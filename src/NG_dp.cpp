@@ -39,22 +39,23 @@ int main(int argc, char **argv) {
 	char filename[64], source[12], methodname[12];
 	time_t rawtime;
 	struct tm* today;
-	bool update(0), checked[NUM_METHODS];
+	bool update(0), checked[NUM_METHODS], verbose(0);
 	shared_ptr<TFile> f = nullptr;
 	unique_ptr<TTree> tx = nullptr, tc = nullptr, tv = nullptr;
 	shared_ptr<Digitizer> digitizer;
 	ifstream fin;
-	memset(source, ' ', 12);
-	memset(checked, 0, NUM_METHODS);
+	memset(source, ' ', sizeof(source));
+	memset(checked, 0, sizeof(checked));
 	if (argc < 3) {
 		cout << "Arguments: -f file [-s source -c config -x special]\n";
 		return 0;
 	}
-	while ((i = getopt(argc, argv, "c:f:s:x:")) != -1) {
+	while ((i = getopt(argc, argv, "c:f:s:vx:")) != -1) {
 		switch(i) {
 			case 'c': config_file = optarg;		break;
 			case 'f': fileset = optarg;			break;
 			case 's': strcpy(source,optarg);	break;
+			case 'v': verbose = true;			break;
 			case 'x': special = atoi(optarg);	break;
 			default: cout << "Arguments: -f file [-s source -c config -x special]\n";
 				return -1;
@@ -118,7 +119,7 @@ int main(int argc, char **argv) {
 	
 	cout << "Found " << config.numEvents << " events and " << config.nchan << " channels\n";
 	
-	time(&rawtime);
+	time(&rawtime);NUM_METHODS
 	today = localtime(&rawtime);
 	timenow = (today->tm_hour)*100 + today->tm_min; // hhmm
 	datenow = (today->tm_year-100)*10000 + (today->tm_mon+1)*100 + today->tm_mday; // yymmdd
@@ -146,8 +147,7 @@ int main(int argc, char **argv) {
 	catch (bad_alloc& ba) {
 		cout << "Allocation error\n";
 		return 0;
-	}
-	if (f->IsZombie()) {
+	} if (f->IsZombie()) {
 		cout << "Error: could not open root file\n";
 		return 0;
 	}
@@ -188,9 +188,9 @@ int main(int argc, char **argv) {
 				checked[method_id] = true;
 				config.method_done[method_id] = true;
 				update |= (version < method_versions[method_id]);
-				update |= ((method_id == CCM_t) && (memcmp(pga_check, config.pga_samples, sizeof(int)*MAX_CH) != 0));
-				update |= ((method_id == CCM_t) && (memcmp(fast_check, config.fastTime, sizeof(int)*MAX_CH) != 0));
-				update |= ((method_id == CCM_t) && (memcmp(slow_check, config.slowTime, sizeof(int)*MAX_CH) != 0));
+				update |= ((method_id == CCM_t) && (memcmp(pga_check, config.pga_samples, sizeof(pga_check)) != 0));
+				update |= ((method_id == CCM_t) && (memcmp(fast_check, config.fastTime, sizeof(fast_check)) != 0));
+				update |= ((method_id == CCM_t) && (memcmp(slow_check, config.slowTime, sizeof(slow_check)) != 0));
 				if (update) {
 					cout << "Method " <<  method_names[method_id] << " will be updated\n";
 					sprintf(filename, "T%i;*", method_id);
@@ -284,8 +284,8 @@ int main(int argc, char **argv) {
 		cout << '\n';
 	}
 	clock_t t = clock();
-	if ( (err_code = Processor(&config, &fin, f, digitizer)) ) cout << error_message[err_code] << '\n';
+	if ( (err_code = Processor(&config, &fin, f, digitizer, verbose)) ) cout << error_message[err_code] << '\n';
 	t = clock() - t;
-	cout << "done\nTotal time elapsed: " << t/CLOCKS_PER_SEC << "sec\n";
+	cout << "Total time elapsed: " << t/CLOCKS_PER_SEC << "sec\n";
 	return 0; // TFile and Digitizer reset in Processor()
 }

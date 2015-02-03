@@ -21,11 +21,11 @@ class Event {
 		void Set(unsigned short* in);
 		int Failed() {return failed;}
 		static const int& Length() {return Event::length;}
-		std::shared_ptr<Digitizer> digitizer;
+		static const int& Length() const {return Event::length;}
+		std::weak_ptr<Digitizer> digitizer;
 		unsigned short trigger;
 		unsigned short* trace;
 		unsigned short peak_x;
-		unsigned short sat_end;
 		unsigned short peak_y; // everything measured in ADC counts
 		unsigned short b_pk_p;
 		unsigned short b_pk_n;

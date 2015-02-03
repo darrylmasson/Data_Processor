@@ -14,7 +14,7 @@ class DFT : public Method {
 		unique_ptr<double[]> COS;
 		unique_ptr<double[]> SIN;
 
-		static shared_ptr<TTree> tree;
+		static weak_ptr<TTree> tree;
 		static int howmany;
 		static bool initialized;
 		
@@ -25,9 +25,8 @@ class DFT : public Method {
 	public:
 		DFT(const int ch, const int len);
 		virtual ~DFT();
-		virtual void evaluate(const shared_ptr<Event> event);
+		virtual void evaluate(const weak_ptr<Event> event);
 		static void root_init(shared_ptr<TTree> tree_in);
-		static void root_deinit() {DFT::tree.reset();}
 		static int HowMany() {return DFT::howmany;}
 		static float version;
 };

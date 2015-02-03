@@ -5,30 +5,30 @@
 #include "TVectorT.h"
 #include <iostream>
 
-float	XSQ::version = 1.0;
+float	XSQ::version = 1.05;
 bool	XSQ::initialized = false;
 int		XSQ::howmany = 0;
 
-shared_ptr<TTree> XSQ::tree = nullptr;
+weak_ptr<TTree> XSQ::tree = nullptr;
 
-double XSQ::xsq_n[3]		= {0,0,0};
-double XSQ::peakheight_n[3]	= {0,0,0};
-double XSQ::baseline_n[3]	= {0,0,0};
-double XSQ::offset_n[3]		= {0,0,0};
-double XSQ::peak_err_n[3]	= {0,0,0};
-double XSQ::base_err_n[3]	= {0,0,0};
-double XSQ::offset_err_n[3]	= {0,0,0};
+double XSQ::xsq_n[4]		= {0,0,0,0};
+double XSQ::peakheight_n[4]	= {0,0,0,0};
+double XSQ::baseline_n[4]	= {0,0,0,0};
+double XSQ::offset_n[4]		= {0,0,0,0};
+double XSQ::peak_err_n[4]	= {0,0,0,0};
+double XSQ::base_err_n[4]	= {0,0,0,0};
+double XSQ::offset_err_n[4]	= {0,0,0,0};
 
-double XSQ::xsq_y[3]		= {0,0,0};
-double XSQ::peakheight_y[3]	= {0,0,0};
-double XSQ::baseline_y[3]	= {0,0,0};
-double XSQ::offset_y[3]		= {0,0,0};
-double XSQ::peak_err_y[3]	= {0,0,0};
-double XSQ::base_err_y[3]	= {0,0,0};
-double XSQ::offset_err_y[3]	= {0,0,0};
+double XSQ::xsq_y[4]		= {0,0,0,0};
+double XSQ::peakheight_y[4]	= {0,0,0,0};
+double XSQ::baseline_y[4]	= {0,0,0,0};
+double XSQ::offset_y[4]		= {0,0,0,0};
+double XSQ::peak_err_y[4]	= {0,0,0,0};
+double XSQ::base_err_y[4]	= {0,0,0,0};
+double XSQ::offset_err_y[4]	= {0,0,0,0};
 
-int XSQ::fit_status_n[3]	= {0,0,0};
-int XSQ::fit_status_y[3]	= {0,0,0};
+int XSQ::fit_status_n[4]	= {0,0,0,0};
+int XSQ::fit_status_y[4]	= {0,0,0,0};
 
 XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Digitizer> digitizer) : nPar(4) {
 	failed = 0;
@@ -41,7 +41,7 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 	unique_ptr<TFile> std_file = nullptr;
 	TVectorT<double>* wave = nullptr;
 	int i(0), p(0);
-	if ((id > 2) || (id < 0)) failed |= method_error;
+	if ((id > 3) || (id < 0)) failed |= method_error;
 	switch (digitizer->ID()) {
 		case dt5751 : 
 			if (digitizer->Special() == 0) {
@@ -105,7 +105,7 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 		std_norm[p] = 1./(std_base[p]-std_peak[p]);
 	} // p
 	std_file->Close();
-	std_file.reset();
+	std_file = nullptr;
 	wave = nullptr;
 	try {
 		input_wave	= unique_ptr<int[]>(new int[eventlength]);
@@ -140,25 +140,25 @@ void XSQ::root_init(shared_ptr<TTree> tree_in) {
 	if (!XSQ::initialized) {
 		XSQ::tree = tree_in;
 		
-		XSQ::tree->Branch("Chisquare_n",	XSQ::xsq_n,			"xsqn[3]/D");
-		XSQ::tree->Branch("Peakscale_n",	XSQ::peakheight_n,	"pkscalen[3]/D");
-		XSQ::tree->Branch("Base_shift_n",	XSQ::baseline_n,	"baseshiftn[3]/D");
-		XSQ::tree->Branch("Offset_n",		XSQ::offset_n,		"offsetn[3]/D");
+		XSQ::tree->Branch("Chisquare_n",	XSQ::xsq_n,			"xsqn[4]/D");
+		XSQ::tree->Branch("Peakscale_n",	XSQ::peakheight_n,	"pkscalen[4]/D");
+		XSQ::tree->Branch("Base_shift_n",	XSQ::baseline_n,	"baseshiftn[4]/D");
+		XSQ::tree->Branch("Offset_n",		XSQ::offset_n,		"offsetn[4]/D");
 		
-		XSQ::tree->Branch("Chisquare_y",	XSQ::xsq_y,			"xsqy[3]/D");
-		XSQ::tree->Branch("Peakscale_y",	XSQ::peakheight_y,	"pkscaley[3]/D");
-		XSQ::tree->Branch("Base_shift_y",	XSQ::baseline_y,	"baseshifty[3]/D");
-		XSQ::tree->Branch("Offset_y",		XSQ::offset_y,		"offsety[3]/D");
+		XSQ::tree->Branch("Chisquare_y",	XSQ::xsq_y,			"xsqy[4]/D");
+		XSQ::tree->Branch("Peakscale_y",	XSQ::peakheight_y,	"pkscaley[4]/D");
+		XSQ::tree->Branch("Base_shift_y",	XSQ::baseline_y,	"baseshifty[4]/D");
+		XSQ::tree->Branch("Offset_y",		XSQ::offset_y,		"offsety[4]/D");
 		
-		XSQ::tree->Branch("Peak_err_n",		XSQ::peak_err_n,	"pkerrn[3]/D");
-		XSQ::tree->Branch("Base_err_n",		XSQ::base_err_n,	"berrn[3]/D");
-		XSQ::tree->Branch("Offset_err_n",	XSQ::offset_err_n,	"offerrn[3]/D");
-		XSQ::tree->Branch("Peak_err_y",		XSQ::peak_err_y,	"pkerry[3]/D");
-		XSQ::tree->Branch("Base_err_y",		XSQ::base_err_y,	"berry[3]/D");
-		XSQ::tree->Branch("Offset_err_y",	XSQ::offset_err_y,	"offerry[3]/D");
+		XSQ::tree->Branch("Peak_err_n",		XSQ::peak_err_n,	"pkerrn[4]/D");
+		XSQ::tree->Branch("Base_err_n",		XSQ::base_err_n,	"berrn[4]/D");
+		XSQ::tree->Branch("Offset_err_n",	XSQ::offset_err_n,	"offerrn[4]/D");
+		XSQ::tree->Branch("Peak_err_y",		XSQ::peak_err_y,	"pkerry[4]/D");
+		XSQ::tree->Branch("Base_err_y",		XSQ::base_err_y,	"berry[4]/D");
+		XSQ::tree->Branch("Offset_err_y",	XSQ::offset_err_y,	"offerry[4]/D");
 		
-		XSQ::tree->Branch("Fit_status_n",	XSQ::fit_status_n,	"fitstatusn[3]/i");
-		XSQ::tree->Branch("Fit_status_y",	XSQ::fit_status_y,	"fitstatusy[3]/i");
+		XSQ::tree->Branch("Fit_status_n",	XSQ::fit_status_n,	"fitstatusn[4]/i");
+		XSQ::tree->Branch("Fit_status_y",	XSQ::fit_status_y,	"fitstatusy[4]/i");
 		
 		XSQ::initialized = true;
 	}
@@ -172,7 +172,7 @@ double XSQ::fitter(double* x, double* par) {
 	return val;
 }
 
-void XSQ::evaluate(const shared_ptr<Event> event) {
+void XSQ::evaluate(const weak_ptr<Event> event) {
 	for (int i = 0; i < eventlength; i++) input_wave[i] = event->trace[i];
 	try {graph.reset(new TGraph(eventlength, x.get(), input_wave.get()));}
 	catch (bad_alloc& ba) { // error codes don't work here

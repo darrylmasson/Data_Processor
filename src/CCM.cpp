@@ -4,7 +4,7 @@
 
 float CCM::version = 2.8;
 bool CCM::initialized = false;
-shared_ptr<TTree> CCM::tree = nullptr;
+weak_ptr<TTree> CCM::tree = nullptr;
 int CCM::howmany = 0;
 
 bool CCM::fullwave[8]			= {0,0,0,0,0,0,0,0};
@@ -56,8 +56,8 @@ void CCM::root_init(shared_ptr<TTree> tree_in) {
 	if (!CCM::initialized) {
 		CCM::tree = tree_in;
 		
-		CCM::tree->Branch("FullWaveform",	CCM::fullwave,		"full_waveform[8]/O"); // max 8 detectors
-		CCM::tree->Branch("Saturated",		CCM::saturated,		"saturated[8]/O");     // must be a number
+		CCM::tree->Branch("FullWaveform",	CCM::fullwave,		"full_waveform[8]/O");
+		CCM::tree->Branch("Saturated",		CCM::saturated,		"saturated[8]/O");
 		CCM::tree->Branch("Truncated",		CCM::truncated,		"trunc[8]/O");
 		
 		CCM::tree->Branch("Risetime",		CCM::rise,			"risetime[8]/S");
@@ -86,7 +86,7 @@ void CCM::root_init(shared_ptr<TTree> tree_in) {
 	}
 }
 
-void CCM::evaluate(const shared_ptr<Event> event) {
+void CCM::evaluate(const weak_ptr<Event> event) {
 	int start(0), stop(eventlength-1), i(0);
 	int temp(0), fast(0), slow(0);
 	long Tfast(0), Tslow(0), Tfull(0);
@@ -102,8 +102,8 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 	CCM::basePostSigma[id] = event->basePostSigma*scaleV;
 
 	for (i = 0; i < eventlength; i++) { // determine integration bounds
-		if ((event->peak_x + i < eventlength) && (stop == eventlength-1) && (event->trace[event->peak_x + i] > threshold)) stop = event->peak_x + i;
-		if ((event->peak_x - i > -1) && (start == 0) && (event->trace[event->peak_x - i] > threshold)) start = event->peak_x - i;
+		if ((stop == eventlength-1) && (event->peak_x + i < eventlength) && (event->trace[event->peak_x + i] > threshold)) stop = event->peak_x + i;
+		if ((start == 0) && (event->peak_x - i > -1) && (event->trace[event->peak_x - i] > threshold)) start = event->peak_x - i;
 		if ((start != 0) && (stop != eventlength-1)) break;
 	}
 	
@@ -117,7 +117,7 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 
 	CCM::peak0[id] = (event->baseline - event->peak_y) * scaleV;
 
-	if ((event->peak_x + 2 < eventlength) && (event->peak_x > 1) && !(saturated[id])) { // peak averaging
+	if ((event->peak_x + 2 < eventlength) && (event->peak_x > 1) && !(CCM::saturated[id])) { // peak averaging
 		for (i = -1; i < 2; i++) temp += event->trace[event->peak_x + i];
 		CCM::peak1[id] = (event->baseline - 0.333*temp)*scaleV;
 		temp += (event->trace[event->peak_x - 2] + event->trace[event->peak_x + 2]);
@@ -151,7 +151,7 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 	if (event->peak_x + gradSamples + 1 < eventlength) {
 		temp = 0;
 		for (i = -1; i < 2; i++) temp += event->trace[event->peak_x + gradSamples + i]; // average with adjacent points to reduce statistical fluctuations
-		temp /= 3.;
+		temp /= 3;
 		CCM::gradient[id] = (gradSamples * (event->baseline - event->peak_y) == 0) ? -1 : (temp - event->peak_y)/(double)(gradSamples * (event->baseline - event->peak_y));
 	} else CCM::gradient[id] = -1;
 	

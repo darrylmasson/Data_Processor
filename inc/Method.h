@@ -24,7 +24,7 @@ class Method {
 	public:
 		Method() {};
 		virtual ~Method() {};
-		virtual void evaluate(const shared_ptr<Event>) =0;
+		virtual void evaluate(const weak_ptr<Event>) =0;
 		int Failed() {return failed;}
 		int GetID() {return id;}
 };
@@ -62,7 +62,7 @@ const char error_message[err_dummy_last][64] = {
 	"Invalid digitizer",
 	"Root error",
 	"File not found",
-	"Array allocation error",
+	"Allocation error",
 	"Thread error",
 	"Bad value in file"
 };
@@ -72,25 +72,25 @@ enum particle {n = 0, y, P};
 struct config_t {
 	unsigned short	mask;
 	int				nchan;
-	int				chan[MAX_CH];
+	int				chan[MAX_CH]; // only the first nchan entries used
 	int				numEvents;
-	int				eventsize;
-	int				eventlength;
+	int				eventsize; // bytes, incl event header
+	int				eventlength; // sampes
 	unsigned int	dc_offset[MAX_CH];
 	unsigned int	threshold[MAX_CH];
-	float			gain[MAX_CH][P];
+	float			gain[MAX_CH][P]; // for fitter
 	int				trig_post;
 	int				pga_samples[MAX_CH];
 	int				fastTime[MAX_CH];
 	int				slowTime[MAX_CH];
-	bool			method_active[NUM_METHODS];
-	bool			already_done;
-	bool			method_done[NUM_METHODS];
+	bool			method_active[NUM_METHODS]; // active for this run
+	bool			already_done; // for timestamps
+	bool			method_done[NUM_METHODS]; // previously processed
 };
 
 struct thread_data_t {
 	unsigned short*		data;
-	shared_ptr<Event>	event;
+	weak_ptr<Event>		event;
 	unique_ptr<Method>	methods[NUM_METHODS];
 	const bool*			activated;
 };

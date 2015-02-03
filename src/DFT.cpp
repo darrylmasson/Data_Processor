@@ -4,11 +4,25 @@
 
 float DFT::version = 1.40;
 bool DFT::initialized = false;
-shared_ptr<TTree> DFT::tree = nullptr;
+weak_ptr<TTree> DFT::tree = nullptr;
 int DFT::howmany = 0;
 
-double DFT::magnitude[8][4]	= {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
-double DFT::phase[8][4]		= {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+double DFT::magnitude[8][4]	= {	{0,0,0,0}, // 8 channels
+								{0,0,0,0}, // 4 orders
+								{0,0,0,0},
+								{0,0,0,0},
+								{0,0,0,0},
+								{0,0,0,0},
+								{0,0,0,0},
+								{0,0,0,0}};
+double DFT::phase[8][4]		= {	{0,0,0,0},
+								{0,0,0,0},
+								{0,0,0,0},
+								{0,0,0,0},
+								{0,0,0,0},
+								{0,0,0,0},
+								{0,0,0,0},
+								{0,0,0,0}};
 
 DFT::DFT(const int ch, const int len) : order(3) {
 	eventlength = len;
@@ -49,7 +63,7 @@ void DFT::root_init(shared_ptr<TTree> tree_in) {
 	}
 }
 
-void DFT::evaluate(const shared_ptr<Event> event) {
+void DFT::evaluate(const weak_ptr<Event> event) {
 	double re(0), im(0);
 	int n(0), t(0), nt(0);
 

@@ -13,12 +13,12 @@ class CCM : public Method { // also includes PGA
 		double scaleT;
 		double scaleV;
 		
-		static shared_ptr<TTree> tree;
+		static weak_ptr<TTree> tree;
 		static int howmany;
 		static bool initialized;
 		
 		static bool fullwave[8];
-		static bool saturated[8];
+		static bool saturated[8]; // up to 8 channels
 		static bool truncated[8];
 		
 		static short decay[8];
@@ -46,9 +46,8 @@ class CCM : public Method { // also includes PGA
 	public:
 		CCM(const int ch, const int fast, const int slow, const int samples, const shared_ptr<Digitizer> digitizer);
 		virtual ~CCM();
-		virtual void evaluate(const shared_ptr<Event> event);
+		virtual void evaluate(const weak_ptr<Event> event);
 		static void root_init(shared_ptr<TTree> tree_in);
-		static void root_deinit() {CCM::tree.reset();}
 		static int HowMany() {return CCM::howmany;}
 		static float version;
 };

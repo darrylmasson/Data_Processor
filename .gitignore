@@ -1,0 +1,6 @@
+# no need to sync object files
+*.o
+
+# backups
+*~
+

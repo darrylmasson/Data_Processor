@@ -16,6 +16,6 @@
 void* Process(void* arg);
 
 // Main processor function.  Returns error code
-int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<Digitizer> digitizer);
+int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<Digitizer> digitizer, bool verbose);
 
 #endif // PROCESSOR_H
