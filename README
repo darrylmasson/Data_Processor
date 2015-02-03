@@ -34,4 +34,4 @@ NG_dp : top level, contains interfacing and version checking.
 
 4. Maintenance
 
-To add additional processing methods, they must follow the same syntax as the existing methods, i.e. must inherit from Method, must have the TTree as a static member, etc.  If the method requires configuration settings that can change between uses then the configuration file may need to be updated, in which case the configuration file parsing function will also need modification.  Once ready for compilation into the project, add the relevant entry into the SRCS line in the Makefile.
+To add additional processing methods, they must follow the same syntax as the existing methods, i.e. must inherit from Method, must have the TTree as a static member, etc.  If the method requires configuration settings that can change between uses then the configuration file may need to be updated, in which case the configuration file parsing function will also need modification.  Once ready for compilation into the project, add the relevant entry into the SRCS line in the Makefile.  Note that the Makefile will need the ROOTDIR changed if the processor is moved.
