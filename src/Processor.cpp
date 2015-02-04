@@ -14,15 +14,15 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	int ch(0), ev(0), m(0), rc(0), prog_check(0), rate(0), timeleft(0), ret(no_error), livetime(0);
 	thread_data_t td[MAX_CH];
 	pthread_t threads[MAX_CH];
-	unique_ptr<char[]> buffer;
+	shared_ptr<char[]> buffer;
 	char treename[NUM_METHODS][4];
-	unique_ptr<TTree> TStree;
+	shared_ptr<TTree> TStree;
 	shared_ptr<TTree> T_data[NUM_METHODS];
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	void* status = nullptr;
-	try {buffer = unique_ptr<char[]>(new char[config->eventsize]);}
+	try {buffer = shared_ptr<char[]>(new char[config->eventsize]);}
 	catch (bad_alloc& ba) {
 		ret |= alloc_error;
 		return ret;
@@ -58,7 +58,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 		}
 		if (config->method_active[CCM_t]) {
 			if (verbose) cout << "CCM ";
-			try {td[ch].methods[CCM_t] = unique_ptr<Method>(new CCM(config->chan[ch],config->fastTime[config->chan[ch]],config->slowTime[config->chan[ch]],config->pga_samples[config->chan[ch]],digitizer));}
+			try {td[ch].methods[CCM_t] = shared_ptr<Method>(new CCM(config->chan[ch],config->fastTime[config->chan[ch]],config->slowTime[config->chan[ch]],config->pga_samples[config->chan[ch]],digitizer));}
 			catch (bad_alloc& ba) {
 				ret |= alloc_error;
 				config->method_active[CCM_t] = false;
@@ -69,7 +69,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 		}
 		if (config->method_active[DFT_t]) {
 			if (verbose) cout << "DFT ";
-			try {td[ch].methods[DFT_t] = unique_ptr<Method>(new DFT(config->chan[ch], Event::Length()));}
+			try {td[ch].methods[DFT_t] = shared_ptr<Method>(new DFT(config->chan[ch], Event::Length()));}
 			catch (bad_alloc& ba) {
 				ret |= alloc_error;
 				config->method_active[DFT_t] = false;
@@ -80,7 +80,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 		}
 		if (config->method_active[XSQ_t]) {
 			if (verbose) cout << "XSQ ";
-			try {td[ch].methods[XSQ_t] = unique_ptr<Method>(new XSQ(config->chan[ch], Event::Length(), config->gain[ch], digitizer));}
+			try {td[ch].methods[XSQ_t] = shared_ptr<Method>(new XSQ(config->chan[ch], Event::Length(), config->gain[ch], digitizer));}
 			catch (bad_alloc& ba) {
 				ret |= alloc_error;
 				config->method_active[XSQ_t] = false;
@@ -96,7 +96,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	
 	if (!config->already_done) {
 		f->cd();
-		try {TStree = unique_ptr<TTree>(new TTree("TS","Timestamps"));}
+		try {TStree = shared_ptr<TTree>(new TTree("TS","Timestamps"));}
 		catch (bad_alloc& ba) {
 			ret |= alloc_error;
 			return ret;

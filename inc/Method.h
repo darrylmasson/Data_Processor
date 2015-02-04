@@ -91,7 +91,7 @@ struct config_t {
 struct thread_data_t {
 	unsigned short*		data;
 	shared_ptr<Event>	event;
-	unique_ptr<Method>	methods[NUM_METHODS];
+	shared_ptr<Method>	methods[NUM_METHODS];
 	const bool*			activated;
 };
 
