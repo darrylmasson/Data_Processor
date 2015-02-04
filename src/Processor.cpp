@@ -69,7 +69,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 		}
 		if (config->method_active[DFT_t]) {
 			if (verbose) cout << "DFT ";
-			try {td[ch].methods[DFT_t] = shared_ptr<Method>(new DFT(config->chan[ch], Event::Length()));}
+			try {td[ch].methods[DFT_t] = shared_ptr<Method>(new DFT(config->chan[ch], Event::Length(), digitizer));}
 			catch (bad_alloc& ba) {
 				ret |= alloc_error;
 				config->method_active[DFT_t] = false;
@@ -162,8 +162,8 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	buffer.reset();
 	if (verbose) cout << " d'toring classes ";
 	for (ch = 0; ch < config->nchan; ch++) {
-//		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m].reset();
-//		td[ch].event.reset();
+		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m].reset();
+		td[ch].event.reset();
 	}
 //	digitizer.reset();
 //	f.reset();

@@ -23,7 +23,7 @@ class DFT : public Method {
 
 		
 	public:
-		DFT(const int ch, const int len);
+		DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer);
 		virtual ~DFT();
 		virtual void evaluate(const shared_ptr<Event> event);
 		static void root_init(shared_ptr<TTree> tree_in);

@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <cmath>
 
-float DFT::version = 1.40;
+float DFT::version = 1.41;
 bool DFT::initialized = false;
 shared_ptr<TTree> DFT::tree = nullptr;
 int DFT::howmany = 0;
@@ -24,7 +24,7 @@ double DFT::phase[8][4]		= {	{0,0,0,0},
 								{0,0,0,0},
 								{0,0,0,0}};
 
-DFT::DFT(const int ch, const int len) : order(3) {
+DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : order(3) {
 	eventlength = len;
 	failed = 0;
 	id = ch;
@@ -36,7 +36,7 @@ DFT::DFT(const int ch, const int len) : order(3) {
 		SIN = unique_ptr<double[]>(new double[order*eventlength]);
 	} catch (bad_alloc& ba) {failed |= alloc_error; return;}
 	for (int n = 0; n < order; n++) {
-		omega = used_orders[n]*pi/eventlength; // GHz
+		omega = used_orders[n]*pi/(eventlength*digitizer->ScaleT()); // GHz
 		for (int t = 0; t < eventlength; t++) {
 			COS[n*eventlength+t] = cos(omega*t);
 			SIN[n*eventlength+t] = sin(omega*t);

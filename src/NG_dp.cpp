@@ -289,5 +289,5 @@ int main(int argc, char **argv) {
 //	digitizer.reset();
 	t = clock() - t;
 	cout << "Total time elapsed: " << t/CLOCKS_PER_SEC << "sec\n";
-	return 0; // TFile and Digitizer reset in Processor()
+	return 0;
 }
