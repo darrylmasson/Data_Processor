@@ -165,8 +165,8 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m].reset();
 		td[ch].event.reset();
 	}
-	digitizer.reset();
-	f.reset();
+//	digitizer.reset();
+//	f.reset();
 	cout << " done\n";
 	return ret;
 }
