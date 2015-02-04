@@ -1,6 +1,7 @@
 #include "DFT.h"
 #include <cstdlib>
 #include <cmath>
+#include <iostream>
 
 float DFT::version = 1.41;
 bool DFT::initialized = false;
@@ -46,6 +47,7 @@ DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : o
 }
 
 DFT::~DFT() {
+	std::cout << " DFT " << id << " d'tor ";
 	DFT::howmany--;
 	COS.reset();
 	SIN.reset();
