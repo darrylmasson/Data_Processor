@@ -144,13 +144,13 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	if (verbose) cout << "making friends: ";
 	for (m = 0; m < NUM_METHODS; m++) {
 		if (config->method_active[m]) {
-			if (verbose) cout << treename[m] << " ";
+			if (verbose) cout << treename[m] << "a ";
 			T_data[m]->AddFriend("TS");
 			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data[m]->AddFriend(treename[(m+i)%NUM_METHODS]);
 			T_data[m]->Write("",TObject::kOverwrite);
 			T_data[m].reset();
 		} else if ((config->method_done[m]) && !(config->method_active[m])) {
-			if (verbose) cout << treename[m] << " ";
+			if (verbose) cout << treename[m] << "b ";
 			T_data[m] = shared_ptr<TTree>((TTree*)f->Get(treename[m]));
 			if (T_data[m].use_count() == 0) continue;
 			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data[m]->AddFriend(treename[(m+i)%NUM_METHODS]);
@@ -162,8 +162,8 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	buffer.reset();
 	if (verbose) cout << " d'toring classes ";
 	for (ch = 0; ch < config->nchan; ch++) {
-		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m].reset();
-		td[ch].event.reset();
+//		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m].reset();
+//		td[ch].event.reset();
 	}
 //	digitizer.reset();
 //	f.reset();
