@@ -162,7 +162,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	buffer.reset();
 	if (verbose) cout << " d'toring classes ";
 	for (ch = 0; ch < config->nchan; ch++) {
-		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m].reset();
+		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m] = nullptr;
 		td[ch].event.reset();
 	}
 //	digitizer.reset();

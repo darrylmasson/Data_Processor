@@ -1,15 +1,5 @@
 // Neutron generator (et al) data processor
-// Written by Darryl, based on algorithms initially written by Jacques
-
-/* How to add new processing codes
-Make sure it follows the same syntax as the other codes (must inherit from Method).  Add appropriate entries to the following locations:
-1. Method.h - add entry to codes_t and code_names
-2. tx tree (this file)
-3. thread_data_t td[] initialization (Processor.cpp)
-4. ParseConfigFile (config.cpp, if needed)
-5. struct config_t (method.h, if needed)
-the #include goes in Processor.h, not here
-*/
+// Written by Darryl, based on algorithms initially written by Jacques and some inspiration from Cassie
 
 #include <cstdlib>
 #include <iostream>
