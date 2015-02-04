@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 	
 	cout << "Found " << config.numEvents << " events and " << config.nchan << " channels\n";
 	
-	time(&rawtime);NUM_METHODS
+	time(&rawtime);
 	today = localtime(&rawtime);
 	timenow = (today->tm_hour)*100 + today->tm_min; // hhmm
 	datenow = (today->tm_year-100)*10000 + (today->tm_mon+1)*100 + today->tm_mday; // yymmdd
