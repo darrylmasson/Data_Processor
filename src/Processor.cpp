@@ -52,7 +52,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 		catch (bad_alloc& ba) {
 			ret |= alloc_error;
 			return ret;
-		} if (event_s[m]->Failed()) {
+		} if (tc[ch].event->Failed()) {
 			ret |= method_error;
 			return ret;
 		}
@@ -152,7 +152,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 		} else if ((config->method_done[m]) && !(config->method_active[m])) {
 			if (verbose) cout << treename[m] << " ";
 			T_data[m] = make_shared<TTree>((TTree*)f->Get(treename[m]));
-			if (T_data[m] == nullptr) continue;
+			if (T_data[m].use_count() == 0) continue;
 			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data[m]->AddFriend(treename[(m+i)%NUM_METHODS]);
 			T_data[m]->Write("",TObject::kOverwrite);
 			T_data[m].reset();
@@ -163,7 +163,6 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	if (verbose) cout << " d'toring classes ";
 	for (ch = 0; ch < config->nchan; ch++) {
 		td[ch].event.reset();
-		event_s[ch].reset();
 		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m].reset();
 	}
 	digitizer.reset();
