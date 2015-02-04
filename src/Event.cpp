@@ -19,7 +19,7 @@ Event::Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int thresho
 
 Event::~Event() {
 	trace = nullptr;
-	digitizer = nullptr;
+	digitizer.reset();
 }
 
 void Event::Set(unsigned short* in) {

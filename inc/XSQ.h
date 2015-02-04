@@ -50,7 +50,7 @@ class XSQ : public Method {
 	public:
 		XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Digitizer> digitizer);
 		virtual ~XSQ();
-		virtual void evaluate(const weak_ptr<Event> event);
+		virtual void evaluate(const shared_ptr<Event> event);
 		static void root_init(shared_ptr<TTree> tree_in);
 		static int Std_Wave_init(const shared_ptr<Digitizer> digitizer);
 		static int HowMany() {return XSQ::howmany;}

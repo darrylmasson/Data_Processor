@@ -172,7 +172,7 @@ double XSQ::fitter(double* x, double* par) {
 	return val;
 }
 
-void XSQ::evaluate(const weak_ptr<Event> event) {
+void XSQ::evaluate(const shared_ptr<Event> event) {
 	for (int i = 0; i < eventlength; i++) input_wave[i] = event->trace[i];
 	try {graph.reset(new TGraph(eventlength, x.get(), input_wave.get()));}
 	catch (bad_alloc& ba) { // error codes don't work here

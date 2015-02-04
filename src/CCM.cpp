@@ -86,7 +86,7 @@ void CCM::root_init(shared_ptr<TTree> tree_in) {
 	}
 }
 
-void CCM::evaluate(const weak_ptr<Event> event) {
+void CCM::evaluate(const shared_ptr<Event> event) {
 	int start(0), stop(eventlength-1), i(0);
 	int temp(0), fast(0), slow(0);
 	long Tfast(0), Tslow(0), Tfull(0);

@@ -21,8 +21,7 @@ class Event {
 		void Set(unsigned short* in);
 		int Failed() {return failed;}
 		static const int& Length() {return Event::length;}
-		static const int& Length() const {return Event::length;}
-		std::weak_ptr<Digitizer> digitizer;
+		std::shared_ptr<Digitizer> digitizer;
 		unsigned short trigger;
 		unsigned short* trace;
 		unsigned short peak_x;

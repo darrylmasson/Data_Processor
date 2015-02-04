@@ -63,7 +63,7 @@ void DFT::root_init(shared_ptr<TTree> tree_in) {
 	}
 }
 
-void DFT::evaluate(const weak_ptr<Event> event) {
+void DFT::evaluate(const shared_ptr<Event> event) {
 	double re(0), im(0);
 	int n(0), t(0), nt(0);
 

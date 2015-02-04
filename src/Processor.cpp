@@ -18,7 +18,6 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	char treename[NUM_METHODS][4];
 	unique_ptr<TTree> TStree;
 	shared_ptr<TTree> T_data[NUM_METHODS];
-	shared_ptr<Event> event_s[MAX_CH];
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -49,7 +48,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	
 	for (ch = 0; ch < config->nchan; ch++) {
 		if (verbose) cout << "CH" << ch << ": Event ";
-		try {event_s[m] = make_shared<Event>(new Event(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]]));}
+		try {td[ch].event = make_shared<Event>(new Event(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]]));}
 		catch (bad_alloc& ba) {
 			ret |= alloc_error;
 			return ret;
@@ -57,7 +56,6 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 			ret |= method_error;
 			return ret;
 		}
-		td[ch].event = event_s[m];
 		if (config->method_active[CCM_t]) {
 			if (verbose) cout << "CCM ";
 			try {td[ch].methods[CCM_t] = unique_ptr<Method>(new CCM(config->chan[ch],config->fastTime[config->chan[ch]],config->slowTime[config->chan[ch]],config->pga_samples[config->chan[ch]],digitizer));}
