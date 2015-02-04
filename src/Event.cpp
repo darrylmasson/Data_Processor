@@ -1,8 +1,10 @@
 #include "Event.h"
 #include <cmath>
 #include <algorithm>
+#include <iostream>
 
 int Event::length = 0;
+int Event::howmany = 0;
 
 Event::Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in) {
 	if (Event::length == 0) Event::length = len;
@@ -15,9 +17,12 @@ Event::Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int thresho
 	failed = 0;
 	if ((special == 0) && (Event::length == len)) Event::length >>= 1;
 	eventlength = Event::length;
+	Event::howmany++;
 }
 
 Event::~Event() {
+	std::cout << " event " << Event::howmany << " d'tor ";
+	Event::howmany--;
 	trace = nullptr;
 	digitizer.reset();
 }

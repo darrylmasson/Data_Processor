@@ -1,6 +1,7 @@
 #include "CCM.h"
 #include <cstdlib>
 #include <cmath>
+#include <iostream>
 
 float CCM::version = 2.8;
 bool CCM::initialized = false;
@@ -48,6 +49,7 @@ CCM::CCM(const int ch, const int fast, const int slow, const int samples, const 
 }
 
 CCM::~CCM() {
+	std::cout << " CCM " << id << " d'tor ";
 	CCM::howmany--;
 	CCM::tree = nullptr;
 }

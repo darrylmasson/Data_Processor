@@ -14,6 +14,7 @@ class Event {
 		int baselength;
 		int special;
 		static int length;
+		static int howmany;
 
 	public:
 		Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in);
