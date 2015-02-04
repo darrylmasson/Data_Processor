@@ -274,8 +274,8 @@ int main(int argc, char **argv) {
 		cout << '\n';
 	}
 	clock_t t = clock();
-	if ( (err_code = Processor(&config, &fin, f, digitizer, verbose)) ) cout << error_message[err_code] << '\n';
-	// f is moved in Processor()
+	if ( (err_code = Processor(&config, &fin, f.release(), digitizer, verbose)) ) cout << error_message[err_code] << '\n';
+
 //	digitizer.reset();
 	t = clock() - t;
 	cout << "Total time elapsed: " << t/CLOCKS_PER_SEC << "sec\n";

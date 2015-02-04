@@ -10,7 +10,7 @@ void* Process(void* arg) {
 	return nullptr;
 }
 
-int Processor(config_t* config, ifstream* fin, unique_ptr<TFile> file, shared_ptr<Digitizer> digitizer, bool verbose) {
+int Processor(config_t* config, ifstream* fin, TFile* file, shared_ptr<Digitizer> digitizer, bool verbose) {
 	int ch(0), ev(0), m(0), rc(0), prog_check(0), rate(0), timeleft(0), ret(no_error), livetime(0);
 	thread_data_t td[MAX_CH];
 	pthread_t threads[MAX_CH];
@@ -32,7 +32,7 @@ int Processor(config_t* config, ifstream* fin, unique_ptr<TFile> file, shared_pt
 	unsigned short* trace = (unsigned short*)(buffer.get() + sizeof_ev_header);
 	clock_t time_this = clock(), time_last = clock();
 	prog_check = config->numEvents/100 + 1;
-	unique_ptr<TFile> f = move(file);
+	unique_ptr<TFile> f(file);
 	f->cd();
 	
 	for (m = 0; m < NUM_METHODS; m++) {
