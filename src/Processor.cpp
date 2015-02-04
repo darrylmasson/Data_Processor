@@ -38,7 +38,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	for (m = 0; m < NUM_METHODS; m++) {
 		sprintf(treename[m], "T%i", m);
 		if (config->method_active[m]) {
-			try {T_data[m] = make_shared<TTree>(new TTree(treename[m], method_names[m]));}
+			try {T_data[m] = shared_ptr<TTree>(new TTree(treename[m], method_names[m]));}
 			catch (bad_alloc& ba) {ret |= alloc_error; config->method_active[m] = false;}
 			if (T_data[m]->IsZombie()) {ret |= root_error; config->method_active[m] = false;}
 	}	}
@@ -48,11 +48,11 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	
 	for (ch = 0; ch < config->nchan; ch++) {
 		if (verbose) cout << "CH" << ch << ": Event ";
-		try {td[ch].event = make_shared<Event>(new Event(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]]));}
+		try {td[ch].event = shared_ptr<Event>(new Event(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]]));}
 		catch (bad_alloc& ba) {
 			ret |= alloc_error;
 			return ret;
-		} if (tc[ch].event->Failed()) {
+		} if (td[ch].event->Failed()) {
 			ret |= method_error;
 			return ret;
 		}
