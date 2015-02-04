@@ -10,19 +10,19 @@ void* Process(void* arg) {
 	return nullptr;
 }
 
-int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<Digitizer> digitizer, bool verbose) {
+int Processor(config_t* config, ifstream* fin, unique_ptr<TFile> file, shared_ptr<Digitizer> digitizer, bool verbose) {
 	int ch(0), ev(0), m(0), rc(0), prog_check(0), rate(0), timeleft(0), ret(no_error), livetime(0);
 	thread_data_t td[MAX_CH];
 	pthread_t threads[MAX_CH];
-	unique_ptr<char[]> buffer;
+	shared_ptr<char[]> buffer;
 	char treename[NUM_METHODS][4];
-	shared_ptr<TTree> TStree;
+	unique_ptr<TTree> TStree;
 	shared_ptr<TTree> T_data[NUM_METHODS];
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	void* status = nullptr;
-	try {buffer = unique_ptr<char[]>(new char[config->eventsize]);}
+	try {buffer = shared_ptr<char[]>(new char[config->eventsize]);}
 	catch (bad_alloc& ba) {
 		ret |= alloc_error;
 		return ret;
@@ -32,7 +32,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	unsigned short* trace = (unsigned short*)(buffer.get() + sizeof_ev_header);
 	clock_t time_this = clock(), time_last = clock();
 	prog_check = config->numEvents/100 + 1;
-	
+	unique_ptr<TFile> f = move(file);
 	f->cd();
 	
 	for (m = 0; m < NUM_METHODS; m++) {
@@ -95,8 +95,8 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	}
 	
 	if (!config->already_done) {
-		f->cd();
-		try {TStree = shared_ptr<TTree>(new TTree("TS","Timestamps"));}
+	//	f->cd();
+		try {TStree = unique_ptr<TTree>(new TTree("TS","Timestamps"));}
 		catch (bad_alloc& ba) {
 			ret |= alloc_error;
 			return ret;
@@ -160,13 +160,14 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	}
 	f->Close();
 	buffer.reset();
-	if (verbose) cout << " d'toring classes ";
+	if (verbose) cout << " d'toring classes: ";
 	for (ch = 0; ch < config->nchan; ch++) {
+		if (verbose) cout << "CH" << ch << " ";
 		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m] = nullptr;
 		td[ch].event.reset();
 	}
 //	digitizer.reset();
-//	f.reset();
+	f.reset();
 	cout << " done\n";
 	return ret;
 }

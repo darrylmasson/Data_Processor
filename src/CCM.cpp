@@ -49,7 +49,7 @@ CCM::CCM(const int ch, const int fast, const int slow, const int samples, const 
 
 CCM::~CCM() {
 	CCM::howmany--;
-	CCM::tree.reset();
+	CCM::tree = nullptr;
 }
 
 void CCM::root_init(shared_ptr<TTree> tree_in) {

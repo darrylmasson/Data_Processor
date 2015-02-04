@@ -49,7 +49,7 @@ DFT::~DFT() {
 	DFT::howmany--;
 	COS.reset();
 	SIN.reset();
-	DFT::tree.reset();
+	DFT::tree = nullptr;
 }
 
 void DFT::root_init(shared_ptr<TTree> tree_in) {

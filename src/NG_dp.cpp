@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
 	time_t rawtime;
 	struct tm* today;
 	bool update(0), checked[NUM_METHODS], verbose(0);
-	shared_ptr<TFile> f = nullptr;
+	unique_ptr<TFile> f = nullptr;
 	unique_ptr<TTree> tx = nullptr, tc = nullptr, tv = nullptr;
 	shared_ptr<Digitizer> digitizer;
 	ifstream fin;
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 	
 	if (special == -1) sprintf(filename, "%sprodata/%s.root", path, fileset.c_str());
 	else sprintf(filename, "%sprodata/%s_x.root", path, fileset.c_str());
-	try {f = shared_ptr<TFile>(new TFile(filename, "UPDATE"));}
+	try {f = unique_ptr<TFile>(new TFile(filename, "UPDATE"));}
 	catch (bad_alloc& ba) {
 		cout << "Allocation error\n";
 		return 0;
@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
 	}
 	clock_t t = clock();
 	if ( (err_code = Processor(&config, &fin, f, digitizer, verbose)) ) cout << error_message[err_code] << '\n';
-//	f.reset();
+	// f is moved in Processor()
 //	digitizer.reset();
 	t = clock() - t;
 	cout << "Total time elapsed: " << t/CLOCKS_PER_SEC << "sec\n";

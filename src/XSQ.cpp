@@ -133,7 +133,7 @@ XSQ::~XSQ() {
 	graph.reset();
 	input_wave.reset();
 	x.reset();
-	XSQ::tree.reset();
+	XSQ::tree = nullptr;
 }
 
 void XSQ::root_init(shared_ptr<TTree> tree_in) {
