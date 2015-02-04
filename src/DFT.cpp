@@ -4,7 +4,7 @@
 
 float DFT::version = 1.40;
 bool DFT::initialized = false;
-weak_ptr<TTree> DFT::tree = nullptr;
+shared_ptr<TTree> DFT::tree = nullptr;
 int DFT::howmany = 0;
 
 double DFT::magnitude[8][4]	= {	{0,0,0,0}, // 8 channels

@@ -24,7 +24,7 @@ class XSQ : public Method {
 		double std_base[P];
 		double std_norm[P];
 		
-		static weak_ptr<TTree> tree;
+		static shared_ptr<TTree> tree;
 		static int howmany;
 		static bool initialized;
 		

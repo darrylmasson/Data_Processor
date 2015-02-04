@@ -9,7 +9,7 @@ float	XSQ::version = 1.05;
 bool	XSQ::initialized = false;
 int		XSQ::howmany = 0;
 
-weak_ptr<TTree> XSQ::tree = nullptr;
+shared_ptr<TTree> XSQ::tree = nullptr;
 
 double XSQ::xsq_n[4]		= {0,0,0,0};
 double XSQ::peakheight_n[4]	= {0,0,0,0};

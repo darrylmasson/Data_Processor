@@ -13,7 +13,7 @@ class CCM : public Method { // also includes PGA
 		double scaleT;
 		double scaleV;
 		
-		static weak_ptr<TTree> tree;
+		static shared_ptr<TTree> tree;
 		static int howmany;
 		static bool initialized;
 		

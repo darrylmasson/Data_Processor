@@ -4,7 +4,7 @@
 
 float CCM::version = 2.8;
 bool CCM::initialized = false;
-weak_ptr<TTree> CCM::tree = nullptr;
+shared_ptr<TTree> CCM::tree = nullptr;
 int CCM::howmany = 0;
 
 bool CCM::fullwave[8]			= {0,0,0,0,0,0,0,0};

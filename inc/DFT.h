@@ -14,7 +14,7 @@ class DFT : public Method {
 		unique_ptr<double[]> COS;
 		unique_ptr<double[]> SIN;
 
-		static weak_ptr<TTree> tree;
+		static shared_ptr<TTree> tree;
 		static int howmany;
 		static bool initialized;
 		
