@@ -14,7 +14,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	int ch(0), ev(0), m(0), rc(0), prog_check(0), rate(0), timeleft(0), ret(no_error), livetime(0);
 	thread_data_t td[MAX_CH];
 	pthread_t threads[MAX_CH];
-	shared_ptr<char[]> buffer;
+	unique_ptr<char[]> buffer;
 	char treename[NUM_METHODS][4];
 	shared_ptr<TTree> TStree;
 	shared_ptr<TTree> T_data[NUM_METHODS];
@@ -22,7 +22,7 @@ int Processor(config_t* config, ifstream* fin, shared_ptr<TFile> f, shared_ptr<D
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	void* status = nullptr;
-	try {buffer = shared_ptr<char[]>(new char[config->eventsize]);}
+	try {buffer = unique_ptr<char[]>(new char[config->eventsize]);}
 	catch (bad_alloc& ba) {
 		ret |= alloc_error;
 		return ret;
