@@ -35,6 +35,7 @@ class XSQ : public Method {
 		static double peak_err_n[4];
 		static double base_err_n[4];
 		static double offset_err_n[4];
+		static double prob_n[4];
 		
 		static double xsq_y[4];
 		static double peakheight_y[4];
@@ -43,6 +44,7 @@ class XSQ : public Method {
 		static double peak_err_y[4];
 		static double base_err_y[4];
 		static double offset_err_y[4];
+		static double prob_y[4];
 		
 		static int fit_status_n[4];
 		static int fit_status_y[4];

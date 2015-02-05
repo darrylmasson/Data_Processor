@@ -4,7 +4,7 @@
 #include "TVectorT.h"
 #include <iostream> // remove
 
-float	XSQ::version = 1.05;
+float	XSQ::version = 1.1;
 bool	XSQ::initialized = false;
 int		XSQ::howmany = 0;
 
@@ -17,6 +17,7 @@ double XSQ::offset_n[4]		= {0,0,0,0};
 double XSQ::peak_err_n[4]	= {0,0,0,0};
 double XSQ::base_err_n[4]	= {0,0,0,0};
 double XSQ::offset_err_n[4]	= {0,0,0,0};
+double XSQ::prob_n[4]		= {0,0,0,0};
 
 double XSQ::xsq_y[4]		= {0,0,0,0};
 double XSQ::peakheight_y[4]	= {0,0,0,0};
@@ -25,6 +26,7 @@ double XSQ::offset_y[4]		= {0,0,0,0};
 double XSQ::peak_err_y[4]	= {0,0,0,0};
 double XSQ::base_err_y[4]	= {0,0,0,0};
 double XSQ::offset_err_y[4]	= {0,0,0,0};
+double XSQ::prob_y[4]		= {0,0,0,0};
 
 int XSQ::fit_status_n[4]	= {0,0,0,0};
 int XSQ::fit_status_y[4]	= {0,0,0,0};
@@ -144,11 +146,13 @@ void XSQ::root_init(shared_ptr<TTree> tree_in) {
 		XSQ::tree->Branch("Peakscale_n",	XSQ::peakheight_n,	"pkscalen[4]/D");
 		XSQ::tree->Branch("Base_shift_n",	XSQ::baseline_n,	"baseshiftn[4]/D");
 		XSQ::tree->Branch("Offset_n",		XSQ::offset_n,		"offsetn[4]/D");
+		XSQ::tree->Branch("Prob_n",			XSQ::prob_n,		"probn[4]/D");
 		
 		XSQ::tree->Branch("Chisquare_y",	XSQ::xsq_y,			"xsqy[4]/D");
 		XSQ::tree->Branch("Peakscale_y",	XSQ::peakheight_y,	"pkscaley[4]/D");
 		XSQ::tree->Branch("Base_shift_y",	XSQ::baseline_y,	"baseshifty[4]/D");
 		XSQ::tree->Branch("Offset_y",		XSQ::offset_y,		"offsety[4]/D");
+		XSQ::tree->Branch("Prob_y",			XSQ::prob_y,		"proby[4]/D");
 		
 		XSQ::tree->Branch("Peak_err_n",		XSQ::peak_err_n,	"pkerrn[4]/D");
 		XSQ::tree->Branch("Base_err_n",		XSQ::base_err_n,	"berrn[4]/D");
@@ -180,6 +184,7 @@ void XSQ::evaluate(const shared_ptr<Event> event) {
 		XSQ::peakheight_n[id]	= -1;
 		XSQ::baseline_n[id]		= -1;
 		XSQ::offset_n[id]		= -1;
+		XSQ::prob_n[id]			= -1;
 		XSQ::peak_err_n[id]		= -1;
 		XSQ::base_err_n[id]		= -1;
 		XSQ::offset_err_n[id]	= -1;
@@ -188,6 +193,7 @@ void XSQ::evaluate(const shared_ptr<Event> event) {
 		XSQ::peakheight_y[id]	= -1;
 		XSQ::baseline_y[id]		= -1;
 		XSQ::offset_y[id]		= -1;
+		XSQ::prob_y[id]			= -1;
 		XSQ::peak_err_y[id]		= -1;
 		XSQ::base_err_y[id]		= -1;
 		XSQ::offset_err_y[id]	= -1;
@@ -211,6 +217,7 @@ void XSQ::evaluate(const shared_ptr<Event> event) {
 	XSQ::peakheight_n[id]	= fit->GetParameter(0)*gain[n];
 	XSQ::baseline_n[id]		= fit->GetParameter(1);
 	XSQ::offset_n[id]		= fit->GetParameter(2);
+	XSQ::prob_n[id]			= fit->GetProb();
 
 	XSQ::peak_err_n[id]		= fit->GetParError(0)*gain[n];
 	XSQ::base_err_n[id]		= fit->GetParError(1);
@@ -230,6 +237,7 @@ void XSQ::evaluate(const shared_ptr<Event> event) {
 	XSQ::peakheight_y[id]	= fit->GetParameter(0)*gain[y];
 	XSQ::baseline_y[id]		= fit->GetParameter(1);
 	XSQ::offset_y[id]		= fit->GetParameter(2);
+	XSQ::prob_y[id]			= fit->GetProb();
 
 	XSQ::peak_err_y[id]		= fit->GetParError(0)*gain[y];
 	XSQ::base_err_y[id]		= fit->GetParError(1);
