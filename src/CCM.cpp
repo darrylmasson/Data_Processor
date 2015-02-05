@@ -50,8 +50,8 @@ CCM::CCM(const int ch, const int fast, const int slow, const int samples, const 
 
 CCM::~CCM() {
 	std::cout << " CCM " << id << " d'tor ";
-//	CCM::howmany--;
-	CCM::tree = nullptr;
+	CCM::howmany--;
+//	CCM::tree = nullptr;
 }
 
 void CCM::root_init(shared_ptr<TTree> tree_in) {
