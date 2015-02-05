@@ -1,5 +1,6 @@
 #include "Digitizer.h"
 #include <cstring>
+#include <iostream>
 
 Digitizer::Digitizer(char in[], int special_in) {
 	strcpy(name,in);
@@ -46,4 +47,6 @@ Digitizer::Digitizer(char in[], int special_in) {
 	scaleT = 1E9/samplerate; // ns
 }
 
-Digitizer::~Digitizer() {}
+Digitizer::~Digitizer() {
+	std::cout << " dig d'tor ";
+}
