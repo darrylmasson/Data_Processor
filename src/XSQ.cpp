@@ -126,7 +126,7 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 
 XSQ::~XSQ() {
 	std::cout << " XSQ " << id << " d'tor ";
-	XSQ::howmany--;
+//	XSQ::howmany--;
 	for (int p = 0; p < P; p++) {
 		std_wave[p].reset();
 	}
