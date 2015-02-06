@@ -19,7 +19,7 @@ const float method_versions[NUM_METHODS] = {
 	XSQ::version
 };
 
-int g_verbose(false);
+bool g_verbose(false);
 
 int main(int argc, char **argv) {
 	cout << "Neutron generator data processor v3_5\n";
