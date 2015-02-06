@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 	bool update(0), checked[NUM_METHODS], verbose(0);
 	unique_ptr<TFile> f = nullptr;
 	unique_ptr<TTree> tx = nullptr, tc = nullptr, tv = nullptr;
-	shared_ptr<Digitizer> digitizer;
+	unique_ptr<Digitizer> digitizer;
 	ifstream fin;
 	memset(source, ' ', sizeof(source));
 	memset(checked, 0, sizeof(checked));
@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 	
-	try {digitizer = shared_ptr<Digitizer>(new Digitizer(f_header.dig_name, special));}
+	try {digitizer = unique_ptr<Digitizer>(new Digitizer(f_header.dig_name, special));}
 	catch (bad_alloc& ba) {
 		cout << "Could not instantiate Digitizer class\n";
 		return 0;
@@ -274,9 +274,8 @@ int main(int argc, char **argv) {
 		cout << '\n';
 	}
 	clock_t t = clock();
-	if ( (err_code = Processor(&config, &fin, f.release(), digitizer, verbose)) ) cout << error_message[err_code] << '\n';
+	if ( (err_code = Processor(&config, &fin, f.release(), digitizer.release(), verbose)) ) cout << error_message[err_code] << '\n';
 
-//	digitizer.reset();
 	t = clock() - t;
 	cout << "Total time elapsed: " << t/CLOCKS_PER_SEC << "sec\n";
 	return 0;
