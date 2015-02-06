@@ -1,6 +1,8 @@
 #ifndef DIGITIZER_H
 #define DIGITIZER_H
 
+extern bool g_verbose;
+
 enum dig_id_t {
   dt5751 = 0,
   dt5751des,

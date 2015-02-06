@@ -48,5 +48,5 @@ Digitizer::Digitizer(char in[], int special_in) {
 }
 
 Digitizer::~Digitizer() {
-	std::cout << " dig d'tor ";
+	if (g_verbose) std::cout << " dig d'tor ";
 }

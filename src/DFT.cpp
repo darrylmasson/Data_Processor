@@ -47,7 +47,7 @@ DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : o
 }
 
 DFT::~DFT() {
-	std::cout << " DFT " << id << " d'tor ";
+	if (g_verbose) cout << " DFT " << id << " d'tor ";
 	DFT::howmany--;
 	COS.reset();
 	SIN.reset();

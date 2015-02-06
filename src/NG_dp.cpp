@@ -19,6 +19,8 @@ const float method_versions[NUM_METHODS] = {
 	XSQ::version
 };
 
+int g_verbose(false);
+
 int main(int argc, char **argv) {
 	cout << "Neutron generator data processor v3_5\n";
 	int i(0), err_code(0), timenow(0), datenow(0), special(-1), method_id(0), pga_check[MAX_CH], fast_check[MAX_CH], slow_check[MAX_CH], XSQ_ndf(0);
@@ -29,7 +31,7 @@ int main(int argc, char **argv) {
 	char filename[64], source[12], methodname[12];
 	time_t rawtime;
 	struct tm* today;
-	bool update(0), checked[NUM_METHODS], verbose(0);
+	bool update(0), checked[NUM_METHODS];
 	unique_ptr<TFile> f = nullptr;
 	unique_ptr<TTree> tx = nullptr, tc = nullptr, tv = nullptr;
 	unique_ptr<Digitizer> digitizer;
@@ -45,7 +47,7 @@ int main(int argc, char **argv) {
 			case 'c': config_file = optarg;		break;
 			case 'f': fileset = optarg;			break;
 			case 's': strcpy(source,optarg);	break;
-			case 'v': verbose = true;			break;
+			case 'v': g_verbose = true;			break;
 			case 'x': special = atoi(optarg);	break;
 			default: cout << "Arguments: -f file [-s source -c config -x special]\n";
 				return -1;
@@ -274,9 +276,11 @@ int main(int argc, char **argv) {
 		cout << '\n';
 	}
 	clock_t t = clock();
-	if ( (err_code = Processor(&config, &fin, f.release(), digitizer.release(), verbose)) ) cout << error_message[err_code] << '\n';
+	if ( (err_code = Processor(&config, &fin, f.release(), digitizer.release())) ) cout << error_message[err_code] << '\n';
 
 	t = clock() - t;
 	cout << "Total time elapsed: " << t/CLOCKS_PER_SEC << "sec\n";
+	f.reset();
+	digitizer.reset();
 	return 0;
 }

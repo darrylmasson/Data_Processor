@@ -2,8 +2,8 @@ CC = g++
 ROOT = $(shell root-config --cflags --libs)
 OBJDIR = obj
 CFLAGS = -g -Wall -Iinc
-ROOTDIR = /data/NeutronGenerator
-EXE = -o $(ROOTDIR)/NG_dp
+OUTDIR = /data/NeutronGenerator
+EXE = -o $(OUTDIR)NG_dp
 SRCS = Digitizer.cpp \
 			 Event.cpp \
 			 CCM.cpp \

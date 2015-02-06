@@ -21,7 +21,7 @@ Event::Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int thresho
 }
 
 Event::~Event() {
-	std::cout << " event " << Event::howmany << " d'tor ";
+	if (g_verbose) std::cout << " event " << Event::howmany << " d'tor ";
 	Event::howmany--;
 	trace = nullptr;
 	digitizer.reset();

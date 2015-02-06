@@ -2,6 +2,10 @@
 #include <iostream>
 #include <ctime>
 #include <pthread.h>
+#include <ratio>
+#include <chrono>
+
+using namespace std::chrono;
 
 void* Process(void* arg) {
 	thread_data_t* input = (thread_data_t*)arg;
@@ -10,7 +14,7 @@ void* Process(void* arg) {
 	return nullptr;
 }
 
-int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool verbose) {
+int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 	int ch(0), ev(0), m(0), rc(0), prog_check(0), rate(0), timeleft(0), ret(no_error), livetime(0);
 	thread_data_t td[MAX_CH];
 	pthread_t threads[MAX_CH];
@@ -19,6 +23,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 	unique_ptr<TTree> TStree;
 	shared_ptr<TTree> T_data[NUM_METHODS];
 	shared_ptr<Digitizer> digitizer(dig);
+	unique_ptr<TFile> f(file);
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -31,9 +36,9 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 	unsigned long* timestamp = (unsigned long*)(buffer.get() + sizeof(long));
 	unsigned long ts_first(0), ts_last(0);
 	unsigned short* trace = (unsigned short*)(buffer.get() + sizeof_ev_header);
-	clock_t time_this = clock(), time_last = clock();
+	steady_clock::time_point t_this, t_that;
+	duration<double> t_elapsed;
 	prog_check = config->numEvents/100 + 1;
-	unique_ptr<TFile> f(file);
 	f->cd();
 	
 	for (m = 0; m < NUM_METHODS; m++) {
@@ -48,7 +53,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 	if (config->method_active[XSQ_t]) XSQ::root_init(T_data[XSQ_t]);
 	
 	for (ch = 0; ch < config->nchan; ch++) {
-		if (verbose) cout << "CH" << ch << ": Event ";
+		if (g_verbose) cout << "CH" << ch << ": Event ";
 		try {td[ch].event = shared_ptr<Event>(new Event(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]]));}
 		catch (bad_alloc& ba) {
 			ret |= alloc_error;
@@ -58,7 +63,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 			return ret;
 		}
 		if (config->method_active[CCM_t]) {
-			if (verbose) cout << "CCM ";
+			if (g_verbose) cout << "CCM ";
 			try {td[ch].methods[CCM_t] = shared_ptr<Method>(new CCM(config->chan[ch],config->fastTime[config->chan[ch]],config->slowTime[config->chan[ch]],config->pga_samples[config->chan[ch]],digitizer));}
 			catch (bad_alloc& ba) {
 				ret |= alloc_error;
@@ -69,7 +74,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 			}
 		}
 		if (config->method_active[DFT_t]) {
-			if (verbose) cout << "DFT ";
+			if (g_verbose) cout << "DFT ";
 			try {td[ch].methods[DFT_t] = shared_ptr<Method>(new DFT(config->chan[ch], Event::Length(), digitizer));}
 			catch (bad_alloc& ba) {
 				ret |= alloc_error;
@@ -80,7 +85,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 			}
 		}
 		if (config->method_active[XSQ_t]) {
-			if (verbose) cout << "XSQ ";
+			if (g_verbose) cout << "XSQ ";
 			try {td[ch].methods[XSQ_t] = shared_ptr<Method>(new XSQ(config->chan[ch], Event::Length(), config->gain[ch], digitizer));}
 			catch (bad_alloc& ba) {
 				ret |= alloc_error;
@@ -92,11 +97,10 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 		}
 		td[ch].activated = config->method_active;
 		td[ch].data = trace + ch*config->eventlength;
-		if (verbose) cout << '\n';
+		if (g_verbose) cout << '\n';
 	}
 	
 	if (!config->already_done) {
-	//	f->cd();
 		try {TStree = unique_ptr<TTree>(new TTree("TS","Timestamps"));}
 		catch (bad_alloc& ba) {
 			ret |= alloc_error;
@@ -107,7 +111,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 		}
 		TStree->Branch("Timestamp", &timestamp[0], "time_stamp/l");
 	}
-	time_last = clock();
+	t_that = steady_clock::now();
 	cout << "Processing:\n";
 	cout << "Completed\tRate (ev/s)\tTime left (s)\n";
 	for (ev = 0; ev < config->numEvents; ev++) {
@@ -123,9 +127,10 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 		if (!config->already_done) TStree->Fill();
 		if (ev % prog_check == prog_check-1) {
 			cout << ev*100l/config->numEvents << "%\t\t";
-			time_this = clock();
-			rate = prog_check*CLOCKS_PER_SEC/(time_this - time_last);
-			time_last = time_this;
+			t_this = steady_clock::now();
+			t_elapsed = duration_cast<duration<double>>(t_this-t_that);
+			t_that = steady_clock::now();
+			rate = t_elapsed.count() == 0 ? 9001 : prog_check/t_elapsed.count(); // it's OVER 9000!
 			cout << rate << "\t\t";
 			timeleft = (config->numEvents - ev)/rate;
 			cout << timeleft << "\n";
@@ -142,16 +147,16 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 		TStree->Write("",TObject::kOverwrite);
 		TStree.reset();
 	}
-	if (verbose) cout << "making friends: ";
+	if (g_verbose) cout << "making friends: ";
 	for (m = 0; m < NUM_METHODS; m++) {
 		if (config->method_active[m]) {
-			if (verbose) cout << treename[m] << "a ";
+			if (g_verbose) cout << treename[m] << "a ";
 			T_data[m]->AddFriend("TS");
 			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data[m]->AddFriend(treename[(m+i)%NUM_METHODS]);
 			T_data[m]->Write("",TObject::kOverwrite);
 			T_data[m].reset();
 		} else if ((config->method_done[m]) && !(config->method_active[m])) {
-			if (verbose) cout << treename[m] << "b ";
+			if (g_verbose) cout << treename[m] << "b ";
 			T_data[m] = shared_ptr<TTree>((TTree*)f->Get(treename[m]));
 			if (T_data[m].use_count() == 0) continue;
 			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data[m]->AddFriend(treename[(m+i)%NUM_METHODS]);
@@ -161,9 +166,9 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig, bool
 	}
 	f->Close();
 	buffer.reset();
-	if (verbose) cout << " d'toring classes: ";
+	if (g_verbose) cout << " d'toring classes: ";
 	for (ch = 0; ch < config->nchan; ch++) {
-		if (verbose) cout << "CH" << ch << " ";
+		if (g_verbose) cout << "CH" << ch << " ";
 		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m] = nullptr;
 		td[ch].event.reset();
 	}
