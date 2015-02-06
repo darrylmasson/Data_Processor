@@ -33,7 +33,7 @@ void GetFileHeader(ifstream* fin, config_t* config, f_header_t* f_header) {
 	
 }
 
-int ParseConfigFile(string& filename, config_t* config, const unique_ptr<Digitizer> digitizer) {
+int ParseConfigFile(string& filename, config_t* config, char dig_name[12]) {
 	char file[64];
 	sprintf(file, "%sconfig/%s", path, filename.c_str());
 	ifstream fin(file,ios::in);
@@ -52,7 +52,7 @@ int ParseConfigFile(string& filename, config_t* config, const unique_ptr<Digitiz
 				fin.getline(buffer, 64, '\n');
 			} // end of while
 		} // end of if method
-		if (strcmp(buffer + 10, digitizer->Name()) == 0) {
+		if (strcmp(buffer + 10, dig_name) == 0) {
 			fin.getline(buffer, 64, '\n');
 			while (strstr(buffer, "END") == NULL) {
 				if (strstr(buffer, "CHANNEL") != NULL) {

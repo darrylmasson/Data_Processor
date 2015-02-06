@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
 	
 	if (config_file == "\0") config_file = "NG_dp_config.cfg";
 	cout << "Parsing " << config_file << " with settings for " << digitizer->Name() << ": ";
-	if ( (err_code = ParseConfigFile(config_file, &config, digitizer)) ) {
+	if ( (err_code = ParseConfigFile(config_file, &config, digitizer->Name())) ) {
 		cout << "failed: " << error_message[err_code] << '\n';
 		return 0;
 	} else cout << "done\n";
