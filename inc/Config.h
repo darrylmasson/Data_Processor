@@ -12,6 +12,6 @@
 void GetFileHeader(ifstream* fin, config_t* config, f_header_t* f_header);
 
 // Gets info for processing run
-int ParseConfigFile(string& filename, config_t* config, const shared_ptr<Digitizer> digitizer);
+int ParseConfigFile(string& filename, config_t* config, const unique_ptr<Digitizer> digitizer);
 
 #endif // CONFIG_H
