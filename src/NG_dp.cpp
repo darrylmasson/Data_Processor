@@ -5,6 +5,8 @@
 #include <iostream>
 #include <unistd.h>
 #include <ctime>
+#include <chrono>
+#include <ratio>
 
 #ifndef PROCESSOR_H
 #include "Processor.h"
@@ -13,13 +15,17 @@
 #include "Config.h"
 #endif
 
+using namespace std::chrono;
+
 const float method_versions[NUM_METHODS] = {
 	CCM::version,
 	DFT::version,
 	XSQ::version
 };
 
-int g_verbose(false);
+bool g_verbose(false);
+
+void on_exit(void) cout << "Exiting\n";
 
 int main(int argc, char **argv) {
 	cout << "Neutron generator data processor v3_5\n";
@@ -31,6 +37,8 @@ int main(int argc, char **argv) {
 	char filename[64], source[12], methodname[12];
 	time_t rawtime;
 	struct tm* today;
+	steady_clock::time_point t_start, t_end;
+	duration<double> t_elapsed;
 	bool update(0), checked[NUM_METHODS];
 	unique_ptr<TFile> f = nullptr;
 	unique_ptr<TTree> tx = nullptr, tc = nullptr, tv = nullptr;
@@ -159,7 +167,7 @@ int main(int argc, char **argv) {
 				return 0;
 			}
 		}
-	tx.reset();
+		tx.reset();
 	}
 	
 	if (config.already_done) {
@@ -275,12 +283,13 @@ int main(int argc, char **argv) {
 		for (i = 0; i < NUM_METHODS; i++) if (config.method_active[i]) cout << method_names[i] << " ";
 		cout << '\n';
 	}
-	clock_t t = clock();
+	atexit(on_exit);
+	t_start = steady_clock::now();
 	if ( (err_code = Processor(&config, &fin, f.release(), digitizer.release())) ) cout << error_message[err_code] << '\n';
-
-	t = clock() - t;
-	cout << "Total time elapsed: " << t/CLOCKS_PER_SEC << "sec\n";
+	t_end = steady_clock::now();
+	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
 	f.reset();
 	digitizer.reset();
+	cout << "Total time elapsed: " << t_elapsed.count() << "sec\n";
 	return 0;
 }
