@@ -51,7 +51,7 @@ CCM::CCM(const int ch, const int fast, const int slow, const int samples, const 
 CCM::~CCM() {
 	if (g_verbose) cout << " CCM " << id << " d'tor ";
 	CCM::howmany--;
-//	CCM::tree = nullptr;
+//	CCM::tree = nullptr; // causes segfaults?
 }
 
 void CCM::root_init(shared_ptr<TTree> tree_in) {
