@@ -25,7 +25,9 @@ const float method_versions[NUM_METHODS] = {
 
 bool g_verbose(false);
 
-void on_exit(void) cout << "Exiting\n";
+void on_exit(void) {
+	cout << "Exiting\n";
+}
 
 int main(int argc, char **argv) {
 	cout << "Neutron generator data processor v3_5\n";
