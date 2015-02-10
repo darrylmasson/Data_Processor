@@ -8,7 +8,7 @@ float	XSQ::version = 1.1;
 bool	XSQ::initialized = false;
 int		XSQ::howmany = 0;
 
-shared_ptr<TTree> XSQ::tree = nullptr;
+unique_ptr<TTree> XSQ::tree = nullptr;
 
 double XSQ::xsq_n[4]		= {0,0,0,0};
 double XSQ::peakheight_n[4]	= {0,0,0,0};
@@ -135,12 +135,11 @@ XSQ::~XSQ() {
 	graph.reset();
 	input_wave.reset();
 	x.reset();
-//	XSQ::tree = nullptr;
 }
 
-void XSQ::root_init(shared_ptr<TTree> tree_in) {
+void XSQ::root_init(TTree* tree_in) {
 	if (!XSQ::initialized) {
-		XSQ::tree = tree_in;
+		XSQ::tree = unique_ptr<TTree>(tree_in);
 		
 		XSQ::tree->Branch("Chisquare_n",	XSQ::xsq_n,			"xsqn[4]/D");
 		XSQ::tree->Branch("Peakscale_n",	XSQ::peakheight_n,	"pkscalen[4]/D");

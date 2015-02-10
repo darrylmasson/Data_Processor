@@ -5,7 +5,7 @@
 
 float CCM::version = 2.81;
 bool CCM::initialized = false;
-shared_ptr<TTree> CCM::tree = nullptr;
+unique_ptr<TTree> CCM::tree = nullptr;
 int CCM::howmany = 0;
 
 bool CCM::fullwave[8]			= {0,0,0,0,0,0,0,0};
@@ -51,12 +51,11 @@ CCM::CCM(const int ch, const int fast, const int slow, const int samples, const 
 CCM::~CCM() {
 	if (g_verbose) cout << " CCM " << id << " d'tor ";
 	CCM::howmany--;
-//	CCM::tree = nullptr; // causes segfaults?
 }
 
-void CCM::root_init(shared_ptr<TTree> tree_in) {
+void CCM::root_init(TTree* tree_in) {
 	if (!CCM::initialized) {
-		CCM::tree = tree_in;
+		CCM::tree = unique_ptr<TTree>(tree_in);
 		
 		CCM::tree->Branch("FullWaveform",	CCM::fullwave,		"full_waveform[8]/O");
 		CCM::tree->Branch("Saturated",		CCM::saturated,		"saturated[8]/O");

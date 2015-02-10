@@ -20,8 +20,8 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 	pthread_t threads[MAX_CH];
 	unique_ptr<char[]> buffer;
 	char treename[NUM_METHODS][4];
-	unique_ptr<TTree> TStree;
-	shared_ptr<TTree> T_data[NUM_METHODS];
+	unique_ptr<TTree> TStree = nullptr;
+	unique_ptr<TTree> T_data = nullptr; // only one as classes handle trees
 	shared_ptr<Digitizer> digitizer(dig);
 	unique_ptr<TFile> f(file);
 	pthread_attr_t attr;
@@ -44,14 +44,17 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 	for (m = 0; m < NUM_METHODS; m++) {
 		sprintf(treename[m], "T%i", m);
 		if (config->method_active[m]) {
-			try {T_data[m] = shared_ptr<TTree>(new TTree(treename[m], method_names[m]));}
+			try {T_data = unique_ptr<TTree>(new TTree(treename[m], method_names[m]));}
 			catch (bad_alloc& ba) {ret |= alloc_error; config->method_active[m] = false;}
-			if (T_data[m]->IsZombie()) {ret |= root_error; config->method_active[m] = false;}
+			if (T_data->IsZombie()) {ret |= root_error; config->method_active[m] = false;}
+			switch (m) {
+				case CCM_t : CCM::root_init(T_data.release()); break;
+				case DFT_t : DFT::root_init(T_data.release()); break;
+				case XSQ_t : XSQ::root_init(T_data.release()); break;
+				default : break;
+			}
 	}	}
-	if (config->method_active[CCM_t]) CCM::root_init(T_data[CCM_t]);
-	if (config->method_active[DFT_t]) DFT::root_init(T_data[DFT_t]);
-	if (config->method_active[XSQ_t]) XSQ::root_init(T_data[XSQ_t]);
-	
+		
 	for (ch = 0; ch < config->nchan; ch++) {
 		if (g_verbose) cout << "CH" << ch << ": Event ";
 		try {td[ch].event = shared_ptr<Event>(new Event(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]]));}
@@ -123,7 +126,9 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 			for (ch = 0; ch < config->nchan; ch++) if ( (rc = pthread_create(&threads[ch], &attr, Process, (void*)&td[ch])) ) {ret |= thread_error; return ret;}
 			for (ch = 0; ch < config->nchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {ret |= thread_error; return ret;}
 		}
-		for (m = 0; m < NUM_METHODS; m++) if (config->method_active[m]) T_data[m]->Fill();
+		if (config->method_active[CCM_t]) CCM::root_fill();
+		if (config->method_active[DFT_t]) DFT::root_fill();
+		if (config->method_active[XSQ_t]) XSQ::root_fill();
 		if (!config->already_done) TStree->Fill();
 		if (ev % prog_check == prog_check-1) {
 			cout << ev*100l/config->numEvents << "%\t\t";
@@ -151,17 +156,23 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 	for (m = 0; m < NUM_METHODS; m++) {
 		if (config->method_active[m]) {
 			if (g_verbose) cout << treename[m] << "a ";
-			T_data[m]->AddFriend("TS");
-			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data[m]->AddFriend(treename[(m+i)%NUM_METHODS]);
-			T_data[m]->Write("",TObject::kOverwrite);
-			T_data[m].reset();
+			switch (m) {
+				case CCM_t : T_data = unique_ptr<TTree>(CCM::root_deinit()); break;
+				case DFT_t : T_data = unique_ptr<TTree>(DFT::root_deinit()); break;
+				case XSQ_t : T_data = unique_ptr<TTree>(XSQ::root_deinit()); break;
+				default : break;
+			}
+			T_data->AddFriend("TS");
+			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data->AddFriend(treename[(m+i)%NUM_METHODS]);
+			T_data->Write("",TObject::kOverwrite);
+			T_data.reset();
 		} else if ((config->method_done[m]) && !(config->method_active[m])) {
 			if (g_verbose) cout << treename[m] << "b ";
-			T_data[m] = shared_ptr<TTree>((TTree*)f->Get(treename[m]));
-			if (T_data[m].use_count() == 0) continue;
-			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data[m]->AddFriend(treename[(m+i)%NUM_METHODS]);
-			T_data[m]->Write("",TObject::kOverwrite);
-			T_data[m].reset();
+			T_data = unique_ptr<TTree>((TTree*)f->Get(treename[m]));
+			if (T_data.use_count() == 0) continue;
+			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data->AddFriend(treename[(m+i)%NUM_METHODS]);
+			T_data->Write("",TObject::kOverwrite);
+			T_data.reset();
 		}
 	}
 	f->Close();

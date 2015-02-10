@@ -14,7 +14,7 @@ class DFT : public Method {
 		unique_ptr<double[]> COS;
 		unique_ptr<double[]> SIN;
 
-		static shared_ptr<TTree> tree;
+		static unique_ptr<TTree> tree;
 		static int howmany;
 		static bool initialized;
 		
@@ -26,7 +26,9 @@ class DFT : public Method {
 		DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer);
 		virtual ~DFT();
 		virtual void evaluate(const shared_ptr<Event> event);
-		static void root_init(shared_ptr<TTree> tree_in);
+		static void root_fill() {DFT::tree->Fill();}
+		static void root_init(TTree* tree_in);
+		static TTree* root_deinit() {DFT::tree.release();}
 		static int HowMany() {return DFT::howmany;}
 		static float version;
 };

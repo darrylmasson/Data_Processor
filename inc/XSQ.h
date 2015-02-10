@@ -24,7 +24,7 @@ class XSQ : public Method {
 		double std_base[P];
 		double std_norm[P];
 		
-		static shared_ptr<TTree> tree;
+		static unique_ptr<TTree> tree;
 		static int howmany;
 		static bool initialized;
 		
@@ -53,7 +53,9 @@ class XSQ : public Method {
 		XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Digitizer> digitizer);
 		virtual ~XSQ();
 		virtual void evaluate(const shared_ptr<Event> event);
-		static void root_init(shared_ptr<TTree> tree_in);
+		static void root_fill() {XSQ::tree->Fill();}
+		static void root_init(TTree* tree_in);
+		static TTree* root_deinit() {XSQ::tree.release();}
 		static int Std_Wave_init(const shared_ptr<Digitizer> digitizer);
 		static int HowMany() {return XSQ::howmany;}
 		double fitter(double* x, double* par);

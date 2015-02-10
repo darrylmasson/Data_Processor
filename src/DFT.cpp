@@ -5,7 +5,7 @@
 
 float DFT::version = 1.41;
 bool DFT::initialized = false;
-shared_ptr<TTree> DFT::tree = nullptr;
+unique_ptr<TTree> DFT::tree = nullptr;
 int DFT::howmany = 0;
 
 double DFT::magnitude[8][4]	= {	{0,0,0,0}, // 8 channels
@@ -51,12 +51,11 @@ DFT::~DFT() {
 	DFT::howmany--;
 	COS.reset();
 	SIN.reset();
-//	DFT::tree = nullptr;
 }
 
-void DFT::root_init(shared_ptr<TTree> tree_in) {
+void DFT::root_init(TTree* tree_in) {
 	if (!DFT::initialized) {
-		DFT::tree = tree_in;
+		DFT::tree = unique_ptr<TTree>(tree_in);
 		
 		DFT::tree->Branch("Amplitude",	DFT::magnitude,	"mag[8][4]/D");
 		DFT::tree->Branch("Phase",		DFT::phase,		"phase[8][4]/D"); // 4 orders

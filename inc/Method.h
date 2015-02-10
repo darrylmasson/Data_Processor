@@ -24,7 +24,7 @@ class Method {
 	public:
 		Method() {};
 		virtual ~Method() {};
-		virtual void evaluate(const shared_ptr<Event>) =0;
+		virtual void evaluate(const shared_ptr<Event>) = 0;
 		int Failed() {return failed;}
 		int GetID() {return id;}
 };
