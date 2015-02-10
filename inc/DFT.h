@@ -28,7 +28,7 @@ class DFT : public Method {
 		virtual void evaluate(const shared_ptr<Event> event);
 		static void root_fill() {DFT::tree->Fill();}
 		static void root_init(TTree* tree_in);
-		static TTree* root_deinit() {DFT::tree.release();}
+		static TTree* root_deinit() {return DFT::tree.release();}
 		static int HowMany() {return DFT::howmany;}
 		static float version;
 };

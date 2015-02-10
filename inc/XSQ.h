@@ -55,7 +55,7 @@ class XSQ : public Method {
 		virtual void evaluate(const shared_ptr<Event> event);
 		static void root_fill() {XSQ::tree->Fill();}
 		static void root_init(TTree* tree_in);
-		static TTree* root_deinit() {XSQ::tree.release();}
+		static TTree* root_deinit() {return XSQ::tree.release();}
 		static int Std_Wave_init(const shared_ptr<Digitizer> digitizer);
 		static int HowMany() {return XSQ::howmany;}
 		double fitter(double* x, double* par);
