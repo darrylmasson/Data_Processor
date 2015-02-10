@@ -25,10 +25,6 @@ const float method_versions[NUM_METHODS] = {
 
 bool g_verbose(false);
 
-void on_exit(void) {
-	cout << "Exiting\n";
-}
-
 int main(int argc, char **argv) {
 	cout << "Neutron generator data processor v3_5\n";
 	int i(0), err_code(0), timenow(0), datenow(0), special(-1), method_id(0), pga_check[MAX_CH], fast_check[MAX_CH], slow_check[MAX_CH], XSQ_ndf(0);
@@ -285,7 +281,6 @@ int main(int argc, char **argv) {
 		for (i = 0; i < NUM_METHODS; i++) if (config.method_active[i]) cout << method_names[i] << " ";
 		cout << '\n';
 	}
-	atexit(on_exit);
 	t_start = steady_clock::now();
 	if ( (err_code = Processor(&config, &fin, f.release(), digitizer.release())) ) cout << error_message[err_code] << '\n';
 	t_end = steady_clock::now();
