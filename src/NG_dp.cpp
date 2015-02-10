@@ -289,7 +289,7 @@ int main(int argc, char **argv) {
 	digitizer.reset();
 	if (special == -1) sprintf(filename, "%sprodata/%s.root", path, fileset.c_str());
 	else sprintf(filename, "%sprodata/%s_x.root", path, fileset.c_str());
-	sprintf(chmod("chmod g+w %s", filename));
+	sprintf(chmod,"chmod g+w %s", filename);
 	system(chmod);
 	cout << "Total time elapsed: " << t_elapsed.count() << "sec\n";
 	return 0;
