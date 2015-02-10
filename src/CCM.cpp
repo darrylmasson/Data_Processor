@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-float CCM::version = 2.8;
+float CCM::version = 2.81;
 bool CCM::initialized = false;
 shared_ptr<TTree> CCM::tree = nullptr;
 int CCM::howmany = 0;
@@ -114,8 +114,8 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 	CCM::saturated[id] = (event->peak_y == 0);
 	CCM::truncated[id] = (start + slowTime >= eventlength);
 	
-	fast = min(fastTime, eventlength - start);
-	slow = min(slowTime, eventlength - start);
+	fast = min(fastTime, eventlength -1 - start);
+	slow = min(slowTime, eventlength -1 - start);
 
 	CCM::peak0[id] = (event->baseline - event->peak_y) * scaleV;
 

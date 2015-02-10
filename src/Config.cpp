@@ -39,7 +39,7 @@ int ParseConfigFile(string& filename, config_t* config, char dig_name[12]) {
 	ifstream fin(file,ios::in);
 	if (!fin.is_open()) return file_error;
 
-	char buffer[64], temp[32];
+	char buffer[64] = '\0', temp[32] = '\0';
 	int ch(-1), code(0);
 	while (!fin.eof()) {
 		fin.getline(buffer, 64, '\n');
