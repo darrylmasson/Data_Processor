@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 	string config_file = "\0", fileset = "\0";
 	config_t config;
 	f_header_t f_header;
-	char filename[64], source[12], methodname[12];
+	char filename[64], source[12], methodname[12], chmod[128];
 	time_t rawtime;
 	struct tm* today;
 	steady_clock::time_point t_start, t_end;
@@ -292,6 +292,10 @@ int main(int argc, char **argv) {
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
 	f.reset();
 	digitizer.reset();
+	if (special == -1) sprintf(filename, "%sprodata/%s.root", path, fileset.c_str());
+	else sprintf(filename, "%sprodata/%s_x.root", path, fileset.c_str());
+	sprintf(chmod("chmod g+w %s", filename));
+	system(chmod);
 	cout << "Total time elapsed: " << t_elapsed.count() << "sec\n";
 	return 0;
 }
