@@ -71,7 +71,8 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 	}
 	
 	sprintf(filename, "%sconfig/standard_events.root", path);
-	std_file.reset(new TFile(filename, "READ"));
+	try {std_file.reset(new TFile(filename, "READ"));}
+	catch (bad_alloc& ba) {failed |= alloc_error; return;}
 	if (!std_file->IsOpen()) {failed |= file_error; return;}
 	for (p = 0; p < P; p++) {
 		try {std_wave[p] = unique_ptr<double[]>(new double[std_length]);}

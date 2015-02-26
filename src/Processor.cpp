@@ -149,6 +149,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 	cout << "Acquisition livetime: " << livetime << "s\nBeginning cleanup: ";
 	fin->close();
 	if (!config->already_done) {
+		f->cd();
 		TStree->Write("",TObject::kOverwrite);
 		TStree.reset();
 	}
@@ -164,12 +165,14 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 			}
 			T_data->AddFriend("TS");
 			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data->AddFriend(treename[(m+i)%NUM_METHODS]);
+			f->cd();
 			T_data->Write("",TObject::kOverwrite);
 			T_data.reset();
 		} else if ((config->method_done[m]) && !(config->method_active[m])) {
 			if (g_verbose) cout << treename[m] << "b ";
 			T_data = unique_ptr<TTree>((TTree*)f->Get(treename[m]));
 			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data->AddFriend(treename[(m+i)%NUM_METHODS]);
+			f->cd();
 			T_data->Write("",TObject::kOverwrite);
 			T_data.reset();
 		}
