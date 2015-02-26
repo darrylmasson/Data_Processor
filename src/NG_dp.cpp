@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 	string config_file = "\0", fileset = "\0";
 	config_t config;
 	f_header_t f_header;
-	char filename[64], source[12], methodname[12], chmod[128];
+	char filename[64], source[12], methodname[12], chmod[128], overwrite(0);;
 	time_t rawtime;
 	struct tm* today;
 	steady_clock::time_point t_start, t_end;
@@ -154,7 +154,6 @@ int main(int argc, char **argv) {
 		tx.reset((TTree*)f->Get("Tx"));
 		if (tx) {
 			cout << fileset << " already processed with an older version of NG_dp; v3.5 will require the removal of previous results.  Continue <y|n>? ";
-			char overwrite(0);
 			cin >> overwrite;
 			if (overwrite == 'y') {
 				f->Delete("*;*");
@@ -196,7 +195,6 @@ int main(int argc, char **argv) {
 					config.method_done[method_id] = false;
 				} else {
 					cout << "Method " << method_names[method_id] << " does not need updating, reprocess anyway <y|n>? ";
-					char overwrite(0);
 					cin >> overwrite;
 					if (overwrite == 'y') {
 						sprintf(filename, "T%i;*", method_id);
@@ -271,6 +269,11 @@ int main(int argc, char **argv) {
 	tc.reset();
 	tv.reset();
 	
+	if ((digitizer->ID() > 2) && (config.method_active[XSQ_t])) {
+		cout << "Digitizer " << digitizer->Name() << " is not compatible with Chisquared method, process anyway <y|n>? ";
+		cin >> overwrite;
+		if (overwrite != 'y') config.method_active[XSQ_t] = false;
+	}
 	if (memchr(config.method_active, 1, NUM_METHODS) == NULL) {
 		f->Close();
 		f.reset();
@@ -281,6 +284,7 @@ int main(int argc, char **argv) {
 		for (i = 0; i < NUM_METHODS; i++) if (config.method_active[i]) cout << method_names[i] << " ";
 		cout << '\n';
 	}
+	
 	t_start = steady_clock::now();
 	if ( (err_code = Processor(&config, &fin, f.release(), digitizer.release())) ) cout << error_message[err_code] << '\n';
 	t_end = steady_clock::now();
