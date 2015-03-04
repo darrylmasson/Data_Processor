@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 		switch(i) {
 			case 'c': s_config_file = optarg;	break;
 			case 'f': s_fileset = optarg;		break;
-			case 's': c_strcpy(source,optarg);	break;
+			case 's': strcpy(c_source,optarg);	break;
 			case 'v': g_verbose = true;			break;
 			case 'x': i_special = atoi(optarg);	break;
 			default: cout << "Arguments: -f file [-s source -c config -x special]\n";
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 	
 	if (i_special == -1) sprintf(c_filename, "%sprodata/%s.root", path, s_fileset.c_str());
 	else sprintf(c_filename, "%sprodata/%s_x.root", path, s_fileset.c_str());
-	fin.open(filename, ios::in);
+	fin.open(c_filename, ios::in);
 	config.already_done =  fin.is_open();
 	if (fin.is_open()) fin.close();
 
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 	
 	if (i_special == -1) sprintf(c_filename, "%sprodata/%s.root", path, s_fileset.c_str());
 	else sprintf(c_filename, "%sprodata/%s_x.root", path, s_fileset.c_str());
-	try {f = unique_ptr<TFile>(new TFile(filename, "UPDATE"));}
+	try {f = unique_ptr<TFile>(new TFile(c_filename, "UPDATE"));}
 	catch (bad_alloc& ba) {
 		cout << "Allocation error\n";
 		return 0;
@@ -242,7 +242,7 @@ int main(int argc, char **argv) {
 		tx->Branch("Posttrigger", &config.trig_post, "tri_post/I"); // don't change, so it's only
 		tx->Branch("Eventlength", &config.eventlength, "ev_len/I"); // written out once
 		tx->Branch("Chisquared_NDF", &i_XSQ_ndf, "ndf/I");
-		if (special != -1) tx->Branch("Special", &i_special, "special/I");
+		if (i_special != -1) tx->Branch("Special", &i_special, "special/I");
 		
 		tv->Branch("MethodName", c_methodname, "codename[12]/B");
 		tv->Branch("MethodID", &method_id, "codeid/I");
@@ -285,7 +285,7 @@ int main(int argc, char **argv) {
 	}
 	
 	t_start = steady_clock::now();
-	if ( (i_err_code = Processor(&config, &fin, f.release(), digitizer.release())) ) cout << error_message[err_code] << '\n';
+	if ( (i_err_code = Processor(&config, &fin, f.release(), digitizer.release())) ) cout << error_message[i_err_code] << '\n';
 	t_end = steady_clock::now();
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
 	f.reset();

@@ -113,7 +113,7 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 		i_input_wave	= unique_ptr<int[]>(new int[eventlength]);
 		i_x				= unique_ptr<int[]>(new int[eventlength]);
 		
-		d_pars			= unique_ptr<double[]>(new double[nPar]);
+		d_pars			= unique_ptr<double[]>(new double[ci_nPar]);
 		
 		fit				= unique_ptr<TF1>(new TF1("fit", this, &XSQ::fitter, 0, min(eventlength, i_std_length), ci_nPar));
 	} catch (bad_alloc& ba) {failed |= alloc_error; return;}
@@ -170,7 +170,7 @@ void XSQ::root_init(TTree* tree_in) {
 
 double XSQ::fitter(double* x, double* par) {
 	int i_sample = (x[0] - par[2]), p = par[3];
-	double d_val = std_base[p] + par[1];
+	double d_val = d_std_base[p] + par[1];
 	if ((i_sample > -1) && (i_sample < i_std_length)) d_val += par[0]*(d_std_wave[p][i_sample]-d_std_base[p]);
 	if (d_val < 0) d_val = 0; // saturated events
 	return d_val;
@@ -228,7 +228,7 @@ void XSQ::evaluate(const shared_ptr<Event> event) {
 	d_pars[1] = event->baseline - d_std_base[y];
 	d_pars[2] = event->trigger - i_std_trig;
 	d_pars[3] = y;
-	fit->SetParameters(pars.get());
+	fit->SetParameters(d_pars.get());
 	fit->FixParameter(3, y);
 	
 	XSQ::si_fit_status_y[id]	= graph->Fit(fit.get(), "Q N R");
