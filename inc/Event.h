@@ -7,7 +7,7 @@
 #endif
 
 class Event {
-	private:
+	protected:
 		int failed;
 		int threshold;
 		int eventlength;

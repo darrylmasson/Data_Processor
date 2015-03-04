@@ -75,7 +75,7 @@ struct config_t {
 	int				chan[MAX_CH]; // only the first nchan entries used
 	int				numEvents;
 	int				eventsize; // bytes, incl event header
-	int				eventlength; // sampes
+	int				eventlength; // samples
 	unsigned int	dc_offset[MAX_CH];
 	unsigned int	threshold[MAX_CH];
 	float			gain[MAX_CH][P]; // for fitter

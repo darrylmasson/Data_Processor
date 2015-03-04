@@ -10,44 +10,44 @@
 class XSQ : public Method {
 	private:
 		unique_ptr<TGraph> graph;
-		const int nPar; // 4: peakheight, baseline offset, trigger offset, particle (fixed)
-		float gain[P];
-		unique_ptr<double[]> pars;
-		unique_ptr<int[]> input_wave;
-		unique_ptr<int[]> x;
-		int std_length; // 450ns
-		int std_trig; // 64ns
-		int std_peak_x; // 71 ns;
-		unique_ptr<double[]> std_wave[P];
+		const int ci_nPar; // 4: peakheight, baseline offset, trigger offset, particle (fixed)
+		float f_gain[P];
+		unique_ptr<double[]> d_pars;
+		unique_ptr<int[]> i_input_wave;
+		unique_ptr<int[]> i_x;
+		int i_std_length; // 450ns
+		int i_std_trig; // 64ns
+		int i_std_peak_x; // 71 ns;
+		unique_ptr<double[]> d_std_wave[P];
 		unique_ptr<TF1> fit;
-		double std_peak[P];
-		double std_base[P];
-		double std_norm[P];
+		double d_std_peak[P];
+		double d_std_base[P];
+		double d_std_norm[P];
 		
 		static unique_ptr<TTree> tree;
-		static int howmany;
-		static bool initialized;
+		static int si_howmany;
+		static bool sb_initialized;
 		
-		static double xsq_n[4]; // only three eljen detectors
-		static double peakheight_n[4]; // but may use CH3
-		static double baseline_n[4]; // in DT5751DES
-		static double offset_n[4];
-		static double peak_err_n[4];
-		static double base_err_n[4];
-		static double offset_err_n[4];
-		static double prob_n[4];
+		static double sd_xsq_n[4]; // only three eljen detectors
+		static double sd_peakheight_n[4]; // but may use CH3
+		static double sd_baseline_n[4]; // in DT5751DES
+		static double sd_offset_n[4];
+		static double sd_peak_err_n[4];
+		static double sd_base_err_n[4];
+		static double sd_offset_err_n[4];
+		static double sd_prob_n[4];
 		
-		static double xsq_y[4];
-		static double peakheight_y[4];
-		static double baseline_y[4];
-		static double offset_y[4];
-		static double peak_err_y[4];
-		static double base_err_y[4];
-		static double offset_err_y[4];
-		static double prob_y[4];
+		static double sd_xsq_y[4];
+		static double sd_peakheight_y[4];
+		static double sd_baseline_y[4];
+		static double sd_offset_y[4];
+		static double sd_peak_err_y[4];
+		static double sd_base_err_y[4];
+		static double sd_offset_err_y[4];
+		static double sd_prob_y[4];
 		
-		static int fit_status_n[4];
-		static int fit_status_y[4];
+		static int si_fit_status_n[4];
+		static int si_fit_status_y[4];
 
 	public:
 		XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Digitizer> digitizer);
@@ -57,9 +57,9 @@ class XSQ : public Method {
 		static void root_init(TTree* tree_in);
 		static TTree* root_deinit() {return XSQ::tree.release();}
 		static int Std_Wave_init(const shared_ptr<Digitizer> digitizer);
-		static int HowMany() {return XSQ::howmany;}
+		static int HowMany() {return XSQ::si_howmany;}
 		double fitter(double* x, double* par);
-		static float version;
+		static float sf_version;
 };
 
 #endif // XSQ_H

@@ -15,7 +15,7 @@ void* Process(void* arg) {
 }
 
 int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
-	int ch(0), ev(0), m(0), rc(0), prog_check(0), rate(0), timeleft(0), ret(no_error), livetime(0);
+	int ch(0), ev(0), m(0), rc(0), i_prog_check(0), i_rate(0), i_timeleft(0), ret(no_error), i_livetime(0);
 	thread_data_t td[MAX_CH];
 	pthread_t threads[MAX_CH];
 	unique_ptr<char[]> buffer;
@@ -33,12 +33,12 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 		ret |= alloc_error;
 		return ret;
 	}
-	unsigned long* timestamp = (unsigned long*)(buffer.get() + sizeof(long));
-	unsigned long ts_first(0), ts_last(0);
-	unsigned short* trace = (unsigned short*)(buffer.get() + sizeof_ev_header);
+	unsigned long* ul_timestamp = (unsigned long*)(buffer.get() + sizeof(long));
+	unsigned long ul_ts_first(0), ul_ts_last(0);
+	unsigned short* us_trace = (unsigned short*)(buffer.get() + sizeof_ev_header);
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
-	prog_check = config->numEvents/100 + 1;
+	i_prog_check = config->numEvents/100 + 1;
 	f->cd();
 	
 	for (m = 0; m < NUM_METHODS; m++) {
@@ -99,7 +99,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 			}
 		}
 		td[ch].activated = config->method_active;
-		td[ch].data = trace + ch*config->eventlength;
+		td[ch].data = us_trace + ch*config->eventlength;
 		if (g_verbose) cout << '\n';
 	}
 	
@@ -112,7 +112,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 			ret |= root_error;
 			return ret;
 		}
-		TStree->Branch("Timestamp", &timestamp[0], "time_stamp/l");
+		TStree->Branch("Timestamp", &ul_timestamp[0], "time_stamp/l");
 	}
 	t_that = steady_clock::now();
 	cout << "Processing:\n";
@@ -130,23 +130,23 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 		if (config->method_active[DFT_t]) DFT::root_fill();
 		if (config->method_active[XSQ_t]) XSQ::root_fill();
 		if (!config->already_done) TStree->Fill();
-		if (ev % prog_check == prog_check-1) {
+		if (ev % i_prog_check == i_prog_check-1) {
 			cout << ev*100l/config->numEvents << "%\t\t";
 			t_this = steady_clock::now();
 			t_elapsed = duration_cast<duration<double>>(t_this-t_that);
 			t_that = steady_clock::now();
-			rate = t_elapsed.count() == 0 ? 9001 : prog_check/t_elapsed.count(); // it's OVER 9000!
-			cout << rate << "\t\t";
-			timeleft = (config->numEvents - ev)/rate;
-			cout << timeleft << "\n";
+			i_rate = t_elapsed.count() == 0 ? 9001 : i_prog_check/t_elapsed.count(); // it's OVER 9000!
+			cout << i_rate << "\t\t";
+			i_timeleft = (config->numEvents - ev)/i_rate;
+			cout << i_timeleft << "\n";
 		}
-		if (ev == 0) ts_first = timestamp[0];	
+		if (ev == 0) ul_ts_first = ul_timestamp[0];	
 	}
 
 	cout << "Processing completed\n";
-	ts_last = timestamp[0];
-	livetime = (ts_last - ts_first)/125e6;
-	cout << "Acquisition livetime: " << livetime << "s\nBeginning cleanup: ";
+	ul_ts_last = ul_timestamp[0];
+	i_livetime = (ul_ts_last - ul_ts_first)/125e6;
+	cout << "Acquisition livetime: " << i_livetime << "s\nBeginning cleanup: ";
 	fin->close();
 	if (!config->already_done) {
 		f->cd();

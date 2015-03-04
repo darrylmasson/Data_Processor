@@ -9,17 +9,17 @@ const double pi = 3.14159265358979;
 
 class DFT : public Method {
 	private:
-		const int order; // 3 non-zero
-		double scalefactor;
-		unique_ptr<double[]> COS;
-		unique_ptr<double[]> SIN;
+		const int ci_order; // 3 non-zero
+		double d_scalefactor;
+		unique_ptr<double[]> d_COS;
+		unique_ptr<double[]> d_SIN;
 
 		static unique_ptr<TTree> tree;
-		static int howmany;
-		static bool initialized;
+		static int si_howmany;
+		static bool sb_initialized;
 		
-		static double magnitude[8][4]; // order = 3
-		static double phase[8][4]; // but we want 0th as well
+		static double sd_magnitude[8][4]; // order = 3
+		static double sd_phase[8][4]; // but we want 0th as well
 
 		
 	public:
@@ -29,8 +29,8 @@ class DFT : public Method {
 		static void root_fill() {DFT::tree->Fill();}
 		static void root_init(TTree* tree_in);
 		static TTree* root_deinit() {return DFT::tree.release();}
-		static int HowMany() {return DFT::howmany;}
-		static float version;
+		static int HowMany() {return DFT::si_howmany;}
+		static float sf_version;
 };
 
 #endif // DFT_H
