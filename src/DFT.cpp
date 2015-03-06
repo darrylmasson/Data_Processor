@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-float DFT::si_version = 1.41;
+float DFT::sf_version = 1.41;
 bool DFT::sb_initialized = false;
 unique_ptr<TTree> DFT::tree = nullptr;
 int DFT::si_howmany = 0;
@@ -33,8 +33,8 @@ DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : c
 	const int used_orders[] = {3,4,5}; // 4 orders incl 0th
 	double omega;
 	try {
-		d_COS = unique_ptr<double[]>(new double[order*eventlength]);
-		d_SIN = unique_ptr<double[]>(new double[order*eventlength]);
+		d_COS = unique_ptr<double[]>(new double[ci_order*eventlength]);
+		d_SIN = unique_ptr<double[]>(new double[ci_order*eventlength]);
 	} catch (bad_alloc& ba) {failed |= alloc_error; return;}
 	for (int n = 0; n < ci_order; n++) {
 		omega = used_orders[n]*pi/(eventlength*digitizer->ScaleT()); // GHz
@@ -73,7 +73,7 @@ void DFT::evaluate(const shared_ptr<Event> event) {
 
 	for (t = 0; t < eventlength; t++) DFT::sd_magnitude[id][0] += event->trace[t];
 	DFT::sd_magnitude[id][0] *= d_scalefactor/2;
-	for (n = 0; n < order; n++) {
+	for (n = 0; n < ci_order; n++) {
 		d_re = 0;
 		d_im = 0;
 		for (t = 0; t < eventlength; t++) {
