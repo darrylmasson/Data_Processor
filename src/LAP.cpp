@@ -11,6 +11,7 @@ int LAP::si_howmany = 0;
 double LAP::laplace[8] = {0,0,0,0,0,0,0,0};
 
 LAP::LAP(int ch, int len, shared_ptr<Digitizer> digitizer) {
+	failed = 0;
 	id = ch;
 	eventlength = len;
 	d_scale_v = digitizer->ScaleV();
