@@ -20,7 +20,8 @@ using namespace std::chrono;
 const float method_versions[NUM_METHODS] = {
 	CCM::sf_version,
 	DFT::sf_version,
-	XSQ::sf_version
+	XSQ::sf_version,
+	LAP::sf_version
 };
 
 bool g_verbose(false);

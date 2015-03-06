@@ -51,6 +51,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 				case CCM_t : CCM::root_init(T_data.release()); break;
 				case DFT_t : DFT::root_init(T_data.release()); break;
 				case XSQ_t : XSQ::root_init(T_data.release()); break;
+				case LAP_T : LAP::root_init(T_data.release()); break;
 				default : break;
 			}
 	}	}
@@ -98,6 +99,17 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 				config->method_active[XSQ_t] = false;
 			}
 		}
+		if (config->method_active[LAP_t]) {
+			if (g_verbose) cout << "LAP ";
+			try {td[ch].methods[LAP_t] = shared_ptr<Method>(new LAP(config->chan[ch[, Event::Length(), digitizer));}
+			catch (bad_alloc& ba) {
+				ret |= alloc_error;
+				config->method_active[LAP_t] = false;
+			} if (td[ch].methods[LAP_t]->Failed()) {
+				ret |= method_error;
+				config->method_active[LAP_t] = false;
+			}
+		}
 		td[ch].activated = config->method_active;
 		td[ch].data = us_trace + ch*config->eventlength;
 		if (g_verbose) cout << '\n';
@@ -129,6 +141,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 		if (config->method_active[CCM_t]) CCM::root_fill();
 		if (config->method_active[DFT_t]) DFT::root_fill();
 		if (config->method_active[XSQ_t]) XSQ::root_fill();
+		if (config->method_active[LAP_t]) LAP::root_fill();
 		if (!config->already_done) TStree->Fill();
 		if (ev % i_prog_check == i_prog_check-1) {
 			cout << ev*100l/config->numEvents << "%\t\t";
@@ -161,6 +174,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 				case CCM_t : T_data = unique_ptr<TTree>(CCM::root_deinit()); break;
 				case DFT_t : T_data = unique_ptr<TTree>(DFT::root_deinit()); break;
 				case XSQ_t : T_data = unique_ptr<TTree>(XSQ::root_deinit()); break;
+				case LAP_t : T_data = unique_ptr<TTree>(LAP::root_deinit()); break;
 				default : break;
 			}
 			T_data->AddFriend("TS");

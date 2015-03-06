@@ -33,6 +33,7 @@ enum methods_t {
 	CCM_t = 0,
 	DFT_t,
 	XSQ_t,
+	LAP_t,
 	
 	NUM_METHODS // add others before this
 };
@@ -40,7 +41,8 @@ enum methods_t {
 const char method_names[NUM_METHODS][12] = {
 	"CCM_PGA",
 	"FOURIER",
-	"CHISQUARED"
+	"CHISQUARED",
+	"LAPLACE"
 };
 
 enum ret_codes_t {
