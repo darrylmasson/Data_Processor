@@ -51,7 +51,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 				case CCM_t : CCM::root_init(T_data.release()); break;
 				case DFT_t : DFT::root_init(T_data.release()); break;
 				case XSQ_t : XSQ::root_init(T_data.release()); break;
-				case LAP_T : LAP::root_init(T_data.release()); break;
+				case LAP_t : LAP::root_init(T_data.release()); break;
 				default : break;
 			}
 	}	}
@@ -101,7 +101,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 		}
 		if (config->method_active[LAP_t]) {
 			if (g_verbose) cout << "LAP ";
-			try {td[ch].methods[LAP_t] = shared_ptr<Method>(new LAP(config->chan[ch[, Event::Length(), digitizer));}
+			try {td[ch].methods[LAP_t] = shared_ptr<Method>(new LAP(config->chan[ch], Event::Length(), digitizer));}
 			catch (bad_alloc& ba) {
 				ret |= alloc_error;
 				config->method_active[LAP_t] = false;

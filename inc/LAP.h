@@ -16,7 +16,7 @@ class LAP : public Method {
 		double d_scale_v;
 		
 	public:
-		LAP(int ch, int len, double s);
+		LAP(int ch, int len, shared_ptr<Digitizer> digitizer);
 		virtual ~LAP();
 		virtual void evaluate(const shared_ptr<Event> event);
 		static void root_fill() {LAP::tree->Fill();}

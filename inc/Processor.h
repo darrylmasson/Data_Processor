@@ -11,6 +11,9 @@
 #ifndef XSQ_H
 #include "XSQ.h"
 #endif
+#ifndef LAP_H
+#include "LAP.h"
+#endif
 
 // Argument is thread_data_t* passed as void*
 void* Process(void* arg);
