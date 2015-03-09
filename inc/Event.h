@@ -17,6 +17,7 @@ class Event {
 		static int howmany;
 
 	public:
+		Event() {++Event::howmany;} // for Event_ave
 		Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in);
 		~Event();
 		virtual void Set(unsigned short* in);
@@ -24,12 +25,12 @@ class Event {
 		static const int& Length() {return Event::length;}
 		std::shared_ptr<Digitizer> digitizer;
 		unsigned short trigger;
-		unsigned short* trace;
+		virtual unsigned short* trace;
 		unsigned short peak_x;
-		unsigned short peak_y; // everything measured in ADC counts
-		unsigned short b_pk_p;
-		unsigned short b_pk_n;
-		unsigned short peak_pos;
+		virtual unsigned short peak_y; // everything measured in ADC counts
+		virtual unsigned short b_pk_p;
+		virtual unsigned short b_pk_n;
+		virtual unsigned short peak_pos;
 		double zero;
 		double baseline;
 		double baseSigma;

@@ -16,8 +16,8 @@ Event_ave::Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int
 	if ((special == 0) && (Event::howmany == 1)) Event::length >>= 1;
 	if ((average > 0) && (Event::howmany == 1)) Event::length -= average;
 	eventlength = Event::length;
-	try { trace.reset(new double[eventlength]);}
-	catch (bad_alloc& ba) {failed |= alloc_error; return;}
+	try { trace = std::unique_ptr<double[]>(new double[eventlength]);}
+	catch (std::bad_alloc& ba) {failed |= alloc_error; return;}
 }
 
 Event_ave::~Event_ave() {
