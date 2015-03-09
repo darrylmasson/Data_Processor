@@ -4,6 +4,9 @@
 #ifndef EVENT_H
 #include "Event.h"
 #endif
+#ifndef EVENT_AV_H
+#include "Event_ave.h"
+#endif
 #include <string>
 #include "TFile.h"
 #include "TTree.h"

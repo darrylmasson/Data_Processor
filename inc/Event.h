@@ -19,7 +19,7 @@ class Event {
 	public:
 		Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in);
 		~Event();
-		void Set(unsigned short* in);
+		virtual void Set(unsigned short* in);
 		int Failed() {return failed;}
 		static const int& Length() {return Event::length;}
 		std::shared_ptr<Digitizer> digitizer;

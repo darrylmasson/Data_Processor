@@ -1,36 +1,41 @@
-#include "Event.h"
+#include "Event_ave.h"
 #include <cmath>
 #include <algorithm>
 #include <iostream>
 
-int Event::length = 0;
-int Event::howmany = 0;
-
-Event::Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in) {
-	Event::howmany++;
+Event_ave::Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in, int average_in) {
 	if (Event::howmany == 1) Event::length = len;
 	digitizer = dig;
 	special = digitizer->Special();
 	baselength = digitizer->Baselength();
 	trace = nullptr;
 	threshold = threshold_in;
+	average = average_in;
 	zero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
 	failed = 0;
 	if ((special == 0) && (Event::howmany == 1)) Event::length >>= 1;
+	if ((average > 0) && (Event::howmany == 1)) Event::length -= average;
 	eventlength = Event::length;
+	try { trace.reset(new double[eventlength]);}
+	catch (bad_alloc& ba) {failed |= alloc_error; return;}
 }
 
-Event::~Event() {
-	if (g_verbose) std::cout << " event " << --Event::howmany << " d'tor ";
-	trace = nullptr;
+Event_ave::~Event_ave() {
+	if (g_verbose) std::cout << " event_ave " << Event::howmany << " d'tor ";
+	trace.reset();
 	digitizer.reset();
 }
 
-void Event::Set(unsigned short* in) {
-	trace = in;
-	int i(0);
-	if (special > 0) for (i = 0; i < eventlength; i++) trace[i] >>= special; // special resolution
-	if (special == 0) for (i = 0; i < eventlength; i++) trace[i] = (trace[2*i] + trace[2*i+1]) >> 1; // special samplerate
+void Event_ave::Set(unsigned short* in) {
+	int i(0), j(0);
+	if (special > 0) for (i = 0; i < eventlength; i++) trace[i] = in[i]>>special; // special resolution
+	if (special == 0) for (i = 0; i < eventlength; i++) trace[i] = (in[2*i] + in[2*i+1]) >> 1; // special samplerate
+	if (average > 0) {
+		for (i = 0; i < eventlength; i++) {
+			trace[i] = 0;
+			for (j = 0; j < average; j++) trace[i] += in[i+j];
+			trace[i] *= 1./average;
+	}	}
 	baseline = 0;
 	baseSigma = 0;
 	peak_y = -1;
