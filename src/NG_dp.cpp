@@ -26,11 +26,20 @@ const float method_versions[NUM_METHODS] = {
 
 bool g_verbose(false);
 
+string Filename_options(int special, int average, string timeanddate) {
+	string ret = path + "/" + timeanddate;
+	if ((special == -1) && (average == 0)) ret += ".root";
+	else if ((i_special == -1) && (config.average != 0)) ret += "_a.root";
+	else if ((i_special != -1) && (config.average == 0)) ret += "_x.root";
+	else ret += "_ax.root";
+	return ret;
+}
+
 int main(int argc, char **argv) {
 	cout << "Neutron generator data processor v3_5\n";
 	int i(0), i_err_code(0), i_timenow(0), i_datenow(0), i_special(-1), method_id(0), i_pga_check[MAX_CH], i_fast_check[MAX_CH], i_slow_check[MAX_CH], i_XSQ_ndf(0);
 	float f_version(0);
-	string s_config_file = "\0", s_fileset = "\0";
+	string s_config_file = "\0", s_fileset = "\0", s_root_file = "\0";
 	config_t config;
 	f_header_t f_header;
 	char c_filename[64], c_source[12], c_methodname[12], c_chmod[128], c_overwrite(0);
@@ -43,24 +52,30 @@ int main(int argc, char **argv) {
 	unique_ptr<TTree> tx = nullptr, tc = nullptr, tv = nullptr;
 	unique_ptr<Digitizer> digitizer;
 	ifstream fin;
+	memset(&config, 0, sizeof(config_t));
 	memset(c_source, ' ', sizeof(c_source));
 	memset(b_checked, 0, sizeof(b_checked));
 	if (argc < 3) {
-		cout << "Arguments: -f file [-s source -c config -x special]\n";
+		cout << "Arguments: -f file [-s source -c config -x special -a moving_average -v]\n";
 		return 0;
 	}
-	while ((i = getopt(argc, argv, "c:f:s:vx:")) != -1) {
+	while ((i = getopt(argc, argv, "a:c:f:s:vx:")) != -1) {
 		switch(i) {
+			case 'a': config.average = atoi(optarg); break;
 			case 'c': s_config_file = optarg;	break;
 			case 'f': s_fileset = optarg;		break;
 			case 's': strcpy(c_source,optarg);	break;
 			case 'v': g_verbose = true;			break;
 			case 'x': i_special = atoi(optarg);	break;
-			default: cout << "Arguments: -f file [-s source -c config -x special]\n";
+			default: cout << "Arguments: -f file [-s source -c config -x special -a moving_average -v]\n";
 				return -1;
 	}	}
 	if (s_fileset == "\0") {
 		cout << "No file specified\n";
+		return 0;
+	}
+	if (config.average < 0) {
+		cout << "Invalid moving average: negative\n";
 		return 0;
 	}
 	switch(i_special) {
@@ -72,12 +87,10 @@ int main(int argc, char **argv) {
 		case 4: cout << "Special resolution: 10-bit\n"; break; // 10-bit simulation
 		default : cout << "Error: invalid special option specified\n"; return 0;
 	}
-	memset(&config, 0, sizeof(config_t));
 	
-	if (i_special == -1) sprintf(c_filename, "%sprodata/%s.root", path, s_fileset.c_str());
-	else sprintf(c_filename, "%sprodata/%s_x.root", path, s_fileset.c_str());
-	fin.open(c_filename, ios::in);
-	config.already_done =  fin.is_open();
+	s_root_file = Filename_options(i_special, config.average, fileset);
+	fin.open(s_root_file.c_str(), ios::in);
+	config.already_done = fin.is_open();
 	if (fin.is_open()) fin.close();
 
 	sprintf(c_filename, "%srawdata/%s.dat", path, s_fileset.c_str());
@@ -140,9 +153,7 @@ int main(int argc, char **argv) {
 			break;
 	}
 	
-	if (i_special == -1) sprintf(c_filename, "%sprodata/%s.root", path, s_fileset.c_str());
-	else sprintf(c_filename, "%sprodata/%s_x.root", path, s_fileset.c_str());
-	try {f = unique_ptr<TFile>(new TFile(c_filename, "UPDATE"));}
+	try {f = unique_ptr<TFile>(new TFile(s_root_file.c_str(), "UPDATE"));}
 	catch (bad_alloc& ba) {
 		cout << "Allocation error\n";
 		return 0;
@@ -244,6 +255,7 @@ int main(int argc, char **argv) {
 		tx->Branch("Eventlength", &config.eventlength, "ev_len/I"); // written out once
 		tx->Branch("Chisquared_NDF", &i_XSQ_ndf, "ndf/I");
 		if (i_special != -1) tx->Branch("Special", &i_special, "special/I");
+		if (config.average != 0) tx->Branch("Moving_average", &config.average, "average/I");
 		
 		tv->Branch("MethodName", c_methodname, "codename[12]/B");
 		tv->Branch("MethodID", &method_id, "codeid/I");
@@ -291,9 +303,8 @@ int main(int argc, char **argv) {
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
 	f.reset();
 	digitizer.reset();
-	if (i_special == -1) sprintf(c_filename, "%sprodata/%s.root", path, s_fileset.c_str());
-	else sprintf(c_filename, "%sprodata/%s_x.root", path, s_fileset.c_str());
-	sprintf(c_chmod,"chmod g+w %s", c_filename);
+
+	sprintf(c_chmod,"chmod g+w %s", s_root_file);
 	system(c_chmod);
 	cout << "Total time elapsed: " << t_elapsed.count() << "sec\n";
 	return 0;

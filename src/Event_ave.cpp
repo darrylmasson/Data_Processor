@@ -28,7 +28,7 @@ Event_ave::~Event_ave() {
 
 void Event_ave::Set(unsigned short* in) {
 	int i(0), j(0);
-	if (special > 0) for (i = 0; i < eventlength; i++) trace[i] = in[i]>>special; // special resolution
+	if (special > 0) for (i = 0; i < eventlength; i++) trace[i] = in[i] >> special; // special resolution
 	if (special == 0) for (i = 0; i < eventlength; i++) trace[i] = (in[2*i] + in[2*i+1]) >> 1; // special samplerate
 	if (average > 0) {
 		for (i = 0; i < eventlength; i++) {
@@ -38,10 +38,10 @@ void Event_ave::Set(unsigned short* in) {
 	}	}
 	baseline = 0;
 	baseSigma = 0;
-	peak_y = -1;
+	peak_y = 15000; // some arbitratily high number as -1 doesn't work for floats
 	peak_x = 0;
 	b_pk_p = 0;
-	b_pk_n = -1;
+	b_pk_n = 15000;
 	peak_pos = 0;
 	trigger = 0;
 	basePost = 0;

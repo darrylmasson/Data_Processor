@@ -89,9 +89,9 @@ void CCM::root_init(TTree* tree_in) {
 
 void CCM::evaluate(const shared_ptr<Event> event) {
 	int i_start(0), i_stop(eventlength-1), i(0);
-	int i_temp(0), i_fast(0), i_slow(0);
+	int i_fast(0), i_slow(0);
 	long l_fastint(0), l_slowint(0), l_fullint(0);
-	double d_threshold(event->baseline - 3*event->baseSigma);
+	double d_threshold(event->baseline - 3*event->baseSigma), d_temp(0);
 	
 	// normalizing baseline values
 	CCM::sd_baseline[id] = (event->baseline - event->zero)*d_scaleV;
@@ -119,10 +119,10 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 	CCM::sd_peak0[id] = (event->baseline - event->peak_y) * d_scaleV;
 
 	if (((event->peak_x + 2) < eventlength) && (event->peak_x > 1) && !(CCM::sb_saturated[id])) { // peak averaging
-		for (i = -1; i < 2; i++) i_temp += event->trace[event->peak_x + i];
-		CCM::sd_peak1[id] = (event->baseline - (0.333*i_temp))*d_scaleV;
-		i_temp += (event->trace[event->peak_x - 2] + event->trace[event->peak_x + 2]);
-		CCM::sd_peak2[id] = (event->baseline - (0.2*i_temp))*d_scaleV;
+		for (i = -1; i < 2; i++) d_temp += event->trace[event->peak_x + i];
+		CCM::sd_peak1[id] = (event->baseline - (0.333*d_temp))*d_scaleV;
+		d_temp += (event->trace[event->peak_x - 2] + event->trace[event->peak_x + 2]);
+		CCM::sd_peak2[id] = (event->baseline - (0.2*d_temp))*d_scaleV;
 	} else CCM::sd_peak2[id] = CCM::sd_peak1[id] = CCM::sd_peak0[id];
 	
 	for (i = i_start; i < eventlength; i++) { // integrator
@@ -150,10 +150,10 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 	CCM::sd_fastint[id] = ((event->baseline * (i_fast)) - (0.5*l_fastint)) * d_scaleV * d_scaleT;
 	
 	if ((event->peak_x + i_gradSamples + 1) < eventlength) {
-		i_temp = 0;
-		for (i = -1; i < 2; i++) i_temp += event->trace[event->peak_x + i_gradSamples + i]; // average with adjacent points to reduce statistical fluctuations
-		i_temp /= 3;
-		CCM::sd_gradient[id] = (i_gradSamples * (event->baseline - event->peak_y) == 0) ? -1 : (i_temp - event->peak_y)/(double)(i_gradSamples * (event->baseline - event->peak_y));
+		d_temp = 0;
+		for (i = -1; i < 2; i++) d_temp += event->trace[event->peak_x + i_gradSamples + i]; // average with adjacent points to reduce statistical fluctuations
+		d_temp /= 3;
+		CCM::sd_gradient[id] = (i_gradSamples * (event->baseline - event->peak_y) == 0) ? -1 : (d_temp - event->peak_y)/(double)(i_gradSamples * (event->baseline - event->peak_y));
 	} else CCM::sd_gradient[id] = -1;
 	
 	return;

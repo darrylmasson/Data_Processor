@@ -58,8 +58,10 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 		
 	for (ch = 0; ch < config->nchan; ch++) {
 		if (g_verbose) cout << "CH" << ch << ": Event ";
-		try {td[ch].event = shared_ptr<Event>(new Event(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]]));}
-		catch (bad_alloc& ba) {
+		try {
+			if (config->average == 0) td[ch].event = shared_ptr<Event>(new Event(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]]));
+			else td[ch].event = shared_ptr<Event_ave>(new Event_ave(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]], config->average));
+		} catch (bad_alloc& ba) {
 			ret |= alloc_error;
 			return ret;
 		} if (td[ch].event->Failed()) {

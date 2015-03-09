@@ -75,22 +75,23 @@ const char error_message[err_dummy_last][64] = {
 enum particle {n = 0, y, P};
 
 struct config_t {
-	unsigned short	mask;
-	int				nchan;
-	int				chan[MAX_CH]; // only the first nchan entries used
-	int				numEvents;
-	int				eventsize; // bytes, incl event header
-	int				eventlength; // samples
-	unsigned int	dc_offset[MAX_CH];
-	unsigned int	threshold[MAX_CH];
-	float			gain[MAX_CH][P]; // for fitter
-	int				trig_post;
-	int				pga_samples[MAX_CH];
-	int				fastTime[MAX_CH];
-	int				slowTime[MAX_CH];
 	bool			method_active[NUM_METHODS]; // active for this run
 	bool			already_done; // for timestamps
 	bool			method_done[NUM_METHODS]; // previously processed
+	unsigned short	mask;
+	int				nchan;
+	int				numEvents;
+	int				eventsize; // bytes, incl event header
+	int				eventlength; // samples
+	int				trig_post;
+	int				average;
+	int				chan[MAX_CH]; // only the first nchan entries used
+	int				pga_samples[MAX_CH];
+	int				fastTime[MAX_CH];
+	int				slowTime[MAX_CH];
+	unsigned int	dc_offset[MAX_CH];
+	unsigned int	threshold[MAX_CH];
+	float			gain[MAX_CH][P]; // for fitter
 };
 
 struct thread_data_t {

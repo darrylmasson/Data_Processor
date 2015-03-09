@@ -14,6 +14,10 @@ class Event_ave : public Event {
 		~Event_ave();
 		virtual void Set(unsigned short* in);
 		unique_ptr<double[]> trace;
+		double peak_y; // these need to be floating point, not integers
+		double b_pk_p;
+		double b_pk_n; // everything else inherited
+		double peak_pos;
 };
 
 #endif // EVENT_AVE_H
