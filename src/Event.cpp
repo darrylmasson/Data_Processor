@@ -14,7 +14,7 @@ Event::Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int thresho
 	baselength = digitizer->Baselength();
 	us_trace = nullptr;
 	threshold = threshold_in;
-	zero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
+	d_zero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
 	failed = 0;
 	if ((special == 0) && (Event::howmany == 1)) Event::length >>= 1;
 	eventlength = Event::length;
@@ -35,8 +35,8 @@ void Event::Set(unsigned short* in) {
 	d_baseSigma = 0;
 	us_peak_y = -1;
 	us_peak_x = 0;
-	d_b_pk_p = 0;
-	d_b_pk_n = -1;
+	us_b_pk_p = 0;
+	us_b_pk_n = -1;
 	us_peak_pos = 0;
 	us_trigger = 0;
 	d_basePost = 0;
