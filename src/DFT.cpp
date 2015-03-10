@@ -71,15 +71,15 @@ void DFT::evaluate(const shared_ptr<Event> event) {
 	DFT::sd_magnitude[id][0] = 0;
 	DFT::sd_phase[id][0] = 0;
 
-	for (t = 0; t < eventlength; t++) DFT::sd_magnitude[id][0] += event->trace[t];
+	for (t = 0; t < eventlength; t++) DFT::sd_magnitude[id][0] += event->Trace(t);
 	DFT::sd_magnitude[id][0] *= d_scalefactor/2;
 	for (n = 0; n < ci_order; n++) {
 		d_re = 0;
 		d_im = 0;
 		for (t = 0; t < eventlength; t++) {
 			nt = n*eventlength + t;
-			d_re += event->trace[t]*d_COS[nt];
-			d_im += event->trace[t]*d_SIN[nt];
+			d_re += event->Trace(t)*d_COS[nt];
+			d_im += event->Trace(t)*d_SIN[nt];
 		}
 		DFT::sd_magnitude[id][n+1] = d_scalefactor*sqrt(d_re*d_re + d_im*d_im);
 		DFT::sd_phase[id][n+1] = atan2(d_im,d_re);

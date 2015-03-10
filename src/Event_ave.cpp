@@ -28,47 +28,47 @@ Event_ave::~Event_ave() {
 
 void Event_ave::Set(unsigned short* in) {
 	int i(0), j(0);
-	if (special > 0) for (i = 0; i < eventlength; i++) trace[i] = in[i] >> special; // special resolution
-	if (special == 0) for (i = 0; i < eventlength; i++) trace[i] = (in[2*i] + in[2*i+1]) >> 1; // special samplerate
+	if (special > 0) for (i = 0; i < eventlength; i++) d_trace[i] = in[i] >> special; // special resolution
+	if (special == 0) for (i = 0; i < eventlength; i++) d_trace[i] = (in[2*i] + in[2*i+1]) >> 1; // special samplerate
 	if (average > 0) {
 		for (i = 0; i < eventlength; i++) {
-			trace[i] = 0;
-			for (j = 0; j < average; j++) trace[i] += in[i+j];
-			trace[i] *= 1./average;
+			d_trace[i] = 0;
+			for (j = 0; j < average; j++) d_trace[i] += in[i+j];
+			d_trace[i] *= 1./average;
 	}	}
-	baseline = 0;
-	baseSigma = 0;
-	peak_y = 15000; // some arbitratily high number as -1 doesn't work for floats
-	peak_x = 0;
-	b_pk_p = 0;
-	b_pk_n = 15000;
-	peak_pos = 0;
-	trigger = 0;
-	basePost = 0;
-	basePostSigma = 0;
-	double temp(0);
+	d_baseline = 0;
+	d_baseSigma = 0;
+	d_peak_y = 15000; // some arbitratily high number as -1 doesn't work for floats
+	us_peak_x = 0;
+	d_b_pk_p = 0;
+	d_b_pk_n = 15000;
+	d_peak_pos = 0;
+	us_trigger = 0;
+	d_basePost = 0;
+	d_basePostSigma = 0;
+	double d_temp(0);
 	for (i = 0; i < eventlength; i++) {
-		peak_pos = std::max(peak_pos, trace[i]);
+		d_peak_pos = std::max(d_peak_pos, d_trace[i]);
 		if (i < baselength) {
-			baseline += trace[i];
-			b_pk_p = std::max(trace[i],b_pk_p);
-			b_pk_n = std::min(trace[i],b_pk_n);
-			basePost += trace[eventlength-baselength+i];
+			d_baseline += d_trace[i];
+			d_b_pk_p = std::max(d_trace[i],d_b_pk_p);
+			d_b_pk_n = std::min(d_trace[i],d_b_pk_n);
+			d_basePost += d_trace[eventlength-baselength+i];
 		}
-		if (peak_y > trace[i]) {
-			peak_y = trace[i];
-			peak_x = i;
+		if (d_peak_y > d_trace[i]) {
+			d_peak_y = d_trace[i];
+			us_peak_x = i;
 		}
-		if ((trigger == 0) && (trace[i] < threshold)) trigger = i;
+		if ((us_trigger == 0) && (d_trace[i] < threshold)) us_trigger = i;
 	}
-	baseline /= baselength;
-	basePost /= baselength;
+	d_baseline /= baselength;
+	d_basePost /= baselength;
 	for (i = 0; i < baselength; i++) {
-		temp = trace[i] - baseline;
-		baseSigma += temp*temp;
-		temp = trace[eventlength-baselength+i] - basePost;
-		basePostSigma += temp*temp;
+		d_temp = d_trace[i] - d_baseline;
+		d_baseSigma += d_temp*d_temp;
+		d_temp = d_trace[eventlength-baselength+i] - d_basePost;
+		d_basePostSigma += d_temp*d_temp;
 	}
-	baseSigma = sqrt(baseSigma/baselength);
-	basePostSigma = sqrt(basePostSigma/baselength);
+	d_baseSigma = sqrt(d_baseSigma/baselength);
+	d_basePostSigma = sqrt(d_basePostSigma/baselength);
 }

@@ -8,16 +8,28 @@
 class Event_ave : public Event {
 	private:
 		int average;
+		double d_peak_y; // these need to be floating point, not integers
+		double d_b_pk_p;
+		double d_b_pk_n; // everything else inherited
+		double d_peak_pos;
+		std::unique_ptr<double[]> d_trace;
 
 	public:
 		Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in, int average_in);
 		~Event_ave();
 		virtual void Set(unsigned short* in);
-		std::unique_ptr<double[]> trace;
-		double peak_y; // these need to be floating point, not integers
-		double b_pk_p;
-		double b_pk_n; // everything else inherited
-		double peak_pos;
+	//	virtual unsigned short& Trigger() {return trigger;}
+		virtual double& Trace(int i) {return d_trace[i];}
+	//	virtual unsigned short& Peak_x() {return us_peak_x;}
+		virtual double& Peak_y() {return d_peak_y;}
+		virtual double& B_pk_p() {return d_b_pk_p;}
+		virtual double& B_pk_n() {return d_b_pk_n;}
+		virtual double& Peak_pos() {return d_peak_pos;}
+	//	virtual double& Zero() {return d_zero;}
+	//	virtual double& Baseline() {return d_baseline;}
+	//	virtual double& BaseSigma() {return d_baseSigma;}
+	//	virtual double& BasePost() {return d_basePost;}
+	//	virtual double& BasePostSigma() {return d_basePostSigma;}
 };
 
 #endif // EVENT_AVE_H

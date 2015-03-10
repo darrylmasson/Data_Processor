@@ -43,8 +43,8 @@ void LAP::root_init(TTree* tree_in) {
 void LAP::evaluate(const shared_ptr<Event> event) {
 	int t(0);
 	LAP::sd_laplace[id] = 0;
-	for (t = event->peak_x; t < eventlength; t++) {
-		LAP::sd_laplace[id] += d_EXP[t - event->peak_x]*event->trace[t];
+	for (t = event->Peak_x(); t < eventlength; t++) {
+		LAP::sd_laplace[id] += d_EXP[t - event->Peak_x()]*event->Trace(t);
 	}
 	LAP::sd_laplace[id] *= d_scale_v;
 }

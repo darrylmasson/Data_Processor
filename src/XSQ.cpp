@@ -177,7 +177,7 @@ double XSQ::fitter(double* x, double* par) {
 }
 
 void XSQ::evaluate(const shared_ptr<Event> event) {
-	for (int i = 0; i < eventlength; i++) i_input_wave[i] = event->trace[i];
+	for (int i = 0; i < eventlength; i++) i_input_wave[i] = event->Trace(i);
 	try {graph.reset(new TGraph(eventlength, i_x.get(), i_input_wave.get()));}
 	catch (bad_alloc& ba) { // error codes don't work here
 		XSQ::sd_xsq_n[id]			= -1;
@@ -204,9 +204,9 @@ void XSQ::evaluate(const shared_ptr<Event> event) {
 		return;
 	}
 	
-	d_pars[0] = (event->baseline - event->peak_y)*d_std_norm[n];
-	d_pars[1] = event->baseline - d_std_base[n];
-	d_pars[2] = event->trigger - i_std_trig;
+	d_pars[0] = (event->Baseline() - event->Peak_y())*d_std_norm[n];
+	d_pars[1] = event->Baseline() - d_std_base[n];
+	d_pars[2] = event->Trigger() - i_std_trig;
 	d_pars[3] = n;
 	fit->SetParameters(d_pars.get());
 	fit->FixParameter(3, n);
@@ -224,9 +224,9 @@ void XSQ::evaluate(const shared_ptr<Event> event) {
 	XSQ::sd_offset_err_n[id]	= fit->GetParError(2);
 
 	
-	d_pars[0] = (event->baseline - event->peak_y)*d_std_norm[y];
-	d_pars[1] = event->baseline - d_std_base[y];
-	d_pars[2] = event->trigger - i_std_trig;
+	d_pars[0] = (event->Baseline() - event->Peak_y())*d_std_norm[y];
+	d_pars[1] = event->Baseline() - d_std_base[y];
+	d_pars[2] = event->Trigger() - i_std_trig;
 	d_pars[3] = y;
 	fit->SetParameters(d_pars.get());
 	fit->FixParameter(3, y);

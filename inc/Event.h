@@ -7,7 +7,7 @@
 #endif
 
 class Event {
-	protected:
+	protected: // these get inherited
 		int failed;
 		int threshold;
 		int eventlength;
@@ -15,6 +15,19 @@ class Event {
 		int special;
 		static int length;
 		static int howmany;
+		
+		unsigned short us_peak_y; // everything measured in ADC counts
+		unsigned short us_b_pk_p;
+		unsigned short us_b_pk_n;
+		unsigned short us_peak_pos;
+		unsigned short* us_trace;
+		unsigned short us_trigger;
+		unsigned short us_peak_x;
+		double d_zero;
+		double d_baseline;
+		double d_baseSigma;
+		double d_basePost;
+		double d_basePostSigma;
 
 	public:
 		Event() {++Event::howmany;} // for Event_ave
@@ -24,18 +37,18 @@ class Event {
 		int Failed() {return failed;}
 		static const int& Length() {return Event::length;}
 		std::shared_ptr<Digitizer> digitizer;
-		unsigned short trigger;
-		virtual unsigned short* trace;
-		unsigned short peak_x;
-		virtual unsigned short peak_y; // everything measured in ADC counts
-		virtual unsigned short b_pk_p;
-		virtual unsigned short b_pk_n;
-		virtual unsigned short peak_pos;
-		double zero;
-		double baseline;
-		double baseSigma;
-		double basePost;
-		double basePostSigma;
+		virtual unsigned short& Trigger() {return us_trigger;}
+		virtual unsigned short& Trace(int i) {return us_trace[i];}
+		virtual unsigned short& Peak_x() {return us_peak_x;}
+		virtual unsigned short& Peak_y() {return us_peak_y;}
+		virtual unsigned short& B_pk_p() {return us_b_pk_p;}
+		virtual unsigned short& B_pk_n() {return us_b_pk_n;}
+		virtual unsigned short& Peak_pos() {return us_peak_pos;}
+		virtual double& Zero() {return d_zero;}
+		virtual double& Baseline() {return d_baseline;}
+		virtual double& BaseSigma() {return d_baseSigma;}
+		virtual double& BasePost() {return d_basePost;}
+		virtual double& BasePostSigma() {return d_basePostSigma;}
 };
 
 #endif // EVENT_H
