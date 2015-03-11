@@ -28,7 +28,7 @@ bool g_verbose(false);
 
 string Filename_options(int special, int average, string& timeanddate) {
 	string ret(path);
-	ret += '/' + timeanddate;
+	ret += '/' + "prodata/" + timeanddate;
 	if ((special == -1) && (average == 0)) ret += ".root";
 	else if ((special == -1) && (average != 0)) ret += "_a.root";
 	else if ((special != -1) && (average == 0)) ret += "_x.root";
