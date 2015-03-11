@@ -37,12 +37,12 @@ class Event {
 		static const int& Length() {return Event::length;}
 		std::shared_ptr<Digitizer> digitizer;
 		virtual unsigned short& Trigger()	{return us_trigger;}
-		virtual double& Trace(int i)		{return us_trace[i];}
+		virtual double Trace(int i)			{return us_trace[i];}
 		virtual unsigned short& Peak_x()	{return us_peak_x;}
-		virtual double& Peak_y()			{return us_peak_y;}
-		virtual double& B_pk_p()			{return us_b_pk_p;}
-		virtual double& B_pk_n()			{return us_b_pk_n;}
-		virtual double& Peak_pos()			{return us_peak_pos;}
+		virtual double Peak_y()				{return us_peak_y;}
+		virtual double B_pk_p()				{return us_b_pk_p;}
+		virtual double B_pk_n()				{return us_b_pk_n;}
+		virtual double Peak_pos()			{return us_peak_pos;}
 		virtual double& Zero()				{return d_zero;}
 		virtual double& Baseline()			{return d_baseline;}
 		virtual double& BaseSigma()			{return d_baseSigma;}

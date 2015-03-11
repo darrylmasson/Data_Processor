@@ -19,12 +19,12 @@ class Event_ave : public Event {
 		~Event_ave();
 		virtual void Set(unsigned short* in);
 	//	virtual unsigned short& Trigger()	{return us_trigger;}
-		virtual double& Trace(int i)		{return d_trace[i];}
+		virtual double Trace(int i)			{return d_trace[i];}
 	//	virtual unsigned short& Peak_x()	{return us_peak_x;}
-		virtual double& Peak_y()			{return d_peak_y;}
-		virtual double& B_pk_p()			{return d_b_pk_p;}
-		virtual double& B_pk_n()			{return d_b_pk_n;}
-		virtual double& Peak_pos()			{return d_peak_pos;}
+		virtual double Peak_y()				{return d_peak_y;}
+		virtual double B_pk_p()				{return d_b_pk_p;}
+		virtual double B_pk_n()				{return d_b_pk_n;}
+		virtual double Peak_pos()			{return d_peak_pos;}
 	//	virtual auto Zero()					{return d_zero;}
 	//	virtual auto Baseline()				{return d_baseline;}
 	//	virtual auto BaseSigma()			{return d_baseSigma;}
