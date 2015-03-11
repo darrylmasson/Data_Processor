@@ -26,11 +26,12 @@ const float method_versions[NUM_METHODS] = {
 
 bool g_verbose(false);
 
-string Filename_options(int special, int average, string timeanddate) {
-	string ret = path + "/" + timeanddate;
+string Filename_options(int special, int average, string& timeanddate) {
+	string ret(path);
+	ret += '/' + timeanddate;
 	if ((special == -1) && (average == 0)) ret += ".root";
-	else if ((i_special == -1) && (config.average != 0)) ret += "_a.root";
-	else if ((i_special != -1) && (config.average == 0)) ret += "_x.root";
+	else if ((special == -1) && (average != 0)) ret += "_a.root";
+	else if ((special != -1) && (average == 0)) ret += "_x.root";
 	else ret += "_ax.root";
 	return ret;
 }
@@ -88,7 +89,7 @@ int main(int argc, char **argv) {
 		default : cout << "Error: invalid special option specified\n"; return 0;
 	}
 	
-	s_root_file = Filename_options(i_special, config.average, fileset);
+	s_root_file = Filename_options(i_special, config.average, s_fileset);
 	fin.open(s_root_file.c_str(), ios::in);
 	config.already_done = fin.is_open();
 	if (fin.is_open()) fin.close();
