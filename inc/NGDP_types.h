@@ -13,6 +13,7 @@ const int sizeof_ev_header = 16;
 extern bool g_verbose;
 
 class Digitizer;
+class Event;
 class Method;
 class CCM;
 class DFT;
