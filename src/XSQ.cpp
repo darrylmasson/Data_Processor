@@ -70,7 +70,7 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 			return;
 	}
 	
-	sprintf(filename, "%sconfig/standard_events.root", path);
+	sprintf(filename, "%s/config/standard_events.root", path);
 	try {std_file.reset(new TFile(filename, "READ"));}
 	catch (bad_alloc& ba) {failed |= alloc_error; return;}
 	if (!std_file->IsOpen()) {failed |= file_error; return;}

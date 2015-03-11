@@ -28,7 +28,7 @@ bool g_verbose(false);
 
 string Filename_options(int special, int average, string& timeanddate) {
 	string ret(path);
-	ret += '/' + "prodata/" + timeanddate;
+	ret += "/prodata/" + timeanddate;
 	if ((special == -1) && (average == 0)) ret += ".root";
 	else if ((special == -1) && (average != 0)) ret += "_a.root";
 	else if ((special != -1) && (average == 0)) ret += "_x.root";
@@ -94,11 +94,11 @@ int main(int argc, char **argv) {
 	config.already_done = fin.is_open();
 	if (fin.is_open()) fin.close();
 
-	sprintf(c_filename, "%srawdata/%s.dat", path, s_fileset.c_str());
+	sprintf(c_filename, "%s/rawdata/%s.dat", path, s_fileset.c_str());
 	fin.open(c_filename, ios::in | ios::binary);
 	if (!fin.is_open()) {
 		for (i = 0; i < MAX_CH; i++) {
-			sprintf(c_filename, "%srawdata/%s_%i.dat", path, s_fileset.c_str(), i);
+			sprintf(c_filename, "%s/rawdata/%s_%i.dat", path, s_fileset.c_str(), i);
 			fin.open(c_filename, ios::in);
 			if (fin.is_open()) {
 				cout << "Legacy files no longer supported, please run up-converter\n";

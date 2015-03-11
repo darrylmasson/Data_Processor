@@ -35,7 +35,7 @@ void GetFileHeader(ifstream* fin, config_t* config, f_header_t* f_header) {
 
 int ParseConfigFile(string& filename, config_t* config, char dig_name[12]) {
 	char file[64];
-	sprintf(file, "%sconfig/%s", path, filename.c_str());
+	sprintf(file, "%s/config/%s", path, filename.c_str());
 	ifstream fin(file,ios::in);
 	if (!fin.is_open()) return file_error;
 

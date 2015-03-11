@@ -6,7 +6,7 @@
 using namespace std;
 
 const int MAX_CH = 8;
-const char path[] = {"/data/NeutronGenerator/"};
+const char path[] = {"/data/NeutronGenerator"};
 const int sizeof_f_header = 86; // sizeof(f_header_t) returns the wrong value
 const int sizeof_ev_header = 16;
 
