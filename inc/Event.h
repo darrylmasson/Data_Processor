@@ -41,8 +41,8 @@ class Event {
 		virtual auto Trace(int i)	->	decltype(us_trace[0])		{return us_trace[i];}
 		virtual auto Peak_x()		->	decltype(us_peak_x)			{return us_peak_x;}
 		virtual auto Peak_y()		->	decltype(us_peak_y)			{return us_peak_y;}
-		virtual auto B_pk_p()		->	decltype(us_b_pk_p			{return us_b_pk_p;}
-		virtual auto B_pk_n()		->	decltype(us_b_pk_n			{return us_b_pk_n;}
+		virtual auto B_pk_p()		->	decltype(us_b_pk_p)			{return us_b_pk_p;}
+		virtual auto B_pk_n()		->	decltype(us_b_pk_n)			{return us_b_pk_n;}
 		virtual auto Peak_pos()		->	decltype(us_peak_pos)		{return us_peak_pos;}
 		virtual auto Zero()			->	decltype(d_zero)			{return d_zero;}
 		virtual auto Baseline()		->	decltype(d_baseline)		{return d_baseline;}
