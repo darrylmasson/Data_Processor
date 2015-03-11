@@ -1,6 +1,8 @@
 #ifndef NGDP_TYPES_H
 #define NGDP_TYPES_H
 
+#include <memory>
+
 using namespace std;
 
 const int MAX_CH = 8;

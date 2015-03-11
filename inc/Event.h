@@ -1,7 +1,6 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-#include <memory>
 #ifndef DIGITIZER_H
 #include "Digitizer.h"
 #endif

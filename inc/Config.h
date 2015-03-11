@@ -4,8 +4,8 @@
 #include <fstream>
 #include <cstring>
 
-#ifndef METHOD_H
-#include "Method.h"
+#ifndef NGDP_TYPES_H
+#include "NGDP_types.h"
 #endif
 
 // Gets info (config_t and f_header_t structs) from the file.  Leaves the get pointer at the start of the 0th event (Processor() does not seek before reading data)
