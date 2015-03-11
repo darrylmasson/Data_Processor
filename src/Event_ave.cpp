@@ -11,7 +11,7 @@ Event_ave::Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int
 	trace = nullptr;
 	threshold = threshold_in;
 	average = average_in;
-	zero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
+	d_zero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
 	failed = 0;
 	if ((special == 0) && (Event::howmany == 1)) Event::length >>= 1;
 	if ((average > 0) && (Event::howmany == 1)) Event::length -= average;
@@ -22,7 +22,7 @@ Event_ave::Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int
 
 Event_ave::~Event_ave() {
 	if (g_verbose) std::cout << " event_ave " << Event::howmany << " d'tor ";
-	trace.reset();
+	d_trace.reset();
 	digitizer.reset();
 }
 
