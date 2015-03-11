@@ -39,7 +39,7 @@ Digitizer::Digitizer(char in[], int special_in) {
 		resolution = -1;
 		V_pp = -1;
 		baselength = 1;
-		failed = 2; // 2 = digitizer error
+		failed = dig_error;
 		id = invalid_dig;
 	}
 	

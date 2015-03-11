@@ -102,3 +102,5 @@ struct f_header_t {
 	unsigned int dc_off[8];
 	unsigned int threshold[8];
 };
+
+#endif // NGDP_TYPES_H
