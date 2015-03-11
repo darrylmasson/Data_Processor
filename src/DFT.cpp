@@ -7,6 +7,7 @@ float DFT::sf_version = 1.41;
 bool DFT::sb_initialized = false;
 unique_ptr<TTree> DFT::tree = nullptr;
 int DFT::si_howmany = 0;
+const double pi = 3.14159265358979;
 
 double DFT::sd_magnitude[8][4]	= {	{0,0,0,0}, // 8 channels
 								{0,0,0,0}, // 4 orders

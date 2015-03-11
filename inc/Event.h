@@ -37,18 +37,18 @@ class Event {
 		int Failed() {return failed;}
 		static const int& Length() {return Event::length;}
 		std::shared_ptr<Digitizer> digitizer;
-		virtual auto Trigger()		->	decltype(us_trigger)		{return us_trigger;}
-		virtual auto Trace(int i)	->	decltype(us_trace[0])		{return us_trace[i];}
-		virtual auto Peak_x()		->	decltype(us_peak_x)			{return us_peak_x;}
-		virtual auto Peak_y()		->	decltype(us_peak_y)			{return us_peak_y;}
-		virtual auto B_pk_p()		->	decltype(us_b_pk_p)			{return us_b_pk_p;}
-		virtual auto B_pk_n()		->	decltype(us_b_pk_n)			{return us_b_pk_n;}
-		virtual auto Peak_pos()		->	decltype(us_peak_pos)		{return us_peak_pos;}
-		virtual auto Zero()			->	decltype(d_zero)			{return d_zero;}
-		virtual auto Baseline()		->	decltype(d_baseline)		{return d_baseline;}
-		virtual auto BaseSigma()	->	decltype(d_baseSigma)		{return d_baseSigma;}
-		virtual auto BasePost()		->	decltype(d_basePost)		{return d_basePost;}
-		virtual auto BasePostSigma()->	decltype(d_basePostSigma)	{return d_basePostSigma;}
+		virtual unsigned short& Trigger()	{return us_trigger;}
+		virtual double& Trace(int i)		{return us_trace[i];}
+		virtual unsigned short& Peak_x()	{return us_peak_x;}
+		virtual double& Peak_y()			{return us_peak_y;}
+		virtual double& B_pk_p()			{return us_b_pk_p;}
+		virtual double& B_pk_n()			{return us_b_pk_n;}
+		virtual double& Peak_pos()			{return us_peak_pos;}
+		virtual double& Zero()				{return d_zero;}
+		virtual double& Baseline()			{return d_baseline;}
+		virtual double& BaseSigma()			{return d_baseSigma;}
+		virtual double& BasePost()			{return d_basePost;}
+		virtual double& BasePostSigma()		{return d_basePostSigma;}
 };
 
 #endif // EVENT_H

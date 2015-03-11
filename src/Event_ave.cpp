@@ -8,7 +8,7 @@ Event_ave::Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int
 	digitizer = dig;
 	special = digitizer->Special();
 	baselength = digitizer->Baselength();
-	trace = nullptr;
+	d_trace = nullptr;
 	threshold = threshold_in;
 	average = average_in;
 	d_zero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
@@ -16,7 +16,7 @@ Event_ave::Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int
 	if ((special == 0) && (Event::howmany == 1)) Event::length >>= 1;
 	if ((average > 0) && (Event::howmany == 1)) Event::length -= average;
 	eventlength = Event::length;
-	try { trace = std::unique_ptr<double[]>(new double[eventlength]);}
+	try { d_trace = std::unique_ptr<double[]>(new double[eventlength]);}
 	catch (std::bad_alloc& ba) {failed |= alloc_error; return;}
 }
 

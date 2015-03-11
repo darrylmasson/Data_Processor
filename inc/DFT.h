@@ -5,8 +5,6 @@
 #include "Method.h"
 #endif
 
-const double pi = 3.14159265358979;
-
 class DFT : public Method {
 	private:
 		const int ci_order; // 3 non-zero

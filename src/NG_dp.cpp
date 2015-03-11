@@ -38,7 +38,7 @@ string Filename_options(int special, int average, string timeanddate) {
 int main(int argc, char **argv) {
 	cout << "Neutron generator data processor v3_5\n";
 	int i(0), i_err_code(0), i_timenow(0), i_datenow(0), i_special(-1), method_id(0), i_pga_check[MAX_CH], i_fast_check[MAX_CH], i_slow_check[MAX_CH], i_XSQ_ndf(0);
-	float f_version(0);
+	float f_version(0), f_det_position_z[3] = {0,0,0}, f_det_position_r[3] = {0,0,0};
 	string s_config_file = "\0", s_fileset = "\0", s_root_file = "\0";
 	config_t config;
 	f_header_t f_header;
@@ -256,6 +256,15 @@ int main(int argc, char **argv) {
 		tx->Branch("Chisquared_NDF", &i_XSQ_ndf, "ndf/I");
 		if (i_special != -1) tx->Branch("Special", &i_special, "special/I");
 		if (config.average != 0) tx->Branch("Moving_average", &config.average, "average/I");
+		if (strcmp(c_source, "NG") == 0) {
+			cout << "Enter detector positions:\n";
+			for (i = 0; i < 3; i++) {
+				cout << "Detector " << i << " z: "; cin >> f_det_position_z[i];
+				cout << "Detector " << i << " r: "; cin >> f_det_position_r[i];
+			}
+			tx->Branch("Detector_position_z", f_det_position_z, "z_pos[3]/F");
+			tx->Branch("Detector_position_r", f_det_position_r, "r_pos[3]/F");
+		}
 		
 		tv->Branch("MethodName", c_methodname, "codename[12]/B");
 		tv->Branch("MethodID", &method_id, "codeid/I");

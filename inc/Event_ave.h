@@ -18,18 +18,18 @@ class Event_ave : public Event {
 		Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in, int average_in);
 		~Event_ave();
 		virtual void Set(unsigned short* in);
-	//	virtual auto Trigger()		->	decltype(us_trigger)		{return us_trigger;}
-		virtual auto Trace(int i)	->	decltype(d_trace[0])		{return d_trace[i];}
-	//	virtual auto Peak_x()		->	decltype(us_peak_x)			{return us_peak_x;}
-		virtual auto Peak_y()		->	decltype(d_peak_y)			{return d_peak_y;}
-		virtual auto B_pk_p()		->	decltype(d_b_pk_p			{return d_b_pk_p;}
-		virtual auto B_pk_n()		->	decltype(d_b_pk_n			{return d_b_pk_n;}
-		virtual auto Peak_pos()		->	decltype(d_peak_pos)		{return d_peak_pos;}
-	//	virtual auto Zero()			->	decltype(d_zero)			{return d_zero;}
-	//	virtual auto Baseline()		->	decltype(d_baseline)		{return d_baseline;}
-	//	virtual auto BaseSigma()	->	decltype(d_baseSigma)		{return d_baseSigma;}
-	//	virtual auto BasePost()		->	decltype(d_basePost)		{return d_basePost;}
-	//	virtual auto BasePostSigma()->	decltype(d_basePostSigma)	{return d_basePostSigma;}
+	//	virtual unsigned short& Trigger()	{return us_trigger;}
+		virtual double& Trace(int i)		{return d_trace[i];}
+	//	virtual unsigned short& Peak_x()	{return us_peak_x;}
+		virtual double& Peak_y()			{return d_peak_y;}
+		virtual double& B_pk_p()			{return d_b_pk_p;}
+		virtual double& B_pk_n()			{return d_b_pk_n;}
+		virtual double& Peak_pos()			{return d_peak_pos;}
+	//	virtual auto Zero()					{return d_zero;}
+	//	virtual auto Baseline()				{return d_baseline;}
+	//	virtual auto BaseSigma()			{return d_baseSigma;}
+	//	virtual auto BasePost()				{return d_basePost;}
+	//	virtual auto BasePostSigma()		{return d_basePostSigma;}
 };
 
 #endif // EVENT_AVE_H
