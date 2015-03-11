@@ -103,7 +103,7 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 	CCM::sd_basePostSigma[id] = event->BasePostSigma()*d_scaleV;
 
 	for (i = 0; i < eventlength; i++) { // determine integration bounds
-		if ((i_stop == (eventlength-1)) && ((event->peak_x + i) < eventlength) && (event->Trace(event->Peak_x() + i) > d_threshold)) i_stop = (event->Peak_x() + i);
+		if ((i_stop == (eventlength-1)) && ((event->Peak_x() + i) < eventlength) && (event->Trace(event->Peak_x() + i) > d_threshold)) i_stop = (event->Peak_x() + i);
 		if ((i_start == 0) && ((event->Peak_x() - i) > -1) && (event->Trace(event->Peak_x() - i) > d_threshold)) i_start = (event->Peak_x() - i);
 		if ((i_start != 0) && (i_stop != (eventlength-1))) break;
 	}
