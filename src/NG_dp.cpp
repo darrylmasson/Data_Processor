@@ -314,7 +314,7 @@ int main(int argc, char **argv) {
 	f.reset();
 	digitizer.reset();
 
-	sprintf(c_chmod,"chmod g+w %s", s_root_file);
+	sprintf(c_chmod,"chmod g+w %s", s_root_file.c_str());
 	system(c_chmod);
 	cout << "Total time elapsed: " << t_elapsed.count() << "sec\n";
 	return 0;
