@@ -128,7 +128,7 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 XSQ::~XSQ() {
 	if (g_verbose) cout << " XSQ " << id << " d'tor ";
 	XSQ::si_howmany--;
-	for (int p = 0; p < P; p++) {
+	for (auto p = 0; p < P; p++) {
 		d_std_wave[p].reset();
 	}
 	d_pars.reset();
@@ -177,7 +177,7 @@ double XSQ::fitter(double* x, double* par) {
 }
 
 void XSQ::evaluate(const shared_ptr<Event> event) {
-	for (int i = 0; i < eventlength; i++) i_input_wave[i] = event->Trace(i);
+	for (auto i = 0; i < eventlength; i++) i_input_wave[i] = event->Trace(i);
 	try {graph.reset(new TGraph(eventlength, i_x.get(), i_input_wave.get()));}
 	catch (bad_alloc& ba) { // error codes don't work here
 		XSQ::sd_xsq_n[id]			= -1;

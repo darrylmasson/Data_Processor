@@ -37,9 +37,9 @@ DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : c
 		d_COS = unique_ptr<double[]>(new double[ci_order*eventlength]);
 		d_SIN = unique_ptr<double[]>(new double[ci_order*eventlength]);
 	} catch (bad_alloc& ba) {failed |= alloc_error; return;}
-	for (int n = 0; n < ci_order; n++) {
+	for (auto n = 0; n < ci_order; n++) {
 		omega = used_orders[n]*pi/(eventlength*digitizer->ScaleT()); // GHz
-		for (int t = 0; t < eventlength; t++) {
+		for (auto t = 0; t < eventlength; t++) {
 			d_COS[n*eventlength+t] = cos(omega*t);
 			d_SIN[n*eventlength+t] = sin(omega*t);
 	}	}
@@ -66,8 +66,8 @@ void DFT::root_init(TTree* tree_in) {
 }
 
 void DFT::evaluate(const shared_ptr<Event> event) {
-	double d_re(0), d_im(0);
-	int n(0), t(0), nt(0);
+	auto d_re(0.), d_im(0.);
+	auto n(0), t(0), nt(0);
 
 	DFT::sd_magnitude[id][0] = 0;
 	DFT::sd_phase[id][0] = 0;

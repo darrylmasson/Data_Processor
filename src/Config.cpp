@@ -9,22 +9,22 @@ void GetFileHeader(ifstream* fin, config_t* config, f_header_t* f_header) {
 	filesize = fin->tellg();
 	fin->seekg(0, fin->beg);
 	fin->read(buffer,sizeof_f_header);
-	strncpy(f_header->dig_name, buffer, 12); // digitizer name
+	strncpy(f_header->dig_name, buffer, sizeof(f_header->dig_name)); // digitizer name
 	
-	memcpy(&f_header->mask, buffer + 12, sizeof(short)); // channel mask
+	memcpy(&f_header->mask, buffer + 12, sizeof(f_header->mask)); // channel mask
 	config->mask = f_header->mask;
 	
-	memcpy(&f_header->ev_len, buffer + 14, sizeof(int)); // eventlength
+	memcpy(&f_header->ev_len, buffer + 14, sizeof(f_header->ev_len)); // eventlength
 	config->eventlength = f_header->ev_len;
 		
-	memcpy(&f_header->trig_post, buffer + 18, sizeof(int)); // post-trigger
+	memcpy(&f_header->trig_post, buffer + 18, sizeof(f_header->trig_post)); // post-trigger
 	config->trig_post = f_header->trig_post;
 	
-	memcpy(f_header->dc_off, buffer + 22, sizeof(int)*MAX_CH); // dc offsets
-	memcpy(config->dc_offset, f_header->dc_off, sizeof(int)*MAX_CH);
+	memcpy(f_header->dc_off, buffer + 22, sizeof(f_header->dc_off)); // dc offsets
+	memcpy(config->dc_offset, f_header->dc_off, sizeof(f_header->dc_off));
 	
-	memcpy(f_header->threshold, buffer + 54, sizeof(int)*MAX_CH); // trigger thresholds
-	memcpy(config->threshold, f_header->threshold, sizeof(int)*MAX_CH);
+	memcpy(f_header->threshold, buffer + 54, sizeof(f_header->threshold)); // trigger thresholds
+	memcpy(config->threshold, f_header->threshold, sizeof(f_header->threshold));
 	
 	config->nchan = 0;
 	for (i = 0; i < MAX_CH; i++) if (f_header->mask & (1<<i)) config->chan[config->nchan++] = i;

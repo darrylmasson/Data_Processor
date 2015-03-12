@@ -18,6 +18,8 @@ class Method {
 		int failed;
 		int id;
 		int eventlength;
+		double d_scaleT;
+		double d_scaleV;
 	
 	public:
 		Method() {};

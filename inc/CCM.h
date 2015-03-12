@@ -10,8 +10,6 @@ class CCM : public Method { // also includes PGA
 		int i_fastTime;
 		int i_slowTime;
 		int i_gradSamples;
-		double d_scaleT;
-		double d_scaleV;
 		
 		static unique_ptr<TTree> tree;
 		static int si_howmany;

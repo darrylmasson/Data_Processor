@@ -11,9 +11,9 @@ class LAP : public Method {
 		static int si_howmany;
 		static bool sb_initialized;
 		static double sd_laplace[8];
+		static double sd_longint[8];
 		
 		unique_ptr<double[]> d_EXP;
-		double d_scale_v;
 		
 	public:
 		LAP(int ch, int len, shared_ptr<Digitizer> digitizer);

@@ -88,10 +88,9 @@ void CCM::root_init(TTree* tree_in) {
 }
 
 void CCM::evaluate(const shared_ptr<Event> event) {
-	int i_start(0), i_stop(eventlength-1), i(0);
-	int i_fast(0), i_slow(0);
-	long l_fastint(0), l_slowint(0), l_fullint(0);
-	double d_threshold(event->Baseline() - 3*event->BaseSigma()), d_temp(0);
+	auto i_start(0), i_stop(eventlength-1), i(0), i_fast(0), i_slow(0);
+	auto l_fastint(0l), l_slowint(0l), l_fullint(0l);
+	auto d_threshold(event->Baseline() - 3*event->BaseSigma()), d_temp(0.);
 	
 	// normalizing baseline values
 	CCM::sd_baseline[id] = (event->Baseline() - event->Zero())*d_scaleV;
@@ -149,7 +148,7 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 	CCM::sd_slowint[id] = ((event->Baseline() * (i_slow)) - (0.5*l_slowint)) * d_scaleV * d_scaleT;
 	CCM::sd_fastint[id] = ((event->Baseline() * (i_fast)) - (0.5*l_fastint)) * d_scaleV * d_scaleT;
 	
-	if ((event->Peak_x() + i_gradSamples + 1) < eventlength) {
+	if ((event->Peak_x() + i_gradSamples + 1) < eventlength) { // PGA
 		d_temp = 0;
 		for (i = -1; i < 2; i++) d_temp += event->Trace(event->Peak_x() + i_gradSamples + i); // average with adjacent points to reduce statistical fluctuations
 		d_temp /= 3;
