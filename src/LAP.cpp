@@ -48,7 +48,7 @@ void LAP::evaluate(const shared_ptr<Event> event) {
 	LAP::sd_laplace[id] = 0;
 	LAP::sd_longint[id] = 0;
 	for (auto t = 0; t < eventlength; t++) {
-		sd_longint[id] += event->Trace(i);
+		sd_longint[id] += event->Trace(t);
 		if (t >= peak_x) LAP::sd_laplace[id] += d_EXP[t - peak_x]*event->Trace(t); // trailing edge of the pulse
 	}
 	LAP::sd_longint[id] = 2*LAP::sd_longint[id] - (event->Trace(0) + event->Trace(eventlength-1)); // trapezoid rule
