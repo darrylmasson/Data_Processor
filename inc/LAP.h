@@ -11,7 +11,7 @@ class LAP : public Method {
 		static int si_howmany;
 		static bool sb_initialized;
 		static double sd_laplace[8];
-		static double sd_longint[8];
+		static double sd_longint[8]; // integral over the full event window
 		
 		unique_ptr<double[]> d_EXP;
 		

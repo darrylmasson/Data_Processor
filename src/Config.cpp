@@ -2,7 +2,7 @@
 #include <cstdlib>
 
 void GetFileHeader(ifstream* fin, config_t* config, f_header_t* f_header) {
-	long filesize;
+	long filesize(0l);
 	int i(0);
 	char buffer[sizeof_f_header];
 	fin->seekg(0, fin->end);
@@ -44,7 +44,7 @@ int ParseConfigFile(string& filename, config_t* config, char dig_name[12]) {
 	while (!fin.eof()) {
 		fin.getline(buffer, 64, '\n');
 		if (buffer[0] == '#') continue;
-		if (strcmp(buffer, "METHODS") == 0) {
+		if (strcmp(buffer, "METHODS") == 0) { // checks for active processing methods
 			fin.getline(buffer, 64, '\n');
 			while (strstr(buffer, "END") == NULL) {
 				sscanf(buffer, "%s %i", temp, &code);
@@ -55,7 +55,7 @@ int ParseConfigFile(string& filename, config_t* config, char dig_name[12]) {
 		if (strcmp(buffer + 10, dig_name) == 0) {
 			fin.getline(buffer, 64, '\n');
 			while (strstr(buffer, "END") == NULL) {
-				if (strstr(buffer, "CHANNEL") != NULL) {
+				if (strstr(buffer, "CHANNEL") != NULL) { // loads processing parameters
 					ch = atoi(&buffer[8]);
 					if ((ch >= MAX_CH) || (ch < 0)) {fin.close(); return config_file_error;}
 					fin.getline(buffer, 64, '\n');

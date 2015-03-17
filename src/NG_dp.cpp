@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 		cout << "Arguments: -f file [-s source -c config -x special -a moving_average -v]\n";
 		return 0;
 	}
-	while ((i = getopt(argc, argv, "a:c:f:s:vx:")) != -1) {
+	while ((i = getopt(argc, argv, "a:c:f:s:vx:")) != -1) { // command line options
 		switch(i) {
 			case 'a': config.average = atoi(optarg); break;
 			case 'c': s_config_file = optarg;	break;
@@ -91,11 +91,11 @@ int main(int argc, char **argv) {
 	
 	s_root_file = Filename_options(i_special, config.average, s_fileset);
 	fin.open(s_root_file.c_str(), ios::in);
-	config.already_done = fin.is_open();
+	config.already_done = fin.is_open(); // checks to see if the file is already processed
 	if (fin.is_open()) fin.close();
 
 	sprintf(c_filename, "%s/rawdata/%s.dat", path, s_fileset.c_str());
-	fin.open(c_filename, ios::in | ios::binary);
+	fin.open(c_filename, ios::in | ios::binary); // opens raw data file
 	if (!fin.is_open()) {
 		for (i = 0; i < MAX_CH; i++) {
 			sprintf(c_filename, "%s/rawdata/%s_%i.dat", path, s_fileset.c_str(), i);
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 		cout << "Error: " << s_fileset << " not found\n";
 		return 0;
 	}
-	GetFileHeader(&fin, &config, &f_header);
+	GetFileHeader(&fin, &config, &f_header); // file header info
 	if (config.numEvents == 0) {
 		cout << "Error: file header not processed\n";
 		return 0;
@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
 	
 	if (s_config_file == "\0") s_config_file = "NG_dp_config.cfg";
 	cout << "Parsing " << s_config_file << " with settings for " << digitizer->Name() << ": ";
-	if ( (i_err_code = ParseConfigFile(s_config_file, &config, digitizer->Name())) ) {
+	if ( (i_err_code = ParseConfigFile(s_config_file, &config, digitizer->Name())) ) { // parsing config file
 		cout << "failed: " << error_message[i_err_code] << '\n';
 		return 0;
 	} else cout << "done\n";
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 	cout << "Found " << config.numEvents << " events and " << config.nchan << " channels\n";
 	
 	time(&t_rawtime);
-	t_today = localtime(&t_rawtime);
+	t_today = localtime(&t_rawtime); // timestamp for processing
 	i_timenow = (t_today->tm_hour)*100 + t_today->tm_min; // hhmm
 	i_datenow = (t_today->tm_year-100)*10000 + (t_today->tm_mon+1)*100 + t_today->tm_mday; // yymmdd
 	
@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
 	}
 	f->cd();
 	if (config.already_done) {
-		tx.reset((TTree*)f->Get("Tx"));
+		tx.reset((TTree*)f->Get("Tx")); // version checking
 		if (tx) {
 			cout << s_fileset << " already processed with an older version of NG_dp; v3.5 will require the removal of previous results.  Continue <y|n>? ";
 			cin >> c_overwrite;
@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
 				config.method_done[method_id] = true;
 				b_update |= (f_version < method_versions[method_id]);
 				b_update |= ((method_id == CCM_t) && (memcmp(i_pga_check, config.pga_samples, sizeof(i_pga_check)) != 0));
-				b_update |= ((method_id == CCM_t) && (memcmp(i_fast_check, config.fastTime, sizeof(i_fast_check)) != 0));
+				b_update |= ((method_id == CCM_t) && (memcmp(i_fast_check, config.fastTime, sizeof(i_fast_check)) != 0)); // checks CCM parameters
 				b_update |= ((method_id == CCM_t) && (memcmp(i_slow_check, config.slowTime, sizeof(i_slow_check)) != 0));
 				if (b_update) {
 					cout << "Method " <<  method_names[method_id] << " will be updated\n";
@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
 		}
 		tc->Write("",TObject::kOverwrite);
 		tv->Write("",TObject::kOverwrite);
-	} else {
+	} else { // first time for this raw data
 		cout << "Creating config trees\n";
 		try {
 			tx = unique_ptr<TTree>(new TTree("TI", "Info"));
@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
 		}
 		tx->Branch("Digitizer", f_header.dig_name, "name[12]/B");
 		tx->Branch("Source", c_source, "source[12]/B");
-		tx->Branch("ChannelMask", &config.mask, "mask/s");
+		tx->Branch("ChannelMask", &config.mask, "mask/s"); // general info on data run
 		tx->Branch("TriggerThreshold", f_header.threshold, "threshold[8]/i");
 		tx->Branch("DC_offset", f_header.dc_off, "dc_off[8]/i"); // the numbers in this tree
 		tx->Branch("Posttrigger", &config.trig_post, "tri_post/I"); // don't change, so it's only
@@ -274,7 +274,7 @@ int main(int argc, char **argv) {
 		tv->Branch("Version", &f_version, "version/F");
 		
 		tc->Branch("PGA_samples", config.pga_samples, "pga[8]/I");
-		tc->Branch("Fast_window", config.fastTime, "fast[8]/I");
+		tc->Branch("Fast_window", config.fastTime, "fast[8]/I"); // this tree holds configuration parameters for CCM
 		tc->Branch("Slow_window", config.slowTime, "slow[8]/I");
 		for (i = 0; i < NUM_METHODS; i++) if (config.method_active[i]) {
 			strcpy(c_methodname, method_names[i]);
@@ -314,7 +314,7 @@ int main(int argc, char **argv) {
 	f.reset();
 	digitizer.reset();
 
-	sprintf(c_chmod,"chmod g+w %s", s_root_file.c_str());
+	sprintf(c_chmod,"chmod g+w %s", s_root_file.c_str()); // changes permissions on the file so everyone has rw access
 	system(c_chmod);
 	cout << "Total time elapsed: " << t_elapsed.count() << "sec\n";
 	return 0;

@@ -16,7 +16,7 @@ class Digitizer {
 		double		scaleV;
 		int			baselength;
 		int			special;
-		dig_id_t	id; // an easier way of identifying digitizers
+		dig_id_t	id;
 		
 	public:
 		Digitizer(char in[], int special_in);
@@ -32,7 +32,7 @@ class Digitizer {
 		int& Special()			{return special;}
 		dig_id_t& ID()			{return id;}
 		
-		const int& Failed() const			{return failed;}
+		const int& Failed() const			{return failed;} // digitizer always passed as const
 		const char* Name() const			{return name;}
 		const double& ScaleT() const		{return scaleT;}
 		const double& ScaleV() const		{return scaleV;}

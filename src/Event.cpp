@@ -21,7 +21,7 @@ Event::Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int thresho
 }
 
 Event::~Event() {
-	if (g_verbose) std::cout << " event " << --Event::howmany << " d'tor ";
+	if (g_verbose) std::cout << " event " << --Event::howmany << " d'tor "; // no ID tag on Event classes
 	us_trace = nullptr;
 	digitizer.reset();
 }
@@ -45,20 +45,20 @@ void Event::Set(unsigned short* in) {
 	for (i = 0; i < eventlength; i++) {
 		us_peak_pos = std::max(us_peak_pos, us_trace[i]);
 		if (i < baselength) {
-			d_baseline += us_trace[i];
+			d_baseline += us_trace[i]; // baseline at start of event
 			us_b_pk_p = std::max(us_trace[i],us_b_pk_p);
 			us_b_pk_n = std::min(us_trace[i],us_b_pk_n);
-			d_basePost += us_trace[eventlength-baselength+i];
+			d_basePost += us_trace[eventlength-baselength+i]; // baseline at end of event
 		}
-		if (us_peak_y > us_trace[i]) {
+		if (us_peak_y > us_trace[i]) { // finding primary peak
 			us_peak_y = us_trace[i];
 			us_peak_x = i;
 		}
-		if ((us_trigger == 0) && (us_trace[i] < threshold)) us_trigger = i;
+		if ((us_trigger == 0) && (us_trace[i] < threshold)) us_trigger = i; // finding trigger
 	}
 	d_baseline /= baselength;
 	d_basePost /= baselength;
-	for (i = 0; i < baselength; i++) {
+	for (i = 0; i < baselength; i++) { // RMS devations of baselines
 		d_temp = us_trace[i] - d_baseline;
 		d_baseSigma += d_temp*d_temp;
 		d_temp = us_trace[eventlength-baselength+i] - d_basePost;

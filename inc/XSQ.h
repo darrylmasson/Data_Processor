@@ -13,8 +13,8 @@ class XSQ : public Method {
 		const int ci_nPar; // 4: peakheight, baseline offset, trigger offset, particle (fixed)
 		float f_gain[P];
 		unique_ptr<double[]> d_pars;
-		unique_ptr<int[]> i_input_wave;
-		unique_ptr<int[]> i_x;
+		unique_ptr<double[]> d_input_wave; // doubles in case we're using averaged events
+		unique_ptr<double[]> d_x;
 		int i_std_length; // 450ns
 		int i_std_trig; // 64ns
 		int i_std_peak_x; // 71 ns;
@@ -27,17 +27,17 @@ class XSQ : public Method {
 		static unique_ptr<TTree> tree;
 		static int si_howmany;
 		static bool sb_initialized;
-		
-		static double sd_xsq_n[4]; // only three eljen detectors
-		static double sd_peakheight_n[4]; // but may use CH3
-		static double sd_baseline_n[4]; // in DT5751DES
-		static double sd_offset_n[4];
-		static double sd_peak_err_n[4];
+		// only three eljen detectors but may use CH3 in DT5751DES
+		static double sd_xsq_n[4]; // chisquared for neutron
+		static double sd_peakheight_n[4]; // peak scale factor
+		static double sd_baseline_n[4]; // baseline shift
+		static double sd_offset_n[4]; // trigger shift
+		static double sd_peak_err_n[4]; // errors in fit params
 		static double sd_base_err_n[4];
 		static double sd_offset_err_n[4];
-		static double sd_prob_n[4];
+		static double sd_prob_n[4]; // fit probability
 		
-		static double sd_xsq_y[4];
+		static double sd_xsq_y[4]; // same, but for gamma
 		static double sd_peakheight_y[4];
 		static double sd_baseline_y[4];
 		static double sd_offset_y[4];
@@ -46,7 +46,7 @@ class XSQ : public Method {
 		static double sd_offset_err_y[4];
 		static double sd_prob_y[4];
 		
-		static int si_fit_status_n[4];
+		static int si_fit_status_n[4]; // fit status. Usually 4
 		static int si_fit_status_y[4];
 
 	public:

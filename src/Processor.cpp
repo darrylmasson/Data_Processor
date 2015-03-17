@@ -141,7 +141,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 			for (ch = 0; ch < config->nchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {ret |= thread_error; return ret;}
 		}
 		if (config->method_active[CCM_t]) CCM::root_fill();
-		if (config->method_active[DFT_t]) DFT::root_fill();
+		if (config->method_active[DFT_t]) DFT::root_fill(); // fills the trees
 		if (config->method_active[XSQ_t]) XSQ::root_fill();
 		if (config->method_active[LAP_t]) LAP::root_fill();
 		if (!config->already_done) TStree->Fill();
@@ -170,7 +170,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 	}
 	if (g_verbose) cout << "making friends: ";
 	for (m = 0; m < NUM_METHODS; m++) {
-		if (config->method_active[m]) {
+		if (config->method_active[m]) { // processed this run
 			if (g_verbose) cout << treename[m] << "a ";
 			switch (m) {
 				case CCM_t : T_data = unique_ptr<TTree>(CCM::root_deinit()); break;
@@ -184,7 +184,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 			f->cd();
 			T_data->Write("",TObject::kOverwrite);
 			T_data.reset();
-		} else if ((config->method_done[m]) && !(config->method_active[m])) {
+		} else if ((config->method_done[m]) && !(config->method_active[m])) { // processed sometime previous
 			if (g_verbose) cout << treename[m] << "b ";
 			T_data = unique_ptr<TTree>((TTree*)f->Get(treename[m]));
 			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data->AddFriend(treename[(m+i)%NUM_METHODS]);
@@ -196,7 +196,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 	f->Close();
 	buffer.reset();
 	if (g_verbose) cout << " d'toring classes: ";
-	for (ch = 0; ch < config->nchan; ch++) {
+	for (ch = 0; ch < config->nchan; ch++) { // general d'tors
 		if (g_verbose) cout << "CH" << ch << " ";
 		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m] = nullptr;
 		td[ch].event.reset();

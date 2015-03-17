@@ -43,7 +43,7 @@ Digitizer::Digitizer(char in[], int special_in) {
 		id = invalid_dig;
 	}
 	
-	scaleV = V_pp/(double)resolution;
+	scaleV = V_pp/(double)resolution; // volts/bin
 	scaleT = 1E9/samplerate; // ns
 }
 

@@ -36,14 +36,14 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 	id = ch;
 	eventlength = len;
 	f_gain[n] = gain_in[n];
-	f_gain[y] = gain_in[y];
+	f_gain[y] = gain_in[y]; // n,y = enums
 	XSQ::si_howmany++;
 	char filename[64];
 	unique_ptr<TFile> std_file = nullptr;
 	TVectorT<double>* wave = nullptr;
 	int i(0), p(0);
 	if ((id > 3) || (id < 0)) failed |= method_error;
-	switch (digitizer->ID()) {
+	switch (digitizer->ID()) { // setting the length and stuff for the standard events
 		case dt5751 : 
 			if (digitizer->Special() == 0) {
 				i_std_length	= 225;
@@ -84,13 +84,13 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 		switch(i_std_length) {
 			case 225 : // 500 MSa/s
 				for (i = 0; i < i_std_length; i++) {
-					d_std_wave[p][i] = ((*wave)[2*i] + (*wave)[2*i+1])/2.;
+					d_std_wave[p][i] = ((*wave)[2*i] + (*wave)[2*i+1])/2.; // averages
 					if (i < digitizer->Baselength()) d_std_base[p] += d_std_wave[p][i];
 					d_std_peak[p] = min(d_std_peak[p], d_std_wave[p][i]);
 				} break;
 			case 899 : // 2 GSa/s
 				for (i = 0; i < i_std_length; i++) {
-					d_std_wave[p][i] = (i%2) ? ((*wave)[(i+1)/2] + (*wave)[(i-1)/2])/2. : (*wave)[i/2];
+					d_std_wave[p][i] = (i%2) ? ((*wave)[(i+1)/2] + (*wave)[(i-1)/2])/2. : (*wave)[i/2]; // interpolates
 					if (i < digitizer->Baselength()) d_std_base[p] += d_std_wave[p][i];
 					d_std_peak[p] = min(d_std_peak[p], d_std_wave[p][i]);
 				} break;
@@ -110,15 +110,15 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 	std_file = nullptr;
 	wave = nullptr;
 	try {
-		i_input_wave	= unique_ptr<int[]>(new int[eventlength]);
-		i_x				= unique_ptr<int[]>(new int[eventlength]);
+		d_input_wave	= unique_ptr<double[]>(new double[eventlength]);
+		d_x				= unique_ptr<double[]>(new double[eventlength]);
 		
 		d_pars			= unique_ptr<double[]>(new double[ci_nPar]);
 		
 		fit				= unique_ptr<TF1>(new TF1("fit", this, &XSQ::fitter, 0, min(eventlength, i_std_length), ci_nPar));
 	} catch (bad_alloc& ba) {failed |= alloc_error; return;}
 	if (fit->IsZombie()) {failed |= root_error; return;}
-	for (i = 0; i < eventlength; i++) i_x[i] = i;
+	for (i = 0; i < eventlength; i++) d_x[i] = i;
 	
 	fit->SetParNames("Peakheight_scale","Baseline_offset","Trigger_offset","Particle");
 
@@ -177,8 +177,8 @@ double XSQ::fitter(double* x, double* par) {
 }
 
 void XSQ::evaluate(const shared_ptr<Event> event) {
-	for (auto i = 0; i < eventlength; i++) i_input_wave[i] = event->Trace(i);
-	try {graph.reset(new TGraph(eventlength, i_x.get(), i_input_wave.get()));}
+	for (auto i = 0; i < eventlength; i++) d_input_wave[i] = event->Trace(i);
+	try {graph.reset(new TGraph(eventlength, d_x.get(), d_input_wave.get()));}
 	catch (bad_alloc& ba) { // error codes don't work here
 		XSQ::sd_xsq_n[id]			= -1;
 		XSQ::sd_peakheight_n[id]	= -1;
@@ -214,7 +214,7 @@ void XSQ::evaluate(const shared_ptr<Event> event) {
 	XSQ::si_fit_status_n[id]	= graph->Fit(fit.get(), "Q N R"); // quiet, no-plot, specified range
 
 	XSQ::sd_xsq_n[id]			= fit->GetChisquare();
-	XSQ::sd_peakheight_n[id]	= fit->GetParameter(0)*f_gain[n];
+	XSQ::sd_peakheight_n[id]	= fit->GetParameter(0)*f_gain[n]; // detectors have different gains
 	XSQ::sd_baseline_n[id]		= fit->GetParameter(1);
 	XSQ::sd_offset_n[id]		= fit->GetParameter(2);
 	XSQ::sd_prob_n[id]			= fit->GetProb();

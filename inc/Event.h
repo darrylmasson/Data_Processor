@@ -6,23 +6,23 @@
 #endif
 
 class Event {
-	protected: // these get inherited
+	protected: // these are inheritable
 		int failed;
-		int threshold;
+		int threshold; // trigger threshold
 		int eventlength;
 		int baselength;
 		int special;
-		static int length;
+		static int length; // number of samples in the waveform
 		static int howmany;
 		
 		unsigned short us_peak_y; // everything measured in ADC counts
-		unsigned short us_b_pk_p;
+		unsigned short us_b_pk_p; // peak in baseline samples
 		unsigned short us_b_pk_n;
-		unsigned short us_peak_pos;
+		unsigned short us_peak_pos; // positive peak
 		unsigned short* us_trace;
-		unsigned short us_trigger;
+		unsigned short us_trigger; // triggering sample
 		unsigned short us_peak_x;
-		double d_zero;
+		double d_zero; // ADC bin for ground
 		double d_baseline;
 		double d_baseSigma;
 		double d_basePost;

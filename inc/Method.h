@@ -16,9 +16,9 @@
 class Method {
 	protected:
 		int failed;
-		int id;
+		int id; // which entry in the array to use
 		int eventlength;
-		double d_scaleT;
+		double d_scaleT; // scale factors from Digitizer class
 		double d_scaleV;
 	
 	public:

@@ -2,7 +2,7 @@
 #include <cmath>
 #include <iostream>
 
-float LAP::sf_version = 1.1;
+float LAP::sf_version = 1.2;
 float LAP::sf_s = 1.5;
 bool LAP::sb_initialized = false;
 unique_ptr<TTree> LAP::tree = nullptr;
@@ -14,6 +14,7 @@ double LAP::sd_longint[8] = {0,0,0,0,0,0,0,0};
 LAP::LAP(int ch, int len, shared_ptr<Digitizer> digitizer) {
 	failed = 0;
 	id = ch;
+	if ((id >= MAX_CH) || (id < 0)) failed |= method_error;
 	eventlength = len;
 	try {d_EXP = unique_ptr<double[]>(new double[eventlength]);}
 	catch (bad_alloc& ba) {
@@ -22,7 +23,7 @@ LAP::LAP(int ch, int len, shared_ptr<Digitizer> digitizer) {
 	}
 	d_scaleV = digitizer->ScaleV();
 	d_scaleT = digitizer->ScaleT();
-	for (auto i = 0; i < eventlength; i++) d_EXP[i] = exp(-LAP::sf_s*d_scaleT*i);
+	for (auto i = 0; i < eventlength; i++) d_EXP[i] = exp(-LAP::sf_s*i/d_scaleT); // not sure if the time scale is correct here.
 	LAP::si_howmany++;
 }
 

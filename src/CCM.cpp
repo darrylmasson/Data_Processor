@@ -9,7 +9,7 @@ unique_ptr<TTree> CCM::tree = nullptr;
 int CCM::si_howmany = 0;
 
 bool CCM::sb_fullwave[8]		= {0,0,0,0,0,0,0,0};
-bool CCM::sb_saturated[8]		= {0,0,0,0,0,0,0,0};
+bool CCM::sb_saturated[8]		= {0,0,0,0,0,0,0,0}; // up to 8 channels on digitizers
 bool CCM::sb_truncated[8]		= {0,0,0,0,0,0,0,0};
 
 short CCM::ss_decay[8]			= {0,0,0,0,0,0,0,0};
@@ -113,15 +113,15 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 	CCM::sb_truncated[id] = ((i_start + i_slowTime) >= eventlength);
 	
 	i_fast = min(i_fastTime, eventlength -1 - i_start);
-	i_slow = min(i_slowTime, eventlength -1 - i_start);
+	i_slow = min(i_slowTime, eventlength -1 - i_start); // local integration limits for fast and slow
 
 	CCM::sd_peak0[id] = (event->Baseline() - event->Peak_y()) * d_scaleV;
 
 	if (((event->Peak_x() + 2) < eventlength) && (event->Peak_x() > 1) && !(CCM::sb_saturated[id])) { // peak averaging
 		for (i = -1; i < 2; i++) d_temp += event->Trace(event->Peak_x() + i);
-		CCM::sd_peak1[id] = (event->Baseline() - (0.333*d_temp))*d_scaleV;
+		CCM::sd_peak1[id] = (event->Baseline() - (0.333*d_temp))*d_scaleV; // averaged with adjacent samples
 		d_temp += (event->Trace(event->Peak_x() - 2) + event->Trace(event->Peak_x() + 2));
-		CCM::sd_peak2[id] = (event->Baseline() - (0.2*d_temp))*d_scaleV;
+		CCM::sd_peak2[id] = (event->Baseline() - (0.2*d_temp))*d_scaleV; // averaged with two adjacent samples
 	} else CCM::sd_peak2[id] = CCM::sd_peak1[id] = CCM::sd_peak0[id];
 	
 	for (i = i_start; i < eventlength; i++) { // integrator
@@ -131,8 +131,8 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 		if ((i > i_stop) && (i > (i_start + i_slow))) break;
 	}
 	l_fullint <<= 1;
-	l_fastint <<= 1;
-	l_slowint <<= 1;
+	l_fastint <<= 1; // trapezoid rule: integral = f(0) + 2*f(1) + ... + 2*f(n-1) + f(n)
+	l_slowint <<= 1; // faster to do sum f(i), double, and subtract endpoints
 	l_fullint -= (event->Trace(i_start) + event->Trace(i_stop));
 	l_fastint -= (event->Trace(i_start) + event->Trace(i_start + i_fast));
 	l_slowint -= (event->Trace(i_start) + event->Trace(i_start + i_slow));
@@ -151,7 +151,7 @@ void CCM::evaluate(const shared_ptr<Event> event) {
 	if ((event->Peak_x() + i_gradSamples + 1) < eventlength) { // PGA
 		d_temp = 0;
 		for (i = -1; i < 2; i++) d_temp += event->Trace(event->Peak_x() + i_gradSamples + i); // average with adjacent points to reduce statistical fluctuations
-		d_temp /= 3;
+		d_temp *= 0.333;
 		CCM::sd_gradient[id] = (i_gradSamples * (event->Baseline() - event->Peak_y()) == 0) ? -1 : (d_temp - event->Peak_y())/(double)(i_gradSamples * (event->Baseline() - event->Peak_y()));
 	} else CCM::sd_gradient[id] = -1;
 	

@@ -7,24 +7,24 @@ float DFT::sf_version = 1.41;
 bool DFT::sb_initialized = false;
 unique_ptr<TTree> DFT::tree = nullptr;
 int DFT::si_howmany = 0;
-const double pi = 3.14159265358979;
+const long double pi = acos(-1.0l); // this hopefully returns as many decimal places as the processor will work with
 
-double DFT::sd_magnitude[8][4]	= {	{0,0,0,0}, // 8 channels
-								{0,0,0,0}, // 4 orders
-								{0,0,0,0},
-								{0,0,0,0},
-								{0,0,0,0},
-								{0,0,0,0},
-								{0,0,0,0},
-								{0,0,0,0}};
+double DFT::sd_magnitude[8][4]	= { {0,0,0,0}, // 8 channels
+									{0,0,0,0}, // 4 orders
+									{0,0,0,0},
+									{0,0,0,0},
+									{0,0,0,0},
+									{0,0,0,0},
+									{0,0,0,0},
+									{0,0,0,0}};
 double DFT::sd_phase[8][4]		= {	{0,0,0,0},
-								{0,0,0,0},
-								{0,0,0,0},
-								{0,0,0,0},
-								{0,0,0,0},
-								{0,0,0,0},
-								{0,0,0,0},
-								{0,0,0,0}};
+									{0,0,0,0},
+									{0,0,0,0},
+									{0,0,0,0},
+									{0,0,0,0},
+									{0,0,0,0},
+									{0,0,0,0},
+									{0,0,0,0}};
 
 DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : ci_order(3) {
 	eventlength = len;
@@ -34,14 +34,14 @@ DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : c
 	const int used_orders[] = {3,4,5}; // 4 orders incl 0th
 	double omega;
 	try {
-		d_COS = unique_ptr<double[]>(new double[ci_order*eventlength]);
+		d_COS = unique_ptr<double[]>(new double[ci_order*eventlength]); // simpler than two-dimensional arrays
 		d_SIN = unique_ptr<double[]>(new double[ci_order*eventlength]);
 	} catch (bad_alloc& ba) {failed |= alloc_error; return;}
 	for (auto n = 0; n < ci_order; n++) {
 		omega = used_orders[n]*pi/(eventlength*digitizer->ScaleT()); // GHz
 		for (auto t = 0; t < eventlength; t++) {
 			d_COS[n*eventlength+t] = cos(omega*t);
-			d_SIN[n*eventlength+t] = sin(omega*t);
+			d_SIN[n*eventlength+t] = sin(omega*t); // simpler than using one table and sin(x) = cos(x-pi/2)
 	}	}
 	DFT::si_howmany++;
 	d_scalefactor = 2./eventlength; // 2/period
@@ -77,7 +77,7 @@ void DFT::evaluate(const shared_ptr<Event> event) {
 	for (n = 0; n < ci_order; n++) {
 		d_re = 0;
 		d_im = 0;
-		for (t = 0; t < eventlength; t++) {
+		for (t = 0; t < eventlength; t++) { // fourier series are pretty straightforward
 			nt = n*eventlength + t;
 			d_re += event->Trace(t)*d_COS[nt];
 			d_im += event->Trace(t)*d_SIN[nt];
