@@ -5,7 +5,7 @@
 #include "Event.h"
 #endif
 
-#ifndef EVENT_AV_H
+#ifndef EVENT_AVE_H
 #include "Event_ave.h"
 #endif
 
