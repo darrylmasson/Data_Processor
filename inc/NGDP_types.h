@@ -18,6 +18,7 @@ extern bool g_verbose; // for debugging purposes
 
 class Digitizer;
 class Event; // forward declarations
+class Event_ave;
 class Method;
 class CCM;
 class DFT;

@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
 	digitizer.reset();
 
 	sprintf(c_chmod,"chmod g+w %s", s_root_file.c_str()); // changes permissions on the file so everyone has rw access
-	system(c_chmod);
+	i = system(c_chmod);
 	cout << "Total time elapsed: " << t_elapsed.count() << "sec\n";
 	return 0;
 }
