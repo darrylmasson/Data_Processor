@@ -134,8 +134,8 @@ XSQ::~XSQ() {
 	d_pars.reset();
 	fit.reset();
 	graph.reset();
-	i_input_wave.reset();
-	i_x.reset();
+	d_input_wave.reset();
+	d_x.reset();
 }
 
 void XSQ::root_init(TTree* tree_in) {
