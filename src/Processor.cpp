@@ -7,6 +7,27 @@
 
 using namespace std::chrono;
 
+auto (*root_init[])(TTree*) -> void = {
+	CCM::root_init,
+	DFT::root_init,
+	XSQ::root_init,
+	LAP::root_init
+};
+
+auto (*root_fill[])() -> void = {
+	CCM::root_fill,
+	DFT::root_fill,
+	XSQ::root_fill,
+	LAP::root_fill
+};
+
+auto (*root_deinit[])() -> TTree* = {
+	CCM::root_deinit,
+	DFT::root_deinit,
+	XSQ::root_deinit,
+	LAP::root_deinit
+};
+
 void* Process(void* arg) {
 	thread_data_t* input = (thread_data_t*)arg;
 	input->event->Set(input->data);
@@ -47,13 +68,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 			try {T_data = unique_ptr<TTree>(new TTree(treename[m], method_names[m]));}
 			catch (bad_alloc& ba) {ret |= alloc_error; config->method_active[m] = false;}
 			if (T_data->IsZombie()) {ret |= root_error; config->method_active[m] = false;}
-			switch (m) {
-				case CCM_t : CCM::root_init(T_data.release()); break;
-				case DFT_t : DFT::root_init(T_data.release()); break;
-				case XSQ_t : XSQ::root_init(T_data.release()); break;
-				case LAP_t : LAP::root_init(T_data.release()); break;
-				default : break;
-			}
+			root_init[m](T_data.release());
 	}	}
 		
 	for (ch = 0; ch < config->nchan; ch++) {
@@ -140,10 +155,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 			for (ch = 0; ch < config->nchan; ch++) if ( (rc = pthread_create(&threads[ch], &attr, Process, (void*)&td[ch])) ) {ret |= thread_error; return ret;}
 			for (ch = 0; ch < config->nchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {ret |= thread_error; return ret;}
 		}
-		if (config->method_active[CCM_t]) CCM::root_fill();
-		if (config->method_active[DFT_t]) DFT::root_fill(); // fills the trees
-		if (config->method_active[XSQ_t]) XSQ::root_fill();
-		if (config->method_active[LAP_t]) LAP::root_fill();
+		for (m = 0; m < NUM_METHODS; m++) if (config->method_active[m]) root_fill[m]();
 		if (!config->already_done) TStree->Fill();
 		if (ev % i_prog_check == i_prog_check-1) {
 			cout << ev*100l/config->numEvents << "%\t\t";
@@ -172,13 +184,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 	for (m = 0; m < NUM_METHODS; m++) {
 		if (config->method_active[m]) { // processed this run
 			if (g_verbose) cout << treename[m] << "a ";
-			switch (m) {
-				case CCM_t : T_data = unique_ptr<TTree>(CCM::root_deinit()); break;
-				case DFT_t : T_data = unique_ptr<TTree>(DFT::root_deinit()); break;
-				case XSQ_t : T_data = unique_ptr<TTree>(XSQ::root_deinit()); break;
-				case LAP_t : T_data = unique_ptr<TTree>(LAP::root_deinit()); break;
-				default : break;
-			}
+			T_data = unique_ptr<TTree>(root_deinit[m]());
 			T_data->AddFriend("TS");
 			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data->AddFriend(treename[(m+i)%NUM_METHODS]);
 			f->cd();
