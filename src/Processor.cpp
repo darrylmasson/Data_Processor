@@ -62,7 +62,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 	i_prog_check = config->numEvents/100 + 1;
 	f->cd();
 	
-	for (m = 0; m < NUM_METHODS; m++) {
+	for (m = 0; m < NUM_METHODS; m++) { // setting up trees
 		sprintf(treename[m], "T%i", m);
 		if (config->method_active[m]) {
 			try {T_data = unique_ptr<TTree>(new TTree(treename[m], method_names[m]));}
@@ -71,7 +71,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 			root_init[m](T_data.release());
 	}	}
 		
-	for (ch = 0; ch < config->nchan; ch++) {
+	for (ch = 0; ch < config->nchan; ch++) { // initializing all classes needed
 		if (g_verbose) cout << "CH" << ch << ": Event ";
 		try {
 			if (config->average == 0) td[ch].event = shared_ptr<Event>(new Event(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]]));
@@ -157,7 +157,7 @@ int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
 		}
 		for (m = 0; m < NUM_METHODS; m++) if (config->method_active[m]) root_fill[m]();
 		if (!config->already_done) TStree->Fill();
-		if (ev % i_prog_check == i_prog_check-1) {
+		if (ev % i_prog_check == i_prog_check-1) { // progress updates
 			cout << ev*100l/config->numEvents << "%\t\t";
 			t_this = steady_clock::now();
 			t_elapsed = duration_cast<duration<double>>(t_this-t_that);
