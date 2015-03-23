@@ -7,6 +7,7 @@ INSTALL = -o $(OUTDIR)/NG_dp
 TEST = -o test_exe
 SRCS = Digitizer.cpp \
 			 Event.cpp \
+			 Event_ave.cpp \
 			 CCM.cpp \
 			 DFT.cpp \
 			 XSQ.cpp \
