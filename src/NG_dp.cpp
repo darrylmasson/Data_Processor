@@ -31,7 +31,6 @@ int main(int argc, char **argv) {
 	cout << "Neutron generator data processor v3_5\n";
 	int i(0), iSpecial(-1), iAverage(0), iErrCode(0);
 	string sConfigFile = "\0", sFileset = "\0", sSource = "\0";
-
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
 
