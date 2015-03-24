@@ -4,71 +4,71 @@
 #include <iostream>
 
 Event_ave::Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in, int average_in) {
-	if (Event::howmany == 1) Event::length = len;
+	if (Event::siHowMany == 1) Event::siLength = len;
 	digitizer = dig;
-	special = digitizer->Special();
-	baselength = digitizer->Baselength();
-	d_trace = nullptr;
+	iSpecial = digitizer->Special();
+	iBaselength = digitizer->Baselength();
+	dTrace = nullptr;
 	threshold = threshold_in;
-	average = average_in;
-	d_zero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
-	failed = 0;
-	if ((special == 0) && (Event::howmany == 1)) Event::length >>= 1;
-	if ((average > 0) && (Event::howmany == 1)) Event::length -= average;
-	eventlength = Event::length;
-	try { d_trace = std::unique_ptr<double[]>(new double[eventlength]);}
+	iAverage = average_in;
+	dScale = 1./iAverage;
+	dZero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
+	iFailed = 0;
+	if ((iSpecial == 0) && (Event::siHowMany == 1)) Event::siLength >>= 1;
+	if ((iAverage > 0) && (Event::siHowMany == 1)) Event::siLength -= iAverage;
+	iEventlength = Event::siLength;
+	try { dTrace = std::unique_ptr<double[]>(new double[iEventlength]);}
 	catch (std::bad_alloc& ba) {failed |= alloc_error; return;}
 }
 
 Event_ave::~Event_ave() {
-	if (g_verbose) std::cout << " event_ave " << Event::howmany << " d'tor "; // d'tor for Event automatically called, so no decrement
-	d_trace.reset();
+	if (g_verbose) std::cout << " event_ave " << Event::siHowMany << " d'tor "; // d'tor for Event automatically called, so no decrement
+	dTrace.reset();
 	digitizer.reset();
 }
 
 void Event_ave::Set(unsigned short* in) {
 	int i(0), j(0);
-	if (special > 0) for (i = 0; i < eventlength; i++) d_trace[i] = in[i] >> special; // special resolution
-	if (special == 0) for (i = 0; i < eventlength; i++) d_trace[i] = (in[2*i] + in[2*i+1]) >> 1; // special samplerate
-	if (average > 0) {
-		for (i = 0; i < eventlength; i++) { // waveform averaging
-			d_trace[i] = 0;
-			for (j = 0; j < average; j++) d_trace[i] += in[i+j];
-			d_trace[i] *= 1./average;
-	}	}
-	d_baseline = 0;
-	d_baseSigma = 0;
-	d_peak_y = 15000; // some arbitratily high number as -1 doesn't work for floats
-	us_peak_x = 0;
-	d_b_pk_p = 0;
-	d_b_pk_n = 15000;
-	d_peak_pos = 0;
-	us_trigger = 0;
-	d_basePost = 0;
-	d_basePostSigma = 0;
-	double d_temp(0);
-	for (i = 0; i < eventlength; i++) {
-		d_peak_pos = std::max(d_peak_pos, d_trace[i]);
-		if (i < baselength) {
-			d_baseline += d_trace[i]; // baseline at start
-			d_b_pk_p = std::max(d_trace[i],d_b_pk_p);
-			d_b_pk_n = std::min(d_trace[i],d_b_pk_n);
-			d_basePost += d_trace[eventlength-baselength+i]; // baseline at end
-		}
-		if (d_peak_y > d_trace[i]) { // peakfinder
-			d_peak_y = d_trace[i];
-			us_peak_x = i;
-		}
-		if ((us_trigger == 0) && (d_trace[i] < threshold)) us_trigger = i; // trigger
+	if (iSpecial > 0) for (i = 0; i < iEventlength; i++) dTrace[i] = in[i] >> iSpecial; // special resolution
+	if (iSpecial == 0) for (i = 0; i < iEventlength; i++) dTrace[i] = (in[2*i] + in[2*i+1]) >> 1; // special samplerate
+	for (i = 0; i < iEventlength; i++) { // waveform averaging
+		dTrace[i] = 0;
+		for (j = 0; j < iAverage; j++) dTrace[i] += in[i+j];
+		dTrace[i] *= dScale;
 	}
-	d_baseline /= baselength;
-	d_basePost /= baselength;
-	for (i = 0; i < baselength; i++) { // RMS baseline deviation
-		d_temp = d_trace[i] - d_baseline;
-		d_baseSigma += d_temp*d_temp;
-		d_temp = d_trace[eventlength-baselength+i] - d_basePost;
-		d_basePostSigma += d_temp*d_temp;
+	dBaseline = 0;
+	dBaseSigma = 0;
+	dPeakY = 15000; // some arbitratily high number as -1 doesn't work for floats
+	usPeakX = 0;
+	dBasePkP = 0;
+	dBasePkN = 15000;
+	dPeakPos = 0;
+	usTrigger = 0;
+	dBasePost = 0;
+	dBasePostSigma = 0;
+	double dTemp(0);
+	for (i = 0; i < iEventlength; i++) {
+		dPeakPos = std::max(dPeakPos, dTrace[i]);
+		if (i < iBaselength) {
+			dBaseline += dTrace[i]; // baseline at start
+			dBasePkP = std::max(dTrace[i],dBasePkP);
+			dBasePkN = std::min(dTrace[i],dBasePkN);
+			dBasePost += dTrace[iEventlength-iBaselength+i]; // baseline at end
+		}
+		if (dPeakY > dTrace[i]) { // peakfinder
+			dPeakY = dTrace[i];
+			usPeakX = i;
+		}
+		if ((usTrigger == 0) && (dTrace[i] < threshold)) usTrigger = i; // trigger
 	}
-	d_baseSigma = sqrt(d_baseSigma/baselength);
-	d_basePostSigma = sqrt(d_basePostSigma/baselength);
+	dBaseline /= iBaselength;
+	dBasePost /= iBaselength;
+	for (i = 0; i < iBaselength; i++) { // RMS baseline deviation
+		dTemp = dTrace[i] - dBaseline;
+		dBaseSigma += dTemp*dTemp;
+		dTemp = dTrace[iEventlength-iBaselength+i] - dBasePost;
+		dBasePostSigma += dTemp*dTemp;
+	}
+	dBaseSigma = sqrt(dBaseSigma/iBaselength);
+	dBasePostSigma = sqrt(dBasePostSigma/iBaselength);
 }

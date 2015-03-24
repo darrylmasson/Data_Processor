@@ -3,48 +3,48 @@
 #include <iostream>
 
 Digitizer::Digitizer(char in[], int special_in) {
-	strcpy(name,in);
-	special = special_in;
-	if (strcmp(name, "DT5730") == 0) {
-		samplerate = 5E8;
-		resolution = (1 << 14);
-		if (special > 0) resolution = (1 << (14 - special));
-		V_pp = 2;
-		baselength = 20;
-		failed = 0;
+	strcpy(cName,in);
+	iSpecial = special_in;
+	if (strcmp(cName, "DT5730") == 0) {
+		dSamplerate = 5E8;
+		sResolution = (1 << 14);
+		if (iSpecial > 0) sResolution = (1 << (14 - iSpecial));
+		dVpp = 2;
+		iBaselength = 20;
+		iFailed = 0;
 		id = dt5730;
-	} else if (strcmp(name, "DT5751") == 0) {
-		samplerate = (special == 0) ? 5E8 : 1E9;
-		resolution = (1 << 10);
-		V_pp = 1;
-		baselength = (special == 0) ? 20 : 40;
-		failed = 0;
+	} else if (strcmp(cName, "DT5751") == 0) {
+		dSamplerate = (iSpecial == 0) ? 5E8 : 1E9;
+		sResolution = (1 << 10);
+		dVpp = 1;
+		iBaselength = (iSpecial == 0) ? 20 : 40;
+		iFailed = 0;
 		id = dt5751;
-	} else if (strcmp(name, "DT5751DES") == 0) {
-		samplerate = 2E9;
-		resolution = (1 << 10);
-		V_pp = 1;
-		baselength = 80;
-		failed = 0;
+	} else if (strcmp(cName, "DT5751DES") == 0) {
+		dSamplerate = 2E9;
+		sResolution = (1 << 10);
+		dVpp = 1;
+		iBaselength = 80;
+		iFailed = 0;
 		id = dt5751des;
-	} else if (strcmp(name, "V1724") == 0) {
-		samplerate = 1E8;
-		resolution = (1 << 14); 
-		V_pp = 2.25;
-		baselength = 15;
-		failed = 0;
+	} else if (strcmp(cName, "V1724") == 0) {
+		dSamplerate = 1E8;
+		sResolution = (1 << 14); 
+		dVpp = 2.25;
+		iBaselength = 15;
+		iFailed = 0;
 		id = v1724;
 	} else {
-		samplerate = -1;
-		resolution = -1;
-		V_pp = -1;
-		baselength = 1;
-		failed = dig_error;
+		dSamplerate = -1;
+		sResolution = -1;
+		dVpp = -1;
+		iBaselength = 1;
+		iFailed = dig_error;
 		id = invalid_dig;
 	}
 	
-	scaleV = V_pp/(double)resolution; // volts/bin
-	scaleT = 1E9/samplerate; // ns
+	dScaleV = dVpp/(double)sResolution; // volts/bin
+	dScaleT = 1E9/dSamplerate; // ns
 }
 
 Digitizer::~Digitizer() {

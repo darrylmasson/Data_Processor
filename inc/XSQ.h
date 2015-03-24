@@ -10,44 +10,44 @@
 class XSQ : public Method {
 	private:
 		unique_ptr<TGraph> graph;
-		const int ci_nPar; // 4: peakheight, baseline offset, trigger offset, particle (fixed)
-		float f_gain[P];
-		unique_ptr<double[]> d_pars;
-		unique_ptr<double[]> d_input_wave; // doubles in case we're using averaged events
-		unique_ptr<double[]> d_x;
-		int i_std_length; // 450ns
-		int i_std_trig; // 64ns
-		int i_std_peak_x; // 71 ns;
-		unique_ptr<double[]> d_std_wave[P];
+		const int ciNPar; // 4: peakheight, baseline offset, trigger offset, particle (fixed)
+		float fGain[P];
+		unique_ptr<double[]> dPars;
+		unique_ptr<double[]> dInputWave; // doubles in case we're using averaged events
+		unique_ptr<double[]> dX;
+		int iStdLength; // 450ns
+		int iStdTrig; // 64ns
+		int iStdPeakX; // 71 ns;
+		unique_ptr<double[]> dStdWave[P];
 		unique_ptr<TF1> fit;
-		double d_std_peak[P];
-		double d_std_base[P];
-		double d_std_norm[P];
+		double dStdPeak[P];
+		double dStdBase[P];
+		double dStdNorm[P];
 		
 		static unique_ptr<TTree> tree;
-		static int si_howmany;
-		static bool sb_initialized;
+		static int siHowMany;
+		static bool sbInitialized;
 		// only three eljen detectors but may use CH3 in DT5751DES
-		static double sd_xsq_n[4]; // chisquared for neutron
-		static double sd_peakheight_n[4]; // peak scale factor
-		static double sd_baseline_n[4]; // baseline shift
-		static double sd_offset_n[4]; // trigger shift
-		static double sd_peak_err_n[4]; // errors in fit params
-		static double sd_base_err_n[4];
-		static double sd_offset_err_n[4];
-		static double sd_prob_n[4]; // fit probability
+		static double sdXsq_n[4]; // chisquared for neutron
+		static double sdPeakheight_n[4]; // peak scale factor
+		static double sdBaseline_n[4]; // baseline shift
+		static double sdOffset_n[4]; // trigger shift
+		static double sdPeakErr_n[4]; // errors in fit params
+		static double sdBaseErr_n[4];
+		static double sdOffsetErr_n[4];
+		static double sdProb_n[4]; // fit probability
 		
-		static double sd_xsq_y[4]; // same, but for gamma
-		static double sd_peakheight_y[4];
-		static double sd_baseline_y[4];
-		static double sd_offset_y[4];
-		static double sd_peak_err_y[4];
-		static double sd_base_err_y[4];
-		static double sd_offset_err_y[4];
-		static double sd_prob_y[4];
+		static double sdXsq_y[4]; // same, but for gamma
+		static double sdPeakheight_y[4];
+		static double sdBaseline_y[4];
+		static double sdOffset_y[4];
+		static double sdPeakErr_y[4];
+		static double sdBaseErr_y[4];
+		static double sdOffsetErr_y[4];
+		static double sdProb_y[4];
 		
-		static int si_fit_status_n[4]; // fit status. Usually 4
-		static int si_fit_status_y[4];
+		static int siFitStatus_n[4]; // fit status. Usually 4
+		static int siFitStatus_y[4];
 
 	public:
 		XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Digitizer> digitizer);
@@ -57,9 +57,9 @@ class XSQ : public Method {
 		static void root_init(TTree* tree_in);
 		static TTree* root_deinit() {return XSQ::tree.release();}
 		static int Std_Wave_init(const shared_ptr<Digitizer> digitizer);
-		static int HowMany() {return XSQ::si_howmany;}
+		static int HowMany() {return XSQ::siHowMany;}
 		double fitter(double* x, double* par);
-		static float sf_version;
+		static float sfVersion;
 };
 
 #endif // XSQ_H

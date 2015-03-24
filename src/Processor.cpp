@@ -1,11 +1,17 @@
 #include "Processor.h"
-#include <iostream>
 #include <ctime>
 #include <pthread.h>
 #include <ratio>
 #include <chrono>
 
 using namespace std::chrono;
+
+const float cfMethodVersions[NUM_METHODS] = {
+	CCM::sfVersion,
+	DFT::sfVersion,
+	XSQ::sfVersion,
+	LAP::sfVersion
+};
 
 auto (*root_init[])(TTree*) -> void = {
 	CCM::root_init,
@@ -30,185 +36,471 @@ auto (*root_deinit[])() -> TTree* = {
 
 void* Process(void* arg) {
 	thread_data_t* input = (thread_data_t*)arg;
-	input->event->Set(input->data);
-	for (int i = 0; i < NUM_METHODS; i++) if (input->activated[i]) input->methods[i]->evaluate(input->event);
+	input->event->Set(input->uspData);
+	for (int i = 0; i < NUM_METHODS; i++) if (input->cbpActivated[i]) input->methods[i]->evaluate(input->event);
 	return nullptr;
 }
 
-int Processor(config_t* config, ifstream* fin, TFile* file, Digitizer* dig) {
-	int ch(0), ev(0), m(0), rc(0), i_prog_check(0), i_rate(0), i_timeleft(0), ret(no_error), i_livetime(0);
-	thread_data_t td[MAX_CH];
+Processor::Processor(int special, int average) {
+	iFailed = 0;
+	iSpecial = special;
+	iAverage = average;
+	strcpy(cMethodNames[0], "CCM_PGA");
+	strcpy(cMethodNames[1], "FOURIER");
+	strcpy(cMethodNames[2], "CHISQUARED");
+	strcpy(cMethodNames[3], "LAPLACE");
+	
+	sConfigFileName = "\0";
+	sRawDataFile = "\0";
+	sRootFile = "\0";
+	
+	memset(bMethodActive, 0, sizeof(bMethodActive));
+	memset(bMethodDone, 0, sizeof(bMethodDone));
+	bRecordTimestamps = false;
+	
+	cDigName[0] = '\0';
+	cSource[0] = '\0';
+	
+	usMask = 0;
+	
+	memset(iChan, 0, sizeof(iChan));
+	iEventlength = 0;
+	iEventsize = 0;
+	iFailed = 0;
+	memset(iFastTime, 0, sizeof(iFastTime));
+	iNchan = 0;
+	iNumEvents = 0;
+	memset(iPGASamples, 0, sizeof(iPGASamples));
+	memset(iSlowTime, 0, sizeof(iSlowTime));
+	iTrigPost = 0;
+	iXSQ_ndf = 0;
+	
+	memset(uiDCOffset, 0, sizeof(uiDCOffset));
+	memset(uiThreshold, 0, sizeof(uiThreshold));
+	
+	memset(fGain, 0, sizeof(fGain));
+	
+	memset(td, 0, sizeof(td));
+}
+
+Processor::~Processor() {
+	for (auto ch = 0; ch < MAX_CH; ch++) {
+		td[ch].uspData = nullptr;
+		td[ch].event.reset();
+		for (auto m = 0; m < NUM_METHODS; m++) td[ch].methods.reset();
+		td[ch].cbpActivated = nullptr;
+	}
+	digitizer.reset();
+	f.reset();
+	tree.reset();
+	buffer.reset();
+	if (fin.is_open()) fin.close();
+}
+
+void Processor::BusinessTime() {
+	if (memchr(bMethodActive, 1, NUM_METHODS) == nullptr) {
+		cout << "No processing method activated\n";
+		return;
+	}
+	int ch(0), ev(0), m(0), rc(0), iProgCheck(0), iRate(0), iTimeleft(0), iLivetime(0);
 	pthread_t threads[MAX_CH];
-	unique_ptr<char[]> buffer;
 	char treename[NUM_METHODS][4];
-	unique_ptr<TTree> TStree = nullptr;
-	unique_ptr<TTree> T_data = nullptr; // only one as classes handle trees
-	shared_ptr<Digitizer> digitizer(dig);
-	unique_ptr<TFile> f(file);
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	void* status = nullptr;
-	try {buffer = unique_ptr<char[]>(new char[config->eventsize]);}
+	try {buffer = unique_ptr<char[]>(new char[iEventsize]);}
 	catch (bad_alloc& ba) {
-		ret |= alloc_error;
-		return ret;
+		iFailed |= alloc_error;
+		return;
 	}
-	unsigned long* ul_timestamp = (unsigned long*)(buffer.get() + sizeof(long));
-	unsigned long ul_ts_first(0), ul_ts_last(0);
-	unsigned short* us_trace = (unsigned short*)(buffer.get() + sizeof_ev_header);
+	unsigned long* ulpTimestamp = (unsigned long*)(buffer.get() + sizeof(long));
+	unsigned long ulTSFirst(0), ulTSLast(0);
+	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
+	for (ch = 0; ch < iNchan; ch++) td[ch].uspData = uspTrace + ch*iEventlength;
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
-	i_prog_check = config->numEvents/100 + 1;
+	iProgCheck = iNumEvents/100 + 1;
 	f->cd();
 	
 	for (m = 0; m < NUM_METHODS; m++) { // setting up trees
 		sprintf(treename[m], "T%i", m);
-		if (config->method_active[m]) {
-			try {T_data = unique_ptr<TTree>(new TTree(treename[m], method_names[m]));}
-			catch (bad_alloc& ba) {ret |= alloc_error; config->method_active[m] = false;}
-			if (T_data->IsZombie()) {ret |= root_error; config->method_active[m] = false;}
-			root_init[m](T_data.release());
+		if (bMethodActive[m]) {
+			try {tree = unique_ptr<TTree>(new TTree(treename[m], method_names[m]));}
+			catch (bad_alloc& ba) {iFailed |= alloc_error; bMethodActive[m] = false;}
+			if (tree->IsZombie()) {iFailed |= root_error; bMethodActive[m] = false;}
+			root_init[m](tree.release());
 	}	}
-		
-	for (ch = 0; ch < config->nchan; ch++) { // initializing all classes needed
-		if (g_verbose) cout << "CH" << ch << ": Event ";
-		try {
-			if (config->average == 0) td[ch].event = shared_ptr<Event>(new Event(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]]));
-			else td[ch].event = shared_ptr<Event_ave>(new Event_ave(config->eventlength, digitizer, config->dc_offset[config->chan[ch]], config->threshold[config->chan[ch]], config->average));
-		} catch (bad_alloc& ba) {
-			ret |= alloc_error;
-			return ret;
-		} if (td[ch].event->Failed()) {
-			ret |= method_error;
-			return ret;
-		}
-		if (config->method_active[CCM_t]) {
-			if (g_verbose) cout << "CCM ";
-			try {td[ch].methods[CCM_t] = shared_ptr<Method>(new CCM(config->chan[ch],config->fastTime[config->chan[ch]],config->slowTime[config->chan[ch]],config->pga_samples[config->chan[ch]],digitizer));}
-			catch (bad_alloc& ba) {
-				ret |= alloc_error;
-				config->method_active[CCM_t] = false;
-			} if (td[ch].methods[CCM_t]->Failed()) {
-				ret |= method_error;
-				config->method_active[CCM_t] = false;
-			}
-		}
-		if (config->method_active[DFT_t]) {
-			if (g_verbose) cout << "DFT ";
-			try {td[ch].methods[DFT_t] = shared_ptr<Method>(new DFT(config->chan[ch], Event::Length(), digitizer));}
-			catch (bad_alloc& ba) {
-				ret |= alloc_error;
-				config->method_active[DFT_t] = false;
-			} if (td[ch].methods[DFT_t]->Failed()) {
-				ret |= method_error;
-				config->method_active[DFT_t] = false;
-			}
-		}
-		if (config->method_active[XSQ_t]) {
-			if (g_verbose) cout << "XSQ ";
-			try {td[ch].methods[XSQ_t] = shared_ptr<Method>(new XSQ(config->chan[ch], Event::Length(), config->gain[ch], digitizer));}
-			catch (bad_alloc& ba) {
-				ret |= alloc_error;
-				config->method_active[XSQ_t] = false;
-			} if (td[ch].methods[XSQ_t]->Failed()) {
-				ret |= method_error;
-				config->method_active[XSQ_t] = false;
-			}
-		}
-		if (config->method_active[LAP_t]) {
-			if (g_verbose) cout << "LAP ";
-			try {td[ch].methods[LAP_t] = shared_ptr<Method>(new LAP(config->chan[ch], Event::Length(), digitizer));}
-			catch (bad_alloc& ba) {
-				ret |= alloc_error;
-				config->method_active[LAP_t] = false;
-			} if (td[ch].methods[LAP_t]->Failed()) {
-				ret |= method_error;
-				config->method_active[LAP_t] = false;
-			}
-		}
-		td[ch].activated = config->method_active;
-		td[ch].data = us_trace + ch*config->eventlength;
-		if (g_verbose) cout << '\n';
-	}
 	
-	if (!config->already_done) {
-		try {TStree = unique_ptr<TTree>(new TTree("TS","Timestamps"));}
+	if (bRecordTimestamps) {
+		try {tree = unique_ptr<TTree>(new TTree("TS","Timestamps"));}
 		catch (bad_alloc& ba) {
-			ret |= alloc_error;
-			return ret;
-		} if (TStree->IsZombie()) {
-			ret |= root_error;
-			return ret;
+			iFailed |= alloc_error;
+			return;
+		} if (tree->IsZombie()) {
+			iFailed |= root_error;
+			return;
 		}
-		TStree->Branch("Timestamp", &ul_timestamp[0], "time_stamp/l");
+		tree->Branch("Timestamp", &ulpTimestamp[0], "time_stamp/l");
 	}
 	t_that = steady_clock::now();
 	cout << "Processing:\n";
 	cout << "Completed\tRate (ev/s)\tTime left (s)\n";
-	for (ev = 0; ev < config->numEvents; ev++) {
-		fin->read(buffer.get(), config->eventsize);
-		if (config->method_active[XSQ_t]) for (ch = 0; ch < config->nchan; ch++) {
+	fin.seekg(sizeof_f_header, fin.beg);
+	for (ev = 0; ev < iNumEvents; ev++) {
+		fin.read(buffer.get(), iEventsize);
+		if (bMethodActive[XSQ_t]) for (ch = 0; ch < iNchan; ch++) {
 			td[ch].event->Set(td[ch].data);
-			for (m = 0; m < NUM_METHODS; m++) if (config->method_active[m]) td[ch].methods[m]->evaluate(td[ch].event); // TF1 isn't thread-friendly
+			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) td[ch].methods[m]->evaluate(td[ch].event); // TF1 isn't thread-friendly
 		} else {
-			for (ch = 0; ch < config->nchan; ch++) if ( (rc = pthread_create(&threads[ch], &attr, Process, (void*)&td[ch])) ) {ret |= thread_error; return ret;}
-			for (ch = 0; ch < config->nchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {ret |= thread_error; return ret;}
+			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_create(&threads[ch], &attr, Process, (void*)&td[ch])) ) {iFailed |= thread_error; return;}
+			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {iFailed |= thread_error; return;}
 		}
-		for (m = 0; m < NUM_METHODS; m++) if (config->method_active[m]) root_fill[m]();
-		if (!config->already_done) TStree->Fill();
-		if (ev % i_prog_check == i_prog_check-1) { // progress updates
-			cout << ev*100l/config->numEvents << "%\t\t";
+		for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) root_fill[m]();
+		if (bRecordTimestamps) tree->Fill();
+		if (ev % iProgCheck == iProgCheck-1) { // progress updates
+			cout << ev*100l/iNumEvents << "%\t\t";
 			t_this = steady_clock::now();
 			t_elapsed = duration_cast<duration<double>>(t_this-t_that);
 			t_that = steady_clock::now();
-			i_rate = t_elapsed.count() == 0 ? 9001 : i_prog_check/t_elapsed.count(); // it's OVER 9000!
-			cout << i_rate << "\t\t";
-			i_timeleft = (config->numEvents - ev)/i_rate;
-			cout << i_timeleft << "\n";
+			iRate = t_elapsed.count() == 0 ? 9001 : iProgCheck/t_elapsed.count(); // it's OVER 9000!
+			cout << iRate << "\t\t";
+			iTimeleft = (iNumEvents - ev)/iRate;
+			cout << iTimeleft << "\n";
 		}
-		if (ev == 0) ul_ts_first = ul_timestamp[0];	
+		if (ev == 0) ulTSFirst = ulpTimestamp[0];	
 	}
 
 	cout << "Processing completed\n";
-	ul_ts_last = ul_timestamp[0];
-	i_livetime = (ul_ts_last - ul_ts_first)/125e6;
-	cout << "Acquisition livetime: " << i_livetime << "s\nBeginning cleanup: ";
-	fin->close();
-	if (!config->already_done) {
+	ulTSLast = ulpTimestamp[0];
+	iLivetime = (ulTSLast - ulTSFirst)/125e6;
+	cout << "Acquisition livetime: " << iLivetime << "s\nBeginning cleanup: ";
+	fin.close();
+	if (bRecordTimestamps) {
 		f->cd();
-		TStree->Write("",TObject::kOverwrite);
-		TStree.reset();
+		tree->Write("",TObject::kOverwrite);
+		tree.reset();
 	}
 	if (g_verbose) cout << "making friends: ";
 	for (m = 0; m < NUM_METHODS; m++) {
-		if (config->method_active[m]) { // processed this run
+		if (bMethodActive[m]) { // processed this run
 			if (g_verbose) cout << treename[m] << "a ";
-			T_data = unique_ptr<TTree>(root_deinit[m]());
-			T_data->AddFriend("TS");
-			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data->AddFriend(treename[(m+i)%NUM_METHODS]);
+			tree = unique_ptr<TTree>(root_deinit[m]());
+			tree->AddFriend("TS");
+			for (int i = 1; i < NUM_METHODS; i++) if ((bMethodDone[(m+i)%NUM_METHODS]) || (bMethodActive[(m+i)%NUM_METHODS])) tree->AddFriend(treename[(m+i)%NUM_METHODS]);
 			f->cd();
-			T_data->Write("",TObject::kOverwrite);
-			T_data.reset();
-		} else if ((config->method_done[m]) && !(config->method_active[m])) { // processed sometime previous
+			tree->Write("",TObject::kOverwrite);
+			tree.reset();
+		} else if ((bMethodDone[m]) && !(bMethodActive[m])) { // processed sometime previous
 			if (g_verbose) cout << treename[m] << "b ";
-			T_data = unique_ptr<TTree>((TTree*)f->Get(treename[m]));
-			for (int i = 1; i < NUM_METHODS; i++) if ((config->method_done[(m+i)%NUM_METHODS]) || (config->method_active[(m+i)%NUM_METHODS])) T_data->AddFriend(treename[(m+i)%NUM_METHODS]);
+			tree = unique_ptr<TTree>((TTree*)f->Get(treename[m]));
+			for (int i = 1; i < NUM_METHODS; i++) if ((bMethodDone[(m+i)%NUM_METHODS]) || (bMethodActive[(m+i)%NUM_METHODS])) tree->AddFriend(treename[(m+i)%NUM_METHODS]);
 			f->cd();
-			T_data->Write("",TObject::kOverwrite);
-			T_data.reset();
+			tree->Write("",TObject::kOverwrite);
+			tree.reset();
 		}
 	}
-	f->Close();
 	buffer.reset();
 	if (g_verbose) cout << " d'toring classes: ";
-	for (ch = 0; ch < config->nchan; ch++) { // general d'tors
+	for (ch = 0; ch < iNchan; ch++) { // general d'tors
 		if (g_verbose) cout << "CH" << ch << " ";
 		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m] = nullptr;
 		td[ch].event.reset();
 	}
-	digitizer.reset();
-	f.reset();
 	cout << " done\n";
-	return ret;
+	return;
+}
+
+void Processor::ClassAlloc() {
+	for (auto ch = 0; ch < iNchan; ch++) { // initializing all classes needed
+		if (g_verbose) cout << "CH" << ch << ": Event ";
+		try {
+			if (iAverage == 0) td[ch].event = shared_ptr<Event>(new Event(iEventlength, digitizer, uiDCOffset[iChan[ch]], uiThreshold[iChan[ch]]));
+			else td[ch].event = shared_ptr<Event_ave>(new Event_ave(iEventlength, digitizer, uiDCOffset[iChan[ch]], uiThreshold[iChan[ch]], iAverage));
+		} catch (bad_alloc& ba) {
+			iFailed |= alloc_error;
+			throw ProcessorException();
+		} if (td[ch].event->Failed()) {
+			iFailed |= method_error;
+			throw ProcessorException();
+		}
+		if (bMethodActive[CCM_t]) { 
+			if (g_verbose) cout << "CCM ";
+			try {td[ch].methods[CCM_t] = shared_ptr<Method>(new CCM(iChan[ch],iFastTime[iChan[ch]],iSlowTime[iChan[ch]],iPGASamples[iChan[ch]],digitizer));}
+			catch (bad_alloc& ba) {
+				iFailed |= alloc_error;
+				bMethodActive[CCM_t] = false;
+			} if (td[ch].methods[CCM_t]->Failed()) {
+				iFailed |= method_error;
+				bMethodActive[CCM_t] = false;
+			}
+		}
+		if (bMethodActive[DFT_t]) {
+			if (g_verbose) cout << "DFT ";
+			try {td[ch].methods[DFT_t] = shared_ptr<Method>(new DFT(iChan[ch], Event::Length(), digitizer));}
+			catch (bad_alloc& ba) {
+				iFailed |= alloc_error;
+				bMethodActive[DFT_t] = false;
+			} if (td[ch].methods[DFT_t]->Failed()) {
+				iFailed |= method_error;
+				bMethodActive[DFT_t] = false;
+			}
+		}
+		if (bMethodActive[XSQ_t]) {
+			if (g_verbose) cout << "XSQ ";
+			try {td[ch].methods[XSQ_t] = shared_ptr<Method>(new XSQ(iChan[ch], Event::Length(), fGain[ch], digitizer));}
+			catch (bad_alloc& ba) {
+				iFailed |= alloc_error;
+				bMethodActive[XSQ_t] = false;
+			} if (td[ch].methods[XSQ_t]->Failed()) {
+				iFailed |= method_error;
+				bMethodActive[XSQ_t] = false;
+			}
+		}
+		if (bMethodActive[LAP_t]) {
+			if (g_verbose) cout << "LAP ";
+			try {td[ch].methods[LAP_t] = shared_ptr<Method>(new LAP(iChan[ch], Event::Length(), digitizer));}
+			catch (bad_alloc& ba) {
+				iFailed |= alloc_error;
+				bMethodActive[LAP_t] = false;
+			} if (td[ch].methods[LAP_t]->Failed()) {
+				iFailed |= method_error;
+				bMethodActive[LAP_t] = false;
+			}
+		}
+		td[ch].cbpActivated = bMethodActive;
+		if (g_verbose) cout << '\n';
+	}
+	if (iFailed) throw ProcessorException();
+}
+
+void Processor::ConfigTrees() {
+	bool bUpdate(false), bChecked[NUM_METHODS];
+	char overwrite(0), cMethodName[12];
+	int iMethodID(0), iDateNow(0), iTimeNow(0), iPGACheck[MAX_CH], iSlowCheck[MAX_CH], iFastCheck[MAX_CH];
+	float fDetPositionZ[3] = {0,0,0}, fDetPositionR[3] = {0,0,0}, fVersion(0);
+	TTree* tc = nullptr;
+	memset(bChecked, 0, sizeof(bChecked));
+	time_t t_rawtime;
+	tm* t_today;
+	time(&t_rawtime);
+	t_today = localtime(&t_rawtime); // timestamp for processing
+	iTimeNow = (t_today->tm_hour)*100 + t_today->tm_min; // hhmm
+	iDateNow = (t_today->tm_year-100)*10000 + (t_today->tm_mon+1)*100 + t_today->tm_mday; // yymmdd
+	switch (digitizer->ID()) {
+		case dt5751 : 
+			if (digitizer->Special() == 0) iXSQ_ndf = min(iEventlength/2, 225)-3; // length - number of free parameters
+			else iXSQ_ndf = min(iEventlength, 450)-3;
+			break;
+		case dt5751des :
+			iXSQ_ndf = min(iEventlength, 899)-3;
+			break;
+		case dt5730 :
+			iXSQ_ndf = min(iEventlength, 225)-3;
+			break;
+		case v1724 :
+		default :
+			iXSQ_ndf = -1;
+			break;
+	}
+	tree = unique_ptr<TTree>((TTree*)f->Get("Tx"));
+	if (tree) { // check for old versions
+		cout << "This file has been processed by an old version of NGrawDP. Reprocessing will require removal of previous results. Continue <y|n>? ";
+		cin >> overwrite;
+		if (overwrite == 'y') f->Delete("*;*");
+		else {
+			iFailed |= root_error;
+			throw ProcessorException();
+		}
+	}
+	tree.reset((TTree*)f->Get("TV"));
+	if (tree) { // already processed, checking versions
+		bRecordTimestamps = false;
+		cout << "Trees already exist, checking versions\n";
+		tree->SetBranchAddress("MethodID", &iMethodID);
+		tree->SetBranchAddress("Version", &fVersion);
+		for (auto i = tree->GetEntries()-1; i >= 0; i--) { // most recent entries will be last in the tree
+			tree->GetEntry(i);
+			if (bChecked[iMethodID] || !bMethodActive[iMethodID]) continue;
+			bChecked[iMethodID] = true;
+			bUpdate = false;
+			if (iMethodID == CCM_t) {
+				tc = (TTree*)f->Get("TC");
+				tc->SetBranchAddress("PGA_samples", iPGACheck);
+				tc->SetBranchAddress("Fast_window", iFastCheck);
+				tc->SetBranchAddress("Slow_window", iSlowCheck);
+				tc->GetEntry(tc->GetEntries()-1); // most recent entry is the one we want
+				bUpdate |= (memcmp(iPGACheck, iPGASamples, sizeof(iPGACheck)) != 0);
+				bUpdate |= (memcmp(iFastCheck, iFastTime, sizeof(iFastCheck)) != 0); // checks CCM parameters
+				bUpdate |= (memcmp(iSlowCheck, iSlowTime, sizeof(iSlowCheck)) != 0);
+			}
+			if ((fVersion[iMethodID] < cfMethodVersions[iMethodID]) || bUpdate) {
+				cout << cMethodNames[iMethodID] << " will be reprocessed\n";
+			} else {
+				cout << cMethodNames[iMethodID] << " up to date, reprocess anyway <y|n>? ";
+				cin >> overwrite;
+				if (overwrite == 'y') {
+					cout << "Reprocessing " << cMethodNames[iMethodID] << '\n';
+				} else {
+					bMethodActive[iMethodID] = false;
+				}
+			}
+		}
+		tc = nullptr;
+	} else { // not already processed
+		cout << "Creating config trees\n";
+		bRecordTimestamps = true;
+		try {tree.reset(new TTree("TI","Info"));}
+		catch (bad_alloc& ba) {
+			cout << "Could not create info tree\n";
+			iFailed |= alloc_error;
+			throw ProcessorException();
+		}
+		tree->Branch("Digitizer", cDigName, "name[12]/B");
+		tree->Branch("Source", cSource, "source[12]/B");
+		tree->Branch("ChannelMask", &usMask, "mask/s"); // general info on data run
+		tree->Branch("TriggerThreshold", uiThreshold, "threshold[8]/i");
+		tree->Branch("DC_offset", usDCOffset, "dc_off[8]/i"); // the numbers in this tree
+		tree->Branch("Posttrigger", &iTrigPost, "tri_post/I"); // don't change, so it's only
+		tree->Branch("Eventlength", &iEventlength, "ev_len/I"); // written out once
+		tree->Branch("Chisquared_NDF", &iXSQ_ndf, "ndf/I");
+		if (iSpecial != -1) tree->Branch("Special", &iSpecial, "special/I");
+		if (iAverage != 0) tree->Branch("Moving_average", &iAverage, "average/I");
+		if (strcmp(cSource, "NG") == 0) {
+			cout << "Enter detector positions:\n";
+			for (auto i = 0; i < 3; i++) {
+				cout << "Detector " << i << " z: "; cin >> fDetPositionZ[i];
+				cout << "Detector " << i << " r: "; cin >> fDetPositionR[i];
+			}
+			tree->Branch("Detector_position_z", fDetPositionZ, "z_pos[3]/F");
+			tree->Branch("Detector_position_r", fDetPositionR, "r_pos[3]/F");
+		}
+		tree->Fill();
+		tree->Write();
+		
+		try {tree.reset(new TTree("TV","Versions"));}
+		catch (bad_alloc& ba) {
+			cout << "Could not create version tree\n";
+			iFailed |= alloc_error;
+			throw ProcessorException();
+		}
+		tree->Branch("MethodName", cMethodName, "codename[12]/B");
+		tree->Branch("MethodID", &iMethodID, "codeid/I");
+		tree->Branch("Date", &iDateNow, "date/I"); // this tree holds version info
+		tree->Branch("Time", &iTimeNow, "time/I");
+		tree->Branch("Version", &fVersion, "version/F");
+		for (auto i = 0; i < NUM_METHODS; i++) if (bMethodActive[i]) {
+			strcpy(cMethodName, cMethodNames[i];
+			fVersion = cfMethodVersions[i];
+			iMethodID = i;
+			tree->Fill();
+		}
+		tree->Write();
+		
+		try {tree.reset(new TTree("TC","CCM_info"));}
+		catch (bad_alloc& ba) {
+			cout << "Could not create CCM info tree\n";
+			iFailed |= alloc_error;
+			throw ProcessorException();
+		}
+		tree->Branch("PGA_samples", iPGASamples, "pga[8]/I");
+		tree->Branch("Fast_window", iFastTime, "fast[8]/I"); // this tree holds configuration parameters for CCM
+		tree->Branch("Slow_window", iSlowTime, "slow[8]/I");
+		tree->Fill();
+		tree->Write();
+		
+		tree.reset();
+	}
+}
+
+void Processor::ParseFileHeader() {
+	if (usMask != 0) return; // for the unlikely event this gets called twice
+	char cBuffer[sizeof_f_header];
+	fin.seekg(0, fin.end);
+	auto filesize = fin.tellg();
+	fin.seekg(0, fin.beg);
+	fin.read(cBuffer, sizeof_f_header);
+	
+	strncpy(cDigName, cBuffer, sizeof(cDigName)); // digitizer name
+	
+	memcpy(&usMask, cBuffer + 12, sizeof(usMask)); // channel mask
+	
+	memcpy(&iEventlength, cBuffer + 14, sizeof(iEventlength)); // eventlength
+	
+	memcpy(&iTrigPost, cBuffer + 18, sizeof(iTrigPost)); // post-trigger
+	
+	memcpy(uiDCOffset, cBuffer + 22, sizeof(uiDCOffset)); // dc offsets
+	
+	memcpy(uiThreshold, cBuffer + 54, sizeof(uiThreshold)); // trigger thresholds
+	
+	iNchan = 0;
+	for (auto i = 0; i < MAX_CH; i++) if (usMask & (1<<i)) iChan[iNchan++] = i;
+	iEventsize = sizeof_ev_header + iNchan*iEventlength*sizeof(short); // each sample is size 2
+	iNumEvents = (filesize - sizeof_f_header)/iEventsize;
+}
+
+void Processor::ParseConfigFile() {
+	ifstream fconf((path + "/config/" + sConfigFileName).c_str(),ios::in);
+	if (!fconf.is_open()) {
+		cout << "Config file " << path << "/config/" << sConfigFileName << " not found\n";
+		iFailed |= file_error;
+		throw ProcessorException();
+	}
+	
+	char temp[32] = {'\0'}, cBuffer[64] = {'\0'};
+	int ch(-1), code(0);
+	while (!fconf.eof()) {
+		fconf.getline(cBuffer, 64, '\n');
+		if (cBuffer[0] == '#') continue;
+		if (strcmp(cBuffer, "METHODS") == 0) { // checks for active processing methods
+			fconf.getline(cBuffer, 64, '\n');
+			while (strstr(cBuffer, "END") == NULL) {
+				sscanf(cBuffer, "%s %i", temp, &code);
+				for (int i = 0; i < NUM_METHODS; i++) if (strcmp(temp, cMethodNames[i]) == 0) bMethodActive[i] = code;
+				fin.getline(cBuffer, 64, '\n');
+			} // end of while
+		} // end of if method
+		if (strcmp(cBuffer + 10, cDigName) == 0) {
+			fin.getline(cBuffer, 64, '\n');
+			while (strstr(cBuffer, "END") == NULL) {
+				if (strstr(cBuffer, "CHANNEL") != NULL) { // loads processing parameters
+					ch = atoi(&cBuffer[8]);
+					if ((ch >= MAX_CH) || (ch < 0)) {iFailed |= config_file_error; throw ProcessorException();}
+					fconf.getline(cBuffer, 64, '\n');
+					sscanf(cBuffer, "SLOW %i FAST %i PGA %i GAIN_N %f GAIN_Y %f", &iSlowTime[ch], &iFastTime[ch], &iPGASamples[ch], &fGain[ch][0], &fGain[ch][1]);
+				}
+				fconf.getline(cBuffer, 64, '\n');
+			} // end of while
+		} // end of if dig
+	} // end of file
+	fconf.close();
+	try {digitizer = shared_ptr<Digitizer>(new Digitizer(cDigName, iSpecial));}
+	catch (bad_alloc& ba) {iFailed |= alloc_error; throw ProcessorException();}
+	if (digitizer->Failed()) iFailed |= method_error;
+	if ((digitizer->ID() > 2) && bMethodActive[XSQ_t]) {
+		cout << "Chisquare method not compatible with " << digitizer->Name() << '\n';
+		bMethodActive[XSQ_t] = false;
+	}
+	return;
+}
+
+void Processor::SetFileSet(string in) { // also opens raw and processed files
+	sRawDataFile = path + "/rawdata/" + in + ".dat";
+	sRootFile = path + "/prodata/" + in;
+	if ((iSpecial == -1) && (iAverage == 0)) sRootFile += ".root";
+	else if ((iSpecial == -1) && (iAverage != 0)) sRootFile += "_a.root";
+	else if ((iSpecial != -1) && (iAverage == 0)) sRootFile += "_x.root";
+	else sRootFile += "_ax.root";
+	fin.open(sRawDataFile.c_str(), ios::in | ios::bin);
+	if (!fin.is_open()) {
+		cout << "Error: " sRawDataFile << " not found\n";
+		iFailed != file_error;
+		throw ProcessorException();
+	}
+	f = unique_ptr<TFile>(new TFile(sRootFile.c_str(), "UPDATE"));
+	if (!f->IsOpen()) {
+		cout << "Error: could not open " sRootFile << '\n';
+		iFailed |= file_error;
+		throw ProcessorException();
+	}
 }

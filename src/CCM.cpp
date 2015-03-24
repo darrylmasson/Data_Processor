@@ -3,157 +3,157 @@
 #include <cmath>
 #include <iostream>
 
-float CCM::sf_version = 2.81;
-bool CCM::sb_initialized = false;
+float CCM::sfVersion = 2.81;
+bool CCM::sbInitialized = false;
 unique_ptr<TTree> CCM::tree = nullptr;
-int CCM::si_howmany = 0;
+int CCM::siHowMany = 0;
 
-bool CCM::sb_fullwave[8]		= {0,0,0,0,0,0,0,0};
-bool CCM::sb_saturated[8]		= {0,0,0,0,0,0,0,0}; // up to 8 channels on digitizers
-bool CCM::sb_truncated[8]		= {0,0,0,0,0,0,0,0};
+bool CCM::sbFullWave[8]			= {0,0,0,0,0,0,0,0};
+bool CCM::sbSaturated[8]		= {0,0,0,0,0,0,0,0}; // up to 8 channels on digitizers
+bool CCM::sbTruncated[8]		= {0,0,0,0,0,0,0,0};
 
-short CCM::ss_decay[8]			= {0,0,0,0,0,0,0,0};
-short CCM::ss_fstop[8]			= {0,0,0,0,0,0,0,0};
-short CCM::ss_rise[8]			= {0,0,0,0,0,0,0,0};
-short CCM::ss_peakx[8]			= {0,0,0,0,0,0,0,0};
-short CCM::ss_sstop[8]			= {0,0,0,0,0,0,0,0};
+short CCM::ssDecay[8]			= {0,0,0,0,0,0,0,0};
+short CCM::ssFastStop[8]		= {0,0,0,0,0,0,0,0};
+short CCM::ssRise[8]			= {0,0,0,0,0,0,0,0};
+short CCM::ssPeakX[8]			= {0,0,0,0,0,0,0,0};
+short CCM::ssSlowStop[8]		= {0,0,0,0,0,0,0,0};
 
-double CCM::sd_baseline[8]		= {0,0,0,0,0,0,0,0};
-double CCM::sd_baseSigma[8]		= {0,0,0,0,0,0,0,0};
-double CCM::sd_basePost[8]		= {0,0,0,0,0,0,0,0};
-double CCM::sd_basePostSigma[8]	= {0,0,0,0,0,0,0,0};
-double CCM::sd_basePeakp[8]		= {0,0,0,0,0,0,0,0};
-double CCM::sd_basePeakn[8]		= {0,0,0,0,0,0,0,0};
-double CCM::sd_fullint[8]		= {0,0,0,0,0,0,0,0};
-double CCM::sd_fastint[8]		= {0,0,0,0,0,0,0,0};
-double CCM::sd_slowint[8]		= {0,0,0,0,0,0,0,0};
-double CCM::sd_peak0[8]			= {0,0,0,0,0,0,0,0};
-double CCM::sd_peak1[8]			= {0,0,0,0,0,0,0,0};
-double CCM::sd_peak2[8]			= {0,0,0,0,0,0,0,0};
-double CCM::sd_peakp[8]			= {0,0,0,0,0,0,0,0};
+double CCM::sdBaseline[8]		= {0,0,0,0,0,0,0,0};
+double CCM::sdBaseSigma[8]		= {0,0,0,0,0,0,0,0};
+double CCM::sdBasePost[8]		= {0,0,0,0,0,0,0,0};
+double CCM::sdBasePostSigma[8]	= {0,0,0,0,0,0,0,0};
+double CCM::sdBasePeakP[8]		= {0,0,0,0,0,0,0,0};
+double CCM::sdBasePeakN[8]		= {0,0,0,0,0,0,0,0};
+double CCM::sdFullInt[8]		= {0,0,0,0,0,0,0,0};
+double CCM::sdFastInt[8]		= {0,0,0,0,0,0,0,0};
+double CCM::sdSlowInt[8]		= {0,0,0,0,0,0,0,0};
+double CCM::sdPeak0[8]			= {0,0,0,0,0,0,0,0};
+double CCM::sdPeak1[8]			= {0,0,0,0,0,0,0,0};
+double CCM::sdPeak2[8]			= {0,0,0,0,0,0,0,0};
+double CCM::sdPeakP[8]			= {0,0,0,0,0,0,0,0};
 
-double CCM::sd_gradient[8]		= {0,0,0,0,0,0,0,0};
+double CCM::sdGradient[8]		= {0,0,0,0,0,0,0,0};
 
 CCM::CCM(const int ch, const int fast, const int slow, const int samples, const shared_ptr<Digitizer> digitizer) {
-	failed = 0;
-	eventlength = Event::Length();
+	iFailed = 0;
+	iEventlength = Event::Length();
 	bool special = (digitizer->Special() == 0);
-	i_fastTime = (special ? fast/2 : fast);
-	i_slowTime = (special ? slow/2 : slow);
-	i_gradSamples = (special ? samples/2 : samples);
+	iFastTime = (special ? fast/2 : fast);
+	iSlowTime = (special ? slow/2 : slow);
+	iPGASamples = (special ? samples/2 : samples);
 	id = ch;
-	if ((id >= MAX_CH) || (id < 0)) failed |= method_error;
-	CCM::si_howmany++;
-	d_scaleV = digitizer->ScaleV();
-	d_scaleT = digitizer->ScaleT();
+	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
+	CCM::siHowMany++;
+	dScaleV = digitizer->ScaleV();
+	dScaleT = digitizer->ScaleT();
 }
 
 CCM::~CCM() {
 	if (g_verbose) cout << " CCM " << id << " d'tor ";
-	CCM::si_howmany--;
+	CCM::siHowMany--;
 }
 
 void CCM::root_init(TTree* tree_in) {
-	if (!CCM::sb_initialized) {
+	if (!CCM::sbInitialized) {
 		CCM::tree = unique_ptr<TTree>(tree_in);
 		
-		CCM::tree->Branch("FullWaveform",	CCM::sb_fullwave,		"full_waveform[8]/O");
-		CCM::tree->Branch("Saturated",		CCM::sb_saturated,		"saturated[8]/O");
-		CCM::tree->Branch("Truncated",		CCM::sb_truncated,		"trunc[8]/O");
+		CCM::tree->Branch("FullWaveform",	CCM::sbFullWave,		"full_waveform[8]/O");
+		CCM::tree->Branch("Saturated",		CCM::sbSaturated,		"saturated[8]/O");
+		CCM::tree->Branch("Truncated",		CCM::sbTruncated,		"trunc[8]/O");
 		
-		CCM::tree->Branch("Risetime",		CCM::ss_rise,			"risetime[8]/S");
-		CCM::tree->Branch("Decaytime",		CCM::ss_decay,			"decay_time[8]/S");
-		CCM::tree->Branch("Faststop",		CCM::ss_fstop,			"fstop[8]/S");
-		CCM::tree->Branch("Slowstop",		CCM::ss_sstop,			"sstop[8]/S");
-		CCM::tree->Branch("Peakx",			CCM::ss_peakx,			"peakx[8]/S");
+		CCM::tree->Branch("Risetime",		CCM::ssRise,			"risetime[8]/S");
+		CCM::tree->Branch("Decaytime",		CCM::ssDecay,			"decay_time[8]/S");
+		CCM::tree->Branch("Faststop",		CCM::ssFastStop,		"fstop[8]/S");
+		CCM::tree->Branch("Slowstop",		CCM::ssSlowStop,		"sstop[8]/S");
+		CCM::tree->Branch("Peakx",			CCM::ssPeakX,			"peakx[8]/S");
 		
-		CCM::tree->Branch("Peakheight0",	CCM::sd_peak0,			"pk_height0[8]/D");
-		CCM::tree->Branch("Peakheight1",	CCM::sd_peak1,			"pk_height1[8]/D");
-		CCM::tree->Branch("Peakheight2",	CCM::sd_peak2,			"pk_height1[8]/D");
-		CCM::tree->Branch("PeakPos",		CCM::sd_peakp,			"pk_pos[8]/D");
-		CCM::tree->Branch("Baseline",		CCM::sd_baseline,		"baseline[8]/D");
-		CCM::tree->Branch("BaseSigma",		CCM::sd_baseSigma,		"baseSigma[8]/D");
-		CCM::tree->Branch("BasePost",		CCM::sd_basePost,		"basePost[8]/D");
-		CCM::tree->Branch("BasePostSigma",	CCM::sd_basePostSigma,	"basePostSigma[8]/D");
-		CCM::tree->Branch("BasePeakPos",	CCM::sd_basePeakp,		"basePeakPos[8]/D");
-		CCM::tree->Branch("BasePeakNeg",	CCM::sd_basePeakn,		"basepeakNeg[8]/D");
-		CCM::tree->Branch("Integral",		CCM::sd_fullint,		"integrals[8]/D");
-		CCM::tree->Branch("SlowInt",		CCM::sd_slowint,		"slowintegral[8]/D");
-		CCM::tree->Branch("FastInt",		CCM::sd_fastint,		"fastintegral[8]/D");
+		CCM::tree->Branch("Peakheight0",	CCM::sdPeak0,			"pk_height0[8]/D");
+		CCM::tree->Branch("Peakheight1",	CCM::sdPeak1,			"pk_height1[8]/D");
+		CCM::tree->Branch("Peakheight2",	CCM::sdPeak2,			"pk_height1[8]/D");
+		CCM::tree->Branch("PeakPos",		CCM::sdPeakP,			"pk_pos[8]/D");
+		CCM::tree->Branch("Baseline",		CCM::sdBaseline,		"baseline[8]/D");
+		CCM::tree->Branch("BaseSigma",		CCM::sdBaseSigma,		"baseSigma[8]/D");
+		CCM::tree->Branch("BasePost",		CCM::sdBasePost,		"basePost[8]/D");
+		CCM::tree->Branch("BasePostSigma",	CCM::sdBasePostSigma,	"basePostSigma[8]/D");
+		CCM::tree->Branch("BasePeakPos",	CCM::sdBasePeakP,		"basePeakPos[8]/D");
+		CCM::tree->Branch("BasePeakNeg",	CCM::sdBasePeakN,		"basepeakNeg[8]/D");
+		CCM::tree->Branch("Integral",		CCM::sdFullInt,			"integrals[8]/D");
+		CCM::tree->Branch("SlowInt",		CCM::sdSlowInt,			"slowintegral[8]/D");
+		CCM::tree->Branch("FastInt",		CCM::sdFastInt,			"fastintegral[8]/D");
 		
-		CCM::tree->Branch("Gradient",		CCM::sd_gradient,		"gradient[8]/D");
+		CCM::tree->Branch("Gradient",		CCM::sdGradient,		"gradient[8]/D");
 		
-		CCM::sb_initialized = true;
+		CCM::sbInitialized = true;
 	}
 }
 
 void CCM::evaluate(const shared_ptr<Event> event) {
-	auto i_start(0), i_stop(eventlength-1), i(0), i_fast(0), i_slow(0);
-	auto l_fastint(0l), l_slowint(0l), l_fullint(0l);
-	auto d_threshold(event->Baseline() - 3*event->BaseSigma()), d_temp(0.);
+	auto iStart(0), iStop(iEventlength-1), i(0), iFast(0), iSlow(0);
+	auto lFastint(0l), lSlowint(0l), lFullint(0l);
+	auto dThreshold(event->Baseline() - 3*event->BaseSigma()), dTemp(0.);
 	
 	// normalizing baseline values
-	CCM::sd_baseline[id] = (event->Baseline() - event->Zero())*d_scaleV;
-	CCM::sd_baseSigma[id] = event->BaseSigma()*d_scaleV;
-	CCM::sd_basePeakp[id] = (event->B_pk_p() - event->Baseline())*d_scaleV;
-	CCM::sd_basePeakn[id] = (event->Baseline() - event->B_pk_n())*d_scaleV;
-	CCM::sd_peakp[id] = (event->Peak_pos() - event->Baseline())*d_scaleV;
-	CCM::sd_basePost[id] = (event->BasePost() - event->Zero())*d_scaleV;
-	CCM::sd_basePostSigma[id] = event->BasePostSigma()*d_scaleV;
+	CCM::sdBaseline[id] = (event->Baseline() - event->Zero())*dScaleV;
+	CCM::sdBaseSigma[id] = event->BaseSigma()*dScaleV;
+	CCM::sdBasePeakP[id] = (event->B_pk_p() - event->Baseline())*dScaleV;
+	CCM::sdBasePeakN[id] = (event->Baseline() - event->B_pk_n())*dScaleV;
+	CCM::sdPeakP[id] = (event->Peak_pos() - event->Baseline())*dScaleV;
+	CCM::sdBasePost[id] = (event->BasePost() - event->Zero())*dScaleV;
+	CCM::sdBasePostSigma[id] = event->BasePostSigma()*dScaleV;
 
-	for (i = 0; i < eventlength; i++) { // determine integration bounds
-		if ((i_stop == (eventlength-1)) && ((event->Peak_x() + i) < eventlength) && (event->Trace(event->Peak_x() + i) > d_threshold)) i_stop = (event->Peak_x() + i);
-		if ((i_start == 0) && ((event->Peak_x() - i) > -1) && (event->Trace(event->Peak_x() - i) > d_threshold)) i_start = (event->Peak_x() - i);
-		if ((i_start != 0) && (i_stop != (eventlength-1))) break;
+	for (i = 0; i < iEventlength; i++) { // determine integration bounds
+		if ((iStop == (iEventlength-1)) && ((event->Peak_x() + i) < iEventlength) && (event->Trace(event->Peak_x() + i) > dThreshold)) iStop = (event->Peak_x() + i);
+		if ((iStart == 0) && ((event->Peak_x() - i) > -1) && (event->Trace(event->Peak_x() - i) > dThreshold)) iStart = (event->Peak_x() - i);
+		if ((iStart != 0) && (iStop != (iEventlength-1))) break;
 	}
 	
 	// boolean results
-	CCM::sb_fullwave[id] = (i_stop != (eventlength-1));
-	CCM::sb_saturated[id] = (event->Peak_y() == 0);
-	CCM::sb_truncated[id] = ((i_start + i_slowTime) >= eventlength);
+	CCM::sbFullWave[id] = (iStop != (iEventlength-1));
+	CCM::sbSaturated[id] = (event->Peak_y() == 0);
+	CCM::sbTruncated[id] = ((iStart + iSlowTime) >= iEventlength);
 	
-	i_fast = min(i_fastTime, eventlength -1 - i_start);
-	i_slow = min(i_slowTime, eventlength -1 - i_start); // local integration limits for fast and slow
+	iFast = min(iFastTime, iEventlength -1 - iStart);
+	iSlow = min(iSlowTime, iEventlength -1 - iStart); // local integration limits for fast and slow
 
-	CCM::sd_peak0[id] = (event->Baseline() - event->Peak_y()) * d_scaleV;
+	CCM::sdPeak0[id] = (event->Baseline() - event->Peak_y()) * dScaleV;
 
-	if (((event->Peak_x() + 2) < eventlength) && (event->Peak_x() > 1) && !(CCM::sb_saturated[id])) { // peak averaging
-		for (i = -1; i < 2; i++) d_temp += event->Trace(event->Peak_x() + i);
-		CCM::sd_peak1[id] = (event->Baseline() - (0.333*d_temp))*d_scaleV; // averaged with adjacent samples
-		d_temp += (event->Trace(event->Peak_x() - 2) + event->Trace(event->Peak_x() + 2));
-		CCM::sd_peak2[id] = (event->Baseline() - (0.2*d_temp))*d_scaleV; // averaged with two adjacent samples
-	} else CCM::sd_peak2[id] = CCM::sd_peak1[id] = CCM::sd_peak0[id];
+	if (((event->Peak_x() + 2) < iEventlength) && (event->Peak_x() > 1) && !(CCM::sbSaturated[id])) { // peak averaging
+		for (i = -1; i < 2; i++) dTemp += event->Trace(event->Peak_x() + i);
+		CCM::sdPeak1[id] = (event->Baseline() - (0.333*dTemp))*dScaleV; // averaged with adjacent samples
+		dTemp += (event->Trace(event->Peak_x() - 2) + event->Trace(event->Peak_x() + 2));
+		CCM::sdPeak2[id] = (event->Baseline() - (0.2*dTemp))*dScaleV; // averaged with two adjacent samples
+	} else CCM::sdPeak2[id] = CCM::sdPeak1[id] = CCM::sdPeak0[id];
 	
-	for (i = i_start; i < eventlength; i++) { // integrator
-		if (i <= i_stop) l_fullint += event->Trace(i);
-		if (i <= (i_start + i_fast)) l_fastint += event->Trace(i);
-		if (i <= (i_start + i_slow)) l_slowint += event->Trace(i);
-		if ((i > i_stop) && (i > (i_start + i_slow))) break;
+	for (i = iStart; i < iEventlength; i++) { // integrator
+		if (i <= iStop) lFullint += event->Trace(i);
+		if (i <= (iStart + iFast)) lFastint += event->Trace(i);
+		if (i <= (iStart + iSlow)) lSlowint += event->Trace(i);
+		if ((i > iStop) && (i > (iStart + iSlow))) break;
 	}
-	l_fullint <<= 1;
-	l_fastint <<= 1; // trapezoid rule: integral = f(0) + 2*f(1) + ... + 2*f(n-1) + f(n)
-	l_slowint <<= 1; // faster to do sum f(i), double, and subtract endpoints
-	l_fullint -= (event->Trace(i_start) + event->Trace(i_stop));
-	l_fastint -= (event->Trace(i_start) + event->Trace(i_start + i_fast));
-	l_slowint -= (event->Trace(i_start) + event->Trace(i_start + i_slow));
+	lFullint <<= 1;
+	lFastint <<= 1; // trapezoid rule: integral = f(0) + 2*f(1) + ... + 2*f(n-1) + f(n)
+	lSlowint <<= 1; // faster to do sum f(i), double, and subtract endpoints
+	lFullint -= (event->Trace(iStart) + event->Trace(iStop));
+	lFastint -= (event->Trace(iStart) + event->Trace(iStart + iFast));
+	lSlowint -= (event->Trace(iStart) + event->Trace(iStart + iSlow));
 	
-	CCM::ss_rise[id] = (event->Peak_x() - i_start)*d_scaleT;
-	CCM::ss_decay[id] = (i_stop - event->Peak_x())*d_scaleT;
+	CCM::ssRise[id] = (event->Peak_x() - iStart)*dScaleT;
+	CCM::ssDecay[id] = (iStop - event->Peak_x())*dScaleT;
 
-	CCM::ss_peakx[id] = event->Peak_x()*d_scaleT;
-	CCM::ss_fstop[id] = (i_start + i_fast)*d_scaleT;
-	CCM::ss_sstop[id] = (i_start + i_slow)*d_scaleT;
+	CCM::ssPeakX[id] = event->Peak_x()*dScaleT;
+	CCM::ssFastStop[id] = (iStart + iFast)*dScaleT;
+	CCM::ssSlowStop[id] = (iStart + iSlow)*dScaleT;
 	
-	CCM::sd_fullint[id] = ((event->Baseline() * (i_stop - i_start)) - (0.5*l_fullint)) * d_scaleV * d_scaleT;
-	CCM::sd_slowint[id] = ((event->Baseline() * (i_slow)) - (0.5*l_slowint)) * d_scaleV * d_scaleT;
-	CCM::sd_fastint[id] = ((event->Baseline() * (i_fast)) - (0.5*l_fastint)) * d_scaleV * d_scaleT;
+	CCM::sdFullInt[id] = ((event->Baseline() * (iStop - iStart)) - (0.5*lFullint)) * dScaleV * dScaleT;
+	CCM::sdSlowInt[id] = ((event->Baseline() * (iSlow)) - (0.5*lSlowint)) * dScaleV * dScaleT;
+	CCM::sdFastInt[id] = ((event->Baseline() * (iFast)) - (0.5*lFastint)) * dScaleV * dScaleT;
 	
-	if ((event->Peak_x() + i_gradSamples + 1) < eventlength) { // PGA
-		d_temp = 0;
-		for (i = -1; i < 2; i++) d_temp += event->Trace(event->Peak_x() + i_gradSamples + i); // average with adjacent points to reduce statistical fluctuations
-		d_temp *= 0.333;
-		CCM::sd_gradient[id] = (i_gradSamples * (event->Baseline() - event->Peak_y()) == 0) ? -1 : (d_temp - event->Peak_y())/(double)(i_gradSamples * (event->Baseline() - event->Peak_y()));
-	} else CCM::sd_gradient[id] = -1;
+	if ((event->Peak_x() + iPGASamples + 1) < iEventlength) { // PGA
+		dTemp = 0;
+		for (i = -1; i < 2; i++) dTemp += event->Trace(event->Peak_x() + iPGASamples + i); // average with adjacent points to reduce statistical fluctuations
+		dTemp *= 0.333;
+		CCM::sdGradient[id] = (iPGASamples * (event->Baseline() - event->Peak_y()) == 0) ? -1 : (dTemp - event->Peak_y())/(double)(iPGASamples * (event->Baseline() - event->Peak_y()));
+	} else CCM::sdGradient[id] = -1;
 	
 	return;
 }

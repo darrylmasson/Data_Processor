@@ -5,120 +5,120 @@
 #include <iostream> // remove
 
 float	XSQ::sf_version = 1.1;
-bool	XSQ::sb_initialized = false;
-int		XSQ::si_howmany = 0;
+bool	XSQ::sbInitialized = false;
+int		XSQ::siHowMany = 0;
 
 unique_ptr<TTree> XSQ::tree = nullptr;
 
-double XSQ::sd_xsq_n[4]			= {0,0,0,0};
-double XSQ::sd_peakheight_n[4]	= {0,0,0,0};
-double XSQ::sd_baseline_n[4]	= {0,0,0,0};
-double XSQ::sd_offset_n[4]		= {0,0,0,0};
-double XSQ::sd_peak_err_n[4]	= {0,0,0,0};
-double XSQ::sd_base_err_n[4]	= {0,0,0,0};
-double XSQ::sd_offset_err_n[4]	= {0,0,0,0};
-double XSQ::sd_prob_n[4]		= {0,0,0,0};
+double XSQ::sdXsq_n[4]			= {0,0,0,0};
+double XSQ::sdPeakheight_n[4]	= {0,0,0,0};
+double XSQ::sdBaseline_n[4]		= {0,0,0,0};
+double XSQ::sdOffset_n[4]		= {0,0,0,0};
+double XSQ::sdPeakErr_n[4]		= {0,0,0,0};
+double XSQ::sdBaseErr_n[4]		= {0,0,0,0};
+double XSQ::sdOffsetErr_n[4]	= {0,0,0,0};
+double XSQ::sdProb_n[4]			= {0,0,0,0};
 
-double XSQ::sd_xsq_y[4]			= {0,0,0,0};
-double XSQ::sd_peakheight_y[4]	= {0,0,0,0};
-double XSQ::sd_baseline_y[4]	= {0,0,0,0};
-double XSQ::sd_offset_y[4]		= {0,0,0,0};
-double XSQ::sd_peak_err_y[4]	= {0,0,0,0};
-double XSQ::sd_base_err_y[4]	= {0,0,0,0};
-double XSQ::sd_offset_err_y[4]	= {0,0,0,0};
-double XSQ::sd_prob_y[4]		= {0,0,0,0};
+double XSQ::sdXsq_y[4]			= {0,0,0,0};
+double XSQ::sdPeakheight_y[4]	= {0,0,0,0};
+double XSQ::sdBaseline_y[4]		= {0,0,0,0};
+double XSQ::sdOffset_y[4]		= {0,0,0,0};
+double XSQ::sdPeakErr_y[4]		= {0,0,0,0};
+double XSQ::sdBaseErr_y[4]		= {0,0,0,0};
+double XSQ::sdOffsetErr_y[4]	= {0,0,0,0};
+double XSQ::sdProb_y[4]			= {0,0,0,0};
 
-int XSQ::si_fit_status_n[4]		= {0,0,0,0};
-int XSQ::si_fit_status_y[4]		= {0,0,0,0};
+int XSQ::siFitStatus_n[4]		= {0,0,0,0};
+int XSQ::siFitStatus_y[4]		= {0,0,0,0};
 
-XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Digitizer> digitizer) : ci_nPar(4) {
-	failed = 0;
+XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Digitizer> digitizer) : ciNPar(4) {
+	iFailed = 0;
 	id = ch;
-	eventlength = len;
-	f_gain[n] = gain_in[n];
-	f_gain[y] = gain_in[y]; // n,y = enums
-	XSQ::si_howmany++;
-	char filename[64];
+	iEventlength = len;
+	fGain[n] = gain_in[n];
+	fGain[y] = gain_in[y]; // n,y = enums
+	XSQ::siHowMany++;
+//	char filename[64];
 	unique_ptr<TFile> std_file = nullptr;
-	TVectorT<double>* wave = nullptr;
+	TVectorT<double>* pWave = nullptr;
 	int i(0), p(0);
-	if ((id > 3) || (id < 0)) failed |= method_error;
+	if ((id > 3) || (id < 0)) iFailed |= method_error;
 	switch (digitizer->ID()) { // setting the length and stuff for the standard events
 		case dt5751 : 
 			if (digitizer->Special() == 0) {
-				i_std_length	= 225;
-				i_std_trig		= 32;
-				i_std_peak_x	= 35;
+				iStdLength	= 225;
+				iStdTrig	= 32;
+				iStdPeakX	= 35;
 			} else {
-				i_std_length	= 450;
-				i_std_trig		= 64;
-				i_std_peak_x	= 71;
+				iStdLength	= 450;
+				iStdTrig	= 64;
+				iStdPeakX	= 71;
 			} break;
 		case dt5751des :
-			i_std_length		= 899;
-			i_std_trig			= 128;
-			i_std_peak_x		= 142;
+			iStdLength		= 899;
+			iStdTrig		= 128;
+			iStdPeakX		= 142;
 			break;
 		case dt5730 :
-			i_std_length		= 225;
-			i_std_trig			= 32;
-			i_std_peak_x		= 35;
+			iStdLength		= 225;
+			iStdTrig		= 32;
+			iStdPeakX		= 35;
 			break;
 		case v1724 :
 		default :
-			failed |= dig_error;
+			iFailed |= dig_error;
 			return;
 	}
 	
-	sprintf(filename, "%s/config/standard_events.root", path);
-	try {std_file.reset(new TFile(filename, "READ"));}
-	catch (bad_alloc& ba) {failed |= alloc_error; return;}
-	if (!std_file->IsOpen()) {failed |= file_error; return;}
+//	sprintf(filename, "%s/config/standard_events.root", path);
+	try {std_file.reset(new TFile((path + "/config/standard_events.root").c_str(), "READ"));}
+	catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
+	if (!std_file->IsOpen()) {iFailed |= file_error; return;}
 	for (p = 0; p < P; p++) {
-		try {d_std_wave[p] = unique_ptr<double[]>(new double[i_std_length]);}
-		catch (bad_alloc& ba) {failed |= alloc_error; return;}
-		wave = (TVectorT<double>*)std_file->Get((p ? "gamma_wave" : "neutron_wave"));
-		if (wave == nullptr) {failed |= root_error; return;}
-		d_std_base[p] = 0;
-		d_std_peak[p] = 1000;
-		switch(i_std_length) {
+		try {dStdWave[p] = unique_ptr<double[]>(new double[iStdLength]);}
+		catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
+		pWave = (TVectorT<double>*)std_file->Get((p ? "gamma_wave" : "neutron_wave"));
+		if (pWave == nullptr) {iFailed |= root_error; return;}
+		dStdBase[p] = 0;
+		dStdPeak[p] = 1000;
+		switch(iStdLength) {
 			case 225 : // 500 MSa/s
-				for (i = 0; i < i_std_length; i++) {
-					d_std_wave[p][i] = ((*wave)[2*i] + (*wave)[2*i+1])/2.; // averages
-					if (i < digitizer->Baselength()) d_std_base[p] += d_std_wave[p][i];
-					d_std_peak[p] = min(d_std_peak[p], d_std_wave[p][i]);
+				for (i = 0; i < iStdLength; i++) {
+					dStdWave[p][i] = ((*pWave)[2*i] + (*pWave)[2*i+1])/2.; // averages
+					if (i < digitizer->Baselength()) dStdBase[p] += dStdWave[p][i];
+					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 899 : // 2 GSa/s
-				for (i = 0; i < i_std_length; i++) {
-					d_std_wave[p][i] = (i%2) ? ((*wave)[(i+1)/2] + (*wave)[(i-1)/2])/2. : (*wave)[i/2]; // interpolates
-					if (i < digitizer->Baselength()) d_std_base[p] += d_std_wave[p][i];
-					d_std_peak[p] = min(d_std_peak[p], d_std_wave[p][i]);
+				for (i = 0; i < iStdLength; i++) {
+					dStdWave[p][i] = (i%2) ? ((*pWave)[(i+1)/2] + (*pWave)[(i-1)/2])/2. : (*pWave)[i/2]; // interpolates
+					if (i < digitizer->Baselength()) dStdBase[p] += dStdWave[p][i];
+					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 450 : // 1 GSa/s
-				for (i = 0; i < i_std_length; i++) {
-					d_std_wave[p][i] = (*wave)[i];
-					if (i < digitizer->Baselength()) d_std_base[p] += d_std_wave[p][i];
-					d_std_peak[p] = min(d_std_peak[p], d_std_wave[p][i]);
+				for (i = 0; i < iStdLength; i++) {
+					dStdWave[p][i] = (*pWave)[i];
+					if (i < digitizer->Baselength()) dStdBase[p] += dStdWave[p][i];
+					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
-			default : failed |= method_error;
+			default : iFailed |= method_error;
 			return;
 		}
-		d_std_base[p] /= digitizer->Baselength();
-		d_std_norm[p] = 1./(d_std_base[p]-d_std_peak[p]);
+		dStdBase[p] /= digitizer->Baselength();
+		dStdNorm[p] = 1./(dStdBase[p]-dStdPeak[p]);
 	} // p
 	std_file->Close();
 	std_file = nullptr;
-	wave = nullptr;
+	pWave = nullptr;
 	try {
-		d_input_wave	= unique_ptr<double[]>(new double[eventlength]);
-		d_x				= unique_ptr<double[]>(new double[eventlength]);
+		dInputWave	= unique_ptr<double[]>(new double[iEventlength]);
+		dX				= unique_ptr<double[]>(new double[iEventlength]);
 		
-		d_pars			= unique_ptr<double[]>(new double[ci_nPar]);
+		dPars			= unique_ptr<double[]>(new double[ciNPar]);
 		
-		fit				= unique_ptr<TF1>(new TF1("fit", this, &XSQ::fitter, 0, min(eventlength, i_std_length), ci_nPar));
-	} catch (bad_alloc& ba) {failed |= alloc_error; return;}
-	if (fit->IsZombie()) {failed |= root_error; return;}
-	for (i = 0; i < eventlength; i++) d_x[i] = i;
+		fit				= unique_ptr<TF1>(new TF1("fit", this, &XSQ::fitter, 0, min(iEventlength, iStdLength), ciNPar));
+	} catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
+	if (fit->IsZombie()) {iFailed |= root_error; return;}
+	for (i = 0; i < iEventlength; i++) dX[i] = i;
 	
 	fit->SetParNames("Peakheight_scale","Baseline_offset","Trigger_offset","Particle");
 
@@ -127,119 +127,119 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 
 XSQ::~XSQ() {
 	if (g_verbose) cout << " XSQ " << id << " d'tor ";
-	XSQ::si_howmany--;
+	XSQ::siHowMany--;
 	for (auto p = 0; p < P; p++) {
-		d_std_wave[p].reset();
+		dStdWave[p].reset();
 	}
-	d_pars.reset();
+	dPars.reset();
 	fit.reset();
 	graph.reset();
-	d_input_wave.reset();
-	d_x.reset();
+	dInputWave.reset();
+	dX.reset();
 }
 
 void XSQ::root_init(TTree* tree_in) {
-	if (!XSQ::sb_initialized) {
+	if (!XSQ::sbInitialized) {
 		XSQ::tree = unique_ptr<TTree>(tree_in);
 		
-		XSQ::tree->Branch("Chisquare_n",	XSQ::sd_xsq_n,			"xsqn[4]/D");
-		XSQ::tree->Branch("Peakscale_n",	XSQ::sd_peakheight_n,	"pkscalen[4]/D");
-		XSQ::tree->Branch("Base_shift_n",	XSQ::sd_baseline_n,		"baseshiftn[4]/D");
-		XSQ::tree->Branch("Offset_n",		XSQ::sd_offset_n,		"offsetn[4]/D");
-		XSQ::tree->Branch("Prob_n",			XSQ::sd_prob_n,			"probn[4]/D");
+		XSQ::tree->Branch("Chisquare_n",	XSQ::sdXsq_n,			"xsqn[4]/D");
+		XSQ::tree->Branch("Peakscale_n",	XSQ::sdPeakheight_n,	"pkscalen[4]/D");
+		XSQ::tree->Branch("Base_shift_n",	XSQ::sdBaseline_n,		"baseshiftn[4]/D");
+		XSQ::tree->Branch("Offset_n",		XSQ::sdOffset_n,		"offsetn[4]/D");
+		XSQ::tree->Branch("Prob_n",			XSQ::sdProb_n,			"probn[4]/D");
 		
-		XSQ::tree->Branch("Chisquare_y",	XSQ::sd_xsq_y,			"xsqy[4]/D");
-		XSQ::tree->Branch("Peakscale_y",	XSQ::sd_peakheight_y,	"pkscaley[4]/D");
-		XSQ::tree->Branch("Base_shift_y",	XSQ::sd_baseline_y,		"baseshifty[4]/D");
-		XSQ::tree->Branch("Offset_y",		XSQ::sd_offset_y,		"offsety[4]/D");
-		XSQ::tree->Branch("Prob_y",			XSQ::sd_prob_y,			"proby[4]/D");
+		XSQ::tree->Branch("Chisquare_y",	XSQ::sdXsq_y,			"xsqy[4]/D");
+		XSQ::tree->Branch("Peakscale_y",	XSQ::sdPeakheight_y,	"pkscaley[4]/D");
+		XSQ::tree->Branch("Base_shift_y",	XSQ::sdBaseline_y,		"baseshifty[4]/D");
+		XSQ::tree->Branch("Offset_y",		XSQ::sdOffset_y,		"offsety[4]/D");
+		XSQ::tree->Branch("Prob_y",			XSQ::sdProb_y,			"proby[4]/D");
 		
-		XSQ::tree->Branch("Peak_err_n",		XSQ::sd_peak_err_n,		"pkerrn[4]/D");
-		XSQ::tree->Branch("Base_err_n",		XSQ::sd_base_err_n,		"berrn[4]/D");
-		XSQ::tree->Branch("Offset_err_n",	XSQ::sd_offset_err_n,	"offerrn[4]/D");
-		XSQ::tree->Branch("Peak_err_y",		XSQ::sd_peak_err_y,		"pkerry[4]/D");
-		XSQ::tree->Branch("Base_err_y",		XSQ::sd_base_err_y,		"berry[4]/D");
-		XSQ::tree->Branch("Offset_err_y",	XSQ::sd_offset_err_y,	"offerry[4]/D");
+		XSQ::tree->Branch("Peak_err_n",		XSQ::sdPeakErr_n,		"pkerrn[4]/D");
+		XSQ::tree->Branch("Base_err_n",		XSQ::sdBaseErr_n,		"berrn[4]/D");
+		XSQ::tree->Branch("Offset_err_n",	XSQ::sdOffsetErr_n,		"offerrn[4]/D");
+		XSQ::tree->Branch("Peak_err_y",		XSQ::sdPeakErr_y,		"pkerry[4]/D");
+		XSQ::tree->Branch("Base_err_y",		XSQ::sdBaseErr_y,		"berry[4]/D");
+		XSQ::tree->Branch("Offset_err_y",	XSQ::sdOffsetErr_y,		"offerry[4]/D");
 		
-		XSQ::tree->Branch("Fit_status_n",	XSQ::si_fit_status_n,	"fitstatusn[4]/i");
-		XSQ::tree->Branch("Fit_status_y",	XSQ::si_fit_status_y,	"fitstatusy[4]/i");
+		XSQ::tree->Branch("Fit_status_n",	XSQ::siFitStatus_n,		"fitstatusn[4]/i");
+		XSQ::tree->Branch("Fit_status_y",	XSQ::siFitStatus_y,		"fitstatusy[4]/i");
 		
-		XSQ::sb_initialized = true;
+		XSQ::sbInitialized = true;
 	}
 }
 
 double XSQ::fitter(double* x, double* par) {
-	int i_sample = (x[0] - par[2]), p = par[3];
-	double d_val = d_std_base[p] + par[1];
-	if ((i_sample > -1) && (i_sample < i_std_length)) d_val += par[0]*(d_std_wave[p][i_sample]-d_std_base[p]);
-	if (d_val < 0) d_val = 0; // saturated events
-	return d_val;
+	int iSample = (x[0] - par[2]), p = par[3];
+	double dVal = dStdBase[p] + par[1];
+	if ((iSample > -1) && (iSample < iStdLength)) dVal += par[0]*(dStdWave[p][iSample]-dStdBase[p]);
+	if (dVal < 0) dVal = 0; // saturated events
+	return dVal;
 }
 
 void XSQ::evaluate(const shared_ptr<Event> event) {
-	for (auto i = 0; i < eventlength; i++) d_input_wave[i] = event->Trace(i);
-	try {graph.reset(new TGraph(eventlength, d_x.get(), d_input_wave.get()));}
+	for (auto i = 0; i < iEventlength; i++) dInputWave[i] = event->Trace(i);
+	try {graph.reset(new TGraph(iEventlength, dX.get(), dInputWave.get()));}
 	catch (bad_alloc& ba) { // error codes don't work here
-		XSQ::sd_xsq_n[id]			= -1;
-		XSQ::sd_peakheight_n[id]	= -1;
-		XSQ::sd_baseline_n[id]		= -1;
-		XSQ::sd_offset_n[id]		= -1;
-		XSQ::sd_prob_n[id]			= -1;
-		XSQ::sd_peak_err_n[id]		= -1;
-		XSQ::sd_base_err_n[id]		= -1;
-		XSQ::sd_offset_err_n[id]	= -1;
+		XSQ::sdXsq_n[id]		= -1;
+		XSQ::sdPeakheight_n[id]	= -1;
+		XSQ::sdBaseline_n[id]	= -1;
+		XSQ::sdOffset_n[id]		= -1;
+		XSQ::sdProb_n[id]		= -1;
+		XSQ::sdPeakErr_n[id]	= -1;
+		XSQ::sdBaseErr_n[id]	= -1;
+		XSQ::sdOffsetErr_n[id]	= -1;
 		
-		XSQ::sd_xsq_y[id]			= -1;
-		XSQ::sd_peakheight_y[id]	= -1;
-		XSQ::sd_baseline_y[id]		= -1;
-		XSQ::sd_offset_y[id]		= -1;
-		XSQ::sd_prob_y[id]			= -1;
-		XSQ::sd_peak_err_y[id]		= -1;
-		XSQ::sd_base_err_y[id]		= -1;
-		XSQ::sd_offset_err_y[id]	= -1;
+		XSQ::sdXsq_y[id]		= -1;
+		XSQ::sdPeakheight_y[id]	= -1;
+		XSQ::sdBaseline_y[id]	= -1;
+		XSQ::sdOffset_y[id]		= -1;
+		XSQ::sdProb_y[id]		= -1;
+		XSQ::sdPeakErr_y[id]	= -1;
+		XSQ::sdBaseErr_y[id]	= -1;
+		XSQ::sdOffsetErr_y[id]	= -1;
 		
-		XSQ::si_fit_status_n[id]	= -1;
-		XSQ::si_fit_status_y[id]	= -1;
+		XSQ::siFitStatus_n[id]	= -1;
+		XSQ::siFitStatus_y[id]	= -1;
 		
 		return;
 	}
 	
-	d_pars[0] = (event->Baseline() - event->Peak_y())*d_std_norm[n];
-	d_pars[1] = event->Baseline() - d_std_base[n];
-	d_pars[2] = event->Trigger() - i_std_trig;
-	d_pars[3] = n;
-	fit->SetParameters(d_pars.get());
+	dPars[0] = (event->Baseline() - event->Peak_y())*dStdNorm[n];
+	dPars[1] = event->Baseline() - dStdBase[n];
+	dPars[2] = event->Trigger() - iStdTrig;
+	dPars[3] = n;
+	fit->SetParameters(dPars.get());
 	fit->FixParameter(3, n);
 	
-	XSQ::si_fit_status_n[id]	= graph->Fit(fit.get(), "Q N R"); // quiet, no-plot, specified range
+	XSQ::siFitStatus_n[id]	= graph->Fit(fit.get(), "Q N R"); // quiet, no-plot, specified range
 
-	XSQ::sd_xsq_n[id]			= fit->GetChisquare();
-	XSQ::sd_peakheight_n[id]	= fit->GetParameter(0)*f_gain[n]; // detectors have different gains
-	XSQ::sd_baseline_n[id]		= fit->GetParameter(1);
-	XSQ::sd_offset_n[id]		= fit->GetParameter(2);
-	XSQ::sd_prob_n[id]			= fit->GetProb();
+	XSQ::sdXsq_n[id]		= fit->GetChisquare();
+	XSQ::sdPeakheight_n[id]	= fit->GetParameter(0)*fGain[n]; // detectors have different gains
+	XSQ::sdBaseline_n[id]	= fit->GetParameter(1);
+	XSQ::sdOffset_n[id]		= fit->GetParameter(2);
+	XSQ::sdProb_n[id]		= fit->GetProb();
 
-	XSQ::sd_peak_err_n[id]		= fit->GetParError(0)*f_gain[n];
-	XSQ::sd_base_err_n[id]		= fit->GetParError(1);
-	XSQ::sd_offset_err_n[id]	= fit->GetParError(2);
+	XSQ::sdPeakErr_n[id]	= fit->GetParError(0)*fGain[n];
+	XSQ::sdBaseErr_n[id]	= fit->GetParError(1);
+	XSQ::sdOffsetErr_n[id]	= fit->GetParError(2);
 
 	
-	d_pars[0] = (event->Baseline() - event->Peak_y())*d_std_norm[y];
-	d_pars[1] = event->Baseline() - d_std_base[y];
-	d_pars[2] = event->Trigger() - i_std_trig;
-	d_pars[3] = y;
-	fit->SetParameters(d_pars.get());
+	dPars[0] = (event->Baseline() - event->Peak_y())*dStdNorm[y];
+	dPars[1] = event->Baseline() - dStdBase[y];
+	dPars[2] = event->Trigger() - iStdTrig;
+	dPars[3] = y;
+	fit->SetParameters(dPars.get());
 	fit->FixParameter(3, y);
 	
-	XSQ::si_fit_status_y[id]	= graph->Fit(fit.get(), "Q N R");
+	XSQ::siFitStatus_y[id]	= graph->Fit(fit.get(), "Q N R");
 
-	XSQ::sd_xsq_y[id]			= fit->GetChisquare();
-	XSQ::sd_peakheight_y[id]	= fit->GetParameter(0)*f_gain[y];
-	XSQ::sd_baseline_y[id]		= fit->GetParameter(1);
-	XSQ::sd_offset_y[id]		= fit->GetParameter(2);
-	XSQ::sd_prob_y[id]			= fit->GetProb();
+	XSQ::sdXsq_y[id]		= fit->GetChisquare();
+	XSQ::sdPeakheight_y[id]	= fit->GetParameter(0)*fGain[y];
+	XSQ::sdBaseline_y[id]	= fit->GetParameter(1);
+	XSQ::sdOffset_y[id]		= fit->GetParameter(2);
+	XSQ::sdProb_y[id]		= fit->GetProb();
 
-	XSQ::sd_peak_err_y[id]		= fit->GetParError(0)*f_gain[y];
-	XSQ::sd_base_err_y[id]		= fit->GetParError(1);
-	XSQ::sd_offset_err_y[id]	= fit->GetParError(2);
+	XSQ::sdPeakErr_y[id]	= fit->GetParError(0)*fGain[y];
+	XSQ::sdBaseErr_y[id]	= fit->GetParError(1);
+	XSQ::sdOffsetErr_y[id]	= fit->GetParError(2);
 }

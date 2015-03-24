@@ -7,41 +7,30 @@
 
 class Digitizer {
 	private:
-		int 		failed;
-		char		name[12];
-		double		samplerate;
-		short		resolution;
-		double		V_pp;
-		double		scaleT;
-		double		scaleV;
-		int			baselength;
-		int			special;
+		int 		iFailed;
+		char		cName[12];
+		double		dSamplerate;
+		short		sResolution;
+		double		dVpp;
+		double		dScaleT;
+		double		dScaleV;
+		int			iBaselength;
+		int			iSpecial;
 		dig_id_t	id;
 		
 	public:
 		Digitizer(char in[], int special_in);
 		~Digitizer();
-		int& Failed()			{return failed;}
-		char* Name()			{return name;}
-		double& ScaleT()		{return scaleT;}
-		double& ScaleV()		{return scaleV;}
-		double& Samplerate()	{return samplerate;}
-		short& Resolution()		{return resolution;}
-		double& Vpp()			{return V_pp;}
-		int& Baselength()		{return baselength;}
-		int& Special()			{return special;}
+		int& Failed()			{return iFailed;}
+		char* Name()			{return cName;}
+		double& ScaleT()		{return dScaleT;}
+		double& ScaleV()		{return dScaleV;}
+		double& Samplerate()	{return dSamplerate;}
+		short& Resolution()		{return sResolution;}
+		double& Vpp()			{return dVpp;}
+		int& Baselength()		{return iBaselength;}
+		int& Special()			{return iSpecial;}
 		dig_id_t& ID()			{return id;}
-		
-		const int& Failed() const			{return failed;} // digitizer always passed as const
-		const char* Name() const			{return name;}
-		const double& ScaleT() const		{return scaleT;}
-		const double& ScaleV() const		{return scaleV;}
-		const double& Samplerate() const	{return samplerate;}
-		const short& Resolution() const		{return resolution;}
-		const double& Vpp() const			{return V_pp;}
-		const int& Baselength() const		{return baselength;}
-		const int& Special() const			{return special;}
-		const dig_id_t& ID() const			{return id;}
 };
 
 #endif // DIGITIZER_H

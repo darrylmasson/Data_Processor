@@ -7,47 +7,47 @@
 
 class Event {
 	protected: // these are inheritable
-		int failed;
-		int threshold; // trigger threshold
-		int eventlength;
-		int baselength;
-		int special;
-		static int length; // number of samples in the waveform
-		static int howmany;
+		int iFailed;
+		int iThreshold; // trigger threshold
+		int iEventlength;
+		int iBaselength;
+		int iSpecial;
+		static int siLength; // number of samples in the waveform
+		static int siHowMany;
 		
-		unsigned short us_peak_y; // everything measured in ADC counts
-		unsigned short us_b_pk_p; // peak in baseline samples
-		unsigned short us_b_pk_n;
-		unsigned short us_peak_pos; // positive peak
-		unsigned short* us_trace;
-		unsigned short us_trigger; // triggering sample
-		unsigned short us_peak_x;
-		double d_zero; // ADC bin for ground
-		double d_baseline;
-		double d_baseSigma;
-		double d_basePost;
-		double d_basePostSigma;
+		unsigned short usPeakY; // everything measured in ADC counts
+		unsigned short usBasePkP; // peak in baseline samples
+		unsigned short usBasePkN;
+		unsigned short usPeakPos; // positive peak
+		unsigned short* usTrace;
+		unsigned short usTrigger; // triggering sample
+		unsigned short usPeakX;
+		double dZero; // ADC bin for ground
+		double dBaseline;
+		double dBaseSigma;
+		double dBasePost;
+		double dBasePostSigma;
 
 	public:
-		Event() {++Event::howmany;} // for Event_ave
+		Event() {++Event::siHowMany;} // for Event_ave
 		Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in);
 		~Event();
 		virtual void Set(unsigned short* in);
-		int Failed() {return failed;}
-		static const int& Length() {return Event::length;}
+		int Failed() {return iFailed;}
+		static const int& Length() {return Event::siLength;}
 		std::shared_ptr<Digitizer> digitizer;
-		virtual unsigned short& Trigger()	{return us_trigger;}
-		virtual double Trace(int i)			{return us_trace[i];}
-		virtual unsigned short& Peak_x()	{return us_peak_x;}
-		virtual double Peak_y()				{return us_peak_y;}
-		virtual double B_pk_p()				{return us_b_pk_p;}
-		virtual double B_pk_n()				{return us_b_pk_n;}
-		virtual double Peak_pos()			{return us_peak_pos;}
-		virtual double& Zero()				{return d_zero;}
-		virtual double& Baseline()			{return d_baseline;}
-		virtual double& BaseSigma()			{return d_baseSigma;}
-		virtual double& BasePost()			{return d_basePost;}
-		virtual double& BasePostSigma()		{return d_basePostSigma;}
+		virtual unsigned short& Trigger()	{return usTrigger;}
+		virtual double Trace(int i)			{return usTrace[i];}
+		virtual unsigned short& Peak_x()	{return usPeakX;}
+		virtual double Peak_y()				{return usPeakY;}
+		virtual double B_pk_p()				{return usBasePkP;}
+		virtual double B_pk_n()				{return usBasePkN;}
+		virtual double Peak_pos()			{return usPeakPos;}
+		virtual double& Zero()				{return dZero;}
+		virtual double& Baseline()			{return dBaseline;}
+		virtual double& BaseSigma()			{return dBaseSigma;}
+		virtual double& BasePost()			{return dBasePost;}
+		virtual double& BasePostSigma()		{return dBasePostSigma;}
 };
 
 #endif // EVENT_H

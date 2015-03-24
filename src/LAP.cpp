@@ -2,57 +2,57 @@
 #include <cmath>
 #include <iostream>
 
-float LAP::sf_version = 1.2;
-float LAP::sf_s = 1.5;
-bool LAP::sb_initialized = false;
+float LAP::sfVersion = 1.2;
+float LAP::sfS = 1.5;
+bool LAP::sbInitialized = false;
 unique_ptr<TTree> LAP::tree = nullptr;
-int LAP::si_howmany = 0;
+int LAP::siHowMany = 0;
 
-double LAP::sd_laplace[8] = {0,0,0,0,0,0,0,0};
-double LAP::sd_longint[8] = {0,0,0,0,0,0,0,0};
+double LAP::sdLaplace[8] = {0,0,0,0,0,0,0,0};
+double LAP::sdLongInt[8] = {0,0,0,0,0,0,0,0};
 
 LAP::LAP(int ch, int len, shared_ptr<Digitizer> digitizer) {
-	failed = 0;
+	iFailed = 0;
 	id = ch;
-	if ((id >= MAX_CH) || (id < 0)) failed |= method_error;
-	eventlength = len;
-	try {d_EXP = unique_ptr<double[]>(new double[eventlength]);}
+	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
+	iEventlength = len;
+	try {dExp = unique_ptr<double[]>(new double[iEventlength]);}
 	catch (bad_alloc& ba) {
-		failed |= alloc_error;
+		iFailed |= alloc_error;
 		return;
 	}
-	d_scaleV = digitizer->ScaleV();
-	d_scaleT = digitizer->ScaleT();
-	for (auto i = 0; i < eventlength; i++) d_EXP[i] = exp(-LAP::sf_s*i/d_scaleT); // not sure if the time scale is correct here.
-	LAP::si_howmany++;
+	dScaleV = digitizer->ScaleV();
+	dScaleT = digitizer->ScaleT();
+	for (auto i = 0; i < iEventlength; i++) dExp[i] = exp(-LAP::sfS*i/dScaleT); // not sure if the time scale is correct here.
+	LAP::siHowMany++;
 }
 
 LAP::~LAP() {
 	if (g_verbose) cout << " LAP " << id << " d'tor ";
-	d_EXP.reset();
-	LAP::si_howmany--;
+	dExp.reset();
+	LAP::siHowMany--;
 }
 
 void LAP::root_init(TTree* tree_in) {
-	if (!LAP::sb_initialized) {
+	if (!LAP::sbInitialized) {
 		LAP::tree = unique_ptr<TTree>(tree_in);
 		
-		LAP::tree->Branch("Laplace", LAP::sd_laplace, "lap[8]/D");
-		LAP::tree->Branch("LongInt", LAP::sd_longint, "longint[8]/D");
+		LAP::tree->Branch("Laplace", LAP::sdLaplace, "lap[8]/D");
+		LAP::tree->Branch("LongInt", LAP::sdLongInt, "longint[8]/D");
 		
-		LAP::sb_initialized = true;
+		LAP::sbInitialized = true;
 	}
 }
 
 void LAP::evaluate(const shared_ptr<Event> event) {
 	auto peak_x = event->Peak_x();
-	LAP::sd_laplace[id] = 0;
-	LAP::sd_longint[id] = 0;
-	for (auto t = 0; t < eventlength; t++) {
-		sd_longint[id] += event->Trace(t);
-		if (t >= peak_x) LAP::sd_laplace[id] += d_EXP[t - peak_x]*event->Trace(t); // trailing edge of the pulse
+	LAP::sdLaplace[id] = 0;
+	LAP::sdLongInt[id] = 0;
+	for (auto t = 0; t < iEventlength; t++) {
+		sdLongInt[id] += event->Trace(t);
+		if (t >= peak_x) LAP::sdLaplace[id] += dExp[t - peak_x]*event->Trace(t); // trailing edge of the pulse
 	}
-	LAP::sd_longint[id] = 2*LAP::sd_longint[id] - (event->Trace(0) + event->Trace(eventlength-1)); // trapezoid rule
-	LAP::sd_longint[id] = (event->Baseline()*eventlength - 0.5*LAP::sd_longint[id])*d_scaleV*d_scaleT;
-	LAP::sd_laplace[id] *= d_scaleV;
+	LAP::sdLongInt[id] = 2*LAP::sdLongInt[id] - (event->Trace(0) + event->Trace(iEventlength-1)); // trapezoid rule
+	LAP::sdLongInt[id] = (event->Baseline()*iEventlength - 0.5*LAP::sdLongInt[id])*dScaleV*dScaleT;
+	LAP::sdLaplace[id] *= dScaleV;
 }

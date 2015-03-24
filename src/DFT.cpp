@@ -4,12 +4,12 @@
 #include <iostream>
 
 float DFT::sf_version = 1.41;
-bool DFT::sb_initialized = false;
+bool DFT::sbInitialized = false;
 unique_ptr<TTree> DFT::tree = nullptr;
-int DFT::si_howmany = 0;
+int DFT::siHowMany = 0;
 const long double pi = 3.14159265358979l;
 
-double DFT::sd_magnitude[8][4]	= { {0,0,0,0}, // 8 channels
+double DFT::sdMagnitude[8][4]	= { {0,0,0,0}, // 8 channels
 									{0,0,0,0}, // 4 orders
 									{0,0,0,0},
 									{0,0,0,0},
@@ -17,7 +17,7 @@ double DFT::sd_magnitude[8][4]	= { {0,0,0,0}, // 8 channels
 									{0,0,0,0},
 									{0,0,0,0},
 									{0,0,0,0}};
-double DFT::sd_phase[8][4]		= {	{0,0,0,0},
+double DFT::sdPhase[8][4]		= {	{0,0,0,0},
 									{0,0,0,0},
 									{0,0,0,0},
 									{0,0,0,0},
@@ -26,64 +26,64 @@ double DFT::sd_phase[8][4]		= {	{0,0,0,0},
 									{0,0,0,0},
 									{0,0,0,0}};
 
-DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : ci_order(3) {
-	eventlength = len;
-	failed = 0;
+DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : ciOrder(3) {
+	iEventlength = len;
+	iFailed = 0;
 	id = ch;
-	if ((id >= MAX_CH) || (id < 0)) failed |= method_error;
+	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
 	const int used_orders[] = {3,4,5}; // 4 orders incl 0th
 	double omega;
 	try {
-		d_COS = unique_ptr<double[]>(new double[ci_order*eventlength]); // simpler than two-dimensional arrays
-		d_SIN = unique_ptr<double[]>(new double[ci_order*eventlength]);
-	} catch (bad_alloc& ba) {failed |= alloc_error; return;}
-	for (auto n = 0; n < ci_order; n++) {
-		omega = used_orders[n]*pi/(eventlength*digitizer->ScaleT()); // GHz
-		for (auto t = 0; t < eventlength; t++) {
-			d_COS[n*eventlength+t] = cos(omega*t);
-			d_SIN[n*eventlength+t] = sin(omega*t); // simpler than using one table and sin(x) = cos(x-pi/2)
+		dCos = unique_ptr<double[]>(new double[ciOrder*iEventlength]); // simpler than two-dimensional arrays
+		dSin = unique_ptr<double[]>(new double[ciOrder*iEventlength]);
+	} catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
+	for (auto n = 0; n < ciOrder; n++) {
+		omega = used_orders[n]*pi/(iEventlength*digitizer->ScaleT()); // GHz
+		for (auto t = 0; t < iEventlength; t++) {
+			dCos[n*iEventlength+t] = cos(omega*t);
+			dSin[n*iEventlength+t] = sin(omega*t); // simpler than using one table and sin(x) = cos(x-pi/2)
 	}	}
-	DFT::si_howmany++;
-	d_scalefactor = 2./eventlength; // 2/period
+	DFT::siHowMany++;
+	dScalefactor = 2./iEventlength; // 2/period
 }
 
 DFT::~DFT() {
 	if (g_verbose) cout << " DFT " << id << " d'tor ";
-	DFT::si_howmany--;
-	d_COS.reset();
-	d_SIN.reset();
+	DFT::siHowMany--;
+	dCos.reset();
+	dSin.reset();
 }
 
 void DFT::root_init(TTree* tree_in) {
-	if (!DFT::sb_initialized) {
+	if (!DFT::sbInitialized) {
 		DFT::tree = unique_ptr<TTree>(tree_in);
 		
-		DFT::tree->Branch("Amplitude",	DFT::sd_magnitude,	"mag[8][4]/D");
-		DFT::tree->Branch("Phase",		DFT::sd_phase,		"phase[8][4]/D"); // 4 orders
+		DFT::tree->Branch("Amplitude",	DFT::sdMagnitude,	"mag[8][4]/D");
+		DFT::tree->Branch("Phase",		DFT::sdPhase,		"phase[8][4]/D"); // 4 orders
 		
-		DFT::sb_initialized = true;
+		DFT::sbInitialized = true;
 	}
 }
 
 void DFT::evaluate(const shared_ptr<Event> event) {
-	auto d_re(0.), d_im(0.);
+	auto dReal(0.), dImag(0.);
 	auto n(0), t(0), nt(0);
 
-	DFT::sd_magnitude[id][0] = 0;
-	DFT::sd_phase[id][0] = 0;
+	DFT::sdMagnitude[id][0] = 0;
+	DFT::sdPhase[id][0] = 0;
 
-	for (t = 0; t < eventlength; t++) DFT::sd_magnitude[id][0] += event->Trace(t);
-	DFT::sd_magnitude[id][0] *= d_scalefactor/2;
-	for (n = 0; n < ci_order; n++) {
-		d_re = 0;
-		d_im = 0;
-		for (t = 0; t < eventlength; t++) { // fourier series are pretty straightforward
-			nt = n*eventlength + t;
-			d_re += event->Trace(t)*d_COS[nt];
-			d_im += event->Trace(t)*d_SIN[nt];
+	for (t = 0; t < iEventlength; t++) DFT::sdMagnitude[id][0] += event->Trace(t);
+	DFT::sdMagnitude[id][0] *= dScalefactor/2;
+	for (n = 0; n < ciOrder; n++) {
+		dReal = 0;
+		dImag = 0;
+		for (t = 0; t < iEventlength; t++) { // fourier series are pretty straightforward
+			nt = n*iEventlength + t;
+			dReal += event->Trace(t)*dCos[nt];
+			dImag += event->Trace(t)*dSin[nt];
 		}
-		DFT::sd_magnitude[id][n+1] = d_scalefactor*sqrt(d_re*d_re + d_im*d_im);
-		DFT::sd_phase[id][n+1] = atan2(d_im,d_re);
+		DFT::sdMagnitude[id][n+1] = dScalefactor*sqrt(dReal*dReal + dImag*dImag);
+		DFT::sdPhase[id][n+1] = atan2(dImag,dReal);
 	}
 }
 

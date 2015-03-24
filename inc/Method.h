@@ -15,17 +15,17 @@
 
 class Method {
 	protected:
-		int failed;
+		int iFailed;
 		int id; // which entry in the array to use
-		int eventlength;
-		double d_scaleT; // scale factors from Digitizer class
-		double d_scaleV;
+		int iEventlength;
+		double dScaleT; // scale factors from Digitizer class
+		double dScaleV;
 	
 	public:
 		Method() {};
 		virtual ~Method() {};
 		virtual void evaluate(const shared_ptr<Event>) = 0;
-		int Failed() {return failed;}
+		int Failed() {return iFailed;}
 		int GetID() {return id;}
 };
 

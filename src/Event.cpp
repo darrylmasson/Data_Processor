@@ -3,67 +3,67 @@
 #include <algorithm>
 #include <iostream>
 
-int Event::length = 0;
-int Event::howmany = 0;
+int Event::siLength = 0;
+int Event::siHowMany = 0;
 
 Event::Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in) {
-	Event::howmany++;
-	if (Event::howmany == 1) Event::length = len;
+	Event::siHowMany++;
+	if (Event::siHowMany == 1) Event::siLength = len;
 	digitizer = dig;
-	special = digitizer->Special();
-	baselength = digitizer->Baselength();
-	us_trace = nullptr;
-	threshold = threshold_in;
+	iSpecial = digitizer->Special();
+	iBaselength = digitizer->Baselength();
+	usTrace = nullptr;
+	iThreshold = threshold_in;
 	d_zero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
-	failed = 0;
-	if ((special == 0) && (Event::howmany == 1)) Event::length >>= 1;
-	eventlength = Event::length;
+	iFailed = 0;
+	if ((iSpecial == 0) && (Event::siHowMany == 1)) Event::siLength >>= 1;
+	iEventlength = Event::siLength;
 }
 
 Event::~Event() {
-	if (g_verbose) std::cout << " event " << --Event::howmany << " d'tor "; // no ID tag on Event classes
-	us_trace = nullptr;
+	if (g_verbose) std::cout << " event " << --Event::siHowMany << " d'tor "; // no ID tag on Event classes
+	usTrace = nullptr;
 	digitizer.reset();
 }
 
 void Event::Set(unsigned short* in) {
-	us_trace = in;
+	usTrace = in;
 	int i(0);
-	if (special > 0) for (i = 0; i < eventlength; i++) us_trace[i] >>= special; // special resolution
-	if (special == 0) for (i = 0; i < eventlength; i++) us_trace[i] = (us_trace[2*i] + us_trace[2*i+1]) >> 1; // special samplerate
-	d_baseline = 0;
-	d_baseSigma = 0;
-	us_peak_y = -1;
-	us_peak_x = 0;
-	us_b_pk_p = 0;
-	us_b_pk_n = -1;
-	us_peak_pos = 0;
-	us_trigger = 0;
-	d_basePost = 0;
-	d_basePostSigma = 0;
-	double d_temp(0);
-	for (i = 0; i < eventlength; i++) {
-		us_peak_pos = std::max(us_peak_pos, us_trace[i]);
-		if (i < baselength) {
-			d_baseline += us_trace[i]; // baseline at start of event
-			us_b_pk_p = std::max(us_trace[i],us_b_pk_p);
-			us_b_pk_n = std::min(us_trace[i],us_b_pk_n);
-			d_basePost += us_trace[eventlength-baselength+i]; // baseline at end of event
+	if (iSpecial > 0) for (i = 0; i < iEventlength; i++) usTrace[i] >>= iSpecial; // special resolution
+	if (iSpecial == 0) for (i = 0; i < iEventlength; i++) usTrace[i] = (usTrace[2*i] + usTrace[2*i+1]) >> 1; // special samplerate
+	dBaseline = 0;
+	dBaseSigma = 0;
+	usPeakY = -1;
+	usPeakX = 0;
+	usBasePkP = 0;
+	usBasePkN = -1;
+	usPeakPos = 0;
+	usTrigger = 0;
+	dBasePost = 0;
+	dBasePostSigma = 0;
+	double dTemp(0);
+	for (i = 0; i < iEventlength; i++) {
+		usPeakPos = std::max(usPeakPos, usTrace[i]);
+		if (i < iBaselength) {
+			dBaseline += usTrace[i]; // baseline at start of event
+			usBasePkP = std::max(usTrace[i],usBasePkP);
+			usBasePkN = std::min(usTrace[i],usBasePkN);
+			dBasePost += usTrace[iEventlength-iBaselength+i]; // baseline at end of event
 		}
-		if (us_peak_y > us_trace[i]) { // finding primary peak
-			us_peak_y = us_trace[i];
-			us_peak_x = i;
+		if (usPeakY > usTrace[i]) { // finding primary peak
+			usPeakY = usTrace[i];
+			usPeakX = i;
 		}
-		if ((us_trigger == 0) && (us_trace[i] < threshold)) us_trigger = i; // finding trigger
+		if ((usTrigger == 0) && (usTrace[i] < iThreshold)) usTrigger = i; // finding trigger
 	}
-	d_baseline /= baselength;
-	d_basePost /= baselength;
-	for (i = 0; i < baselength; i++) { // RMS devations of baselines
-		d_temp = us_trace[i] - d_baseline;
-		d_baseSigma += d_temp*d_temp;
-		d_temp = us_trace[eventlength-baselength+i] - d_basePost;
-		d_basePostSigma += d_temp*d_temp;
+	dBaseline /= iBaselength;
+	dBasePost /= iBaselength;
+	for (i = 0; i < iBaselength; i++) { // RMS devations of baselines
+		dTemp = usTrace[i] - dBaseline;
+		dBaseSigma += dTemp*dTemp;
+		dTemp = usTrace[iEventlength-iBaselength+i] - dBasePost;
+		dBasePostSigma += dTemp*dTemp;
 	}
-	d_baseSigma = sqrt(d_baseSigma/baselength);
-	d_basePostSigma = sqrt(d_basePostSigma/baselength);
+	dBaseSigma = sqrt(dBaseSigma/iBaselength);
+	dBasePostSigma = sqrt(dBasePostSigma/iBaselength);
 }
