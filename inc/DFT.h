@@ -28,7 +28,7 @@ class DFT : public Method {
 		static void root_init(TTree* tree_in);
 		static TTree* root_deinit() {return DFT::tree.release();}
 		static int HowMany() {return DFT::siHowMany;}
-		static float sf_version;
+		static float sfVersion;
 };
 
 #endif // DFT_H

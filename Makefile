@@ -1,9 +1,10 @@
 CC = g++
 ROOT = $(shell root-config --cflags --libs)
 OBJDIR = obj
+SRCDIR = src
 CFLAGS = -g -Wall -Iinc -O
 OUTDIR = /data/NeutronGenerator
-INSTALL = -o $(OUTDIR)/NG_dp
+INSTALL = -o $(OUTDIR)/NGrawdp
 TEST = -o test_exe
 SRCS = Digitizer.cpp \
 			 Event.cpp \
@@ -18,8 +19,8 @@ SRCS = Digitizer.cpp \
 OBJS = $(SRCS:.cpp=.o)
 VPATH = src
 
-test : $(L)$(OBJS)
-	$(CC) $(CFLAGS) $(TEST) $(addprefix $(OBJDIR)/,$(OBJS)) $(ROOT)
+test :
+	$(CC) $(CFLAGS) $(TEST) $(addprefix $(SRCDIR)/,$(SRCS)) $(ROOT)
 
 install : $(L)$(OBJS)
 	$(CC) $(CFLAGS) $(INSTALL) $(addprefix $(OBJDIR)/,$(OBJS)) $(ROOT)
@@ -30,4 +31,4 @@ $(L)%.o : %.cpp
 .PHONY: clean
 
 clean:
-	rm -f $(OBJDIR)/*.o
+	rm -f $(OBJDIR)/*.o test_exe ../NGrawDP

@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 	string sConfigFile = "\0", sFileset = "\0", sSource = "\0";
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
-
+	unique_ptr<Processor> processor = nullptr;
 	if (argc < 3) {
 		cout << "Arguments: -f file [-s source -c config -x special -a moving_average -v]\n";
 		return 0;
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 		case 4: cout << "Special resolution: 10-bit\n"; break; // 10-bit simulation
 		default : cout << "Error: invalid special option specified\n"; return 0;
 	}
-	try {unique_ptr<Processor> processor = unique_ptr<Processor>(new Processor(iSpecial, iAverage));}
+	try {processor = unique_ptr<Processor>(new Processor(iSpecial, iAverage));}
 	catch (bad_alloc& ba) {
 		cout << "Error allocating memory\n";
 		return 0;

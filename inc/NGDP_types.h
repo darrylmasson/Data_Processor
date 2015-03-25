@@ -2,15 +2,16 @@
 #define NGDP_TYPES_H
 
 #include <memory>
+#include <string>
 
 // note on variable names:
 // most variables have their type as a one or two character prefix
-// using normal names, ie u = unsigned, s = static, d = double, etc
+// using normal names, ie u = unsigned, s = static/short, d = double, etc
 
 using namespace std;
 
 const int MAX_CH = 8;
-const char path[] = {"/data/NeutronGenerator"};
+const string path = {"/data/NeutronGenerator"};
 const int sizeof_f_header = 86; // sizeof(f_header_t) returns the wrong value
 const int sizeof_ev_header = 16;
 

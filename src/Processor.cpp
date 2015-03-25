@@ -87,7 +87,7 @@ Processor::~Processor() {
 	for (auto ch = 0; ch < MAX_CH; ch++) {
 		td[ch].uspData = nullptr;
 		td[ch].event.reset();
-		for (auto m = 0; m < NUM_METHODS; m++) td[ch].methods.reset();
+		for (auto m = 0; m < NUM_METHODS; m++) td[ch].methods[m].reset();
 		td[ch].cbpActivated = nullptr;
 	}
 	digitizer.reset();
@@ -126,7 +126,7 @@ void Processor::BusinessTime() {
 	for (m = 0; m < NUM_METHODS; m++) { // setting up trees
 		sprintf(treename[m], "T%i", m);
 		if (bMethodActive[m]) {
-			try {tree = unique_ptr<TTree>(new TTree(treename[m], method_names[m]));}
+			try {tree = unique_ptr<TTree>(new TTree(treename[m], cMethodNames[m]));}
 			catch (bad_alloc& ba) {iFailed |= alloc_error; bMethodActive[m] = false;}
 			if (tree->IsZombie()) {iFailed |= root_error; bMethodActive[m] = false;}
 			root_init[m](tree.release());
@@ -150,7 +150,7 @@ void Processor::BusinessTime() {
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.get(), iEventsize);
 		if (bMethodActive[XSQ_t]) for (ch = 0; ch < iNchan; ch++) {
-			td[ch].event->Set(td[ch].data);
+			td[ch].event->Set(td[ch].uspData);
 			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) td[ch].methods[m]->evaluate(td[ch].event); // TF1 isn't thread-friendly
 		} else {
 			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_create(&threads[ch], &attr, Process, (void*)&td[ch])) ) {iFailed |= thread_error; return;}
@@ -334,7 +334,7 @@ void Processor::ConfigTrees() {
 				bUpdate |= (memcmp(iFastCheck, iFastTime, sizeof(iFastCheck)) != 0); // checks CCM parameters
 				bUpdate |= (memcmp(iSlowCheck, iSlowTime, sizeof(iSlowCheck)) != 0);
 			}
-			if ((fVersion[iMethodID] < cfMethodVersions[iMethodID]) || bUpdate) {
+			if ((fVersion < cfMethodVersions[iMethodID]) || bUpdate) {
 				cout << cMethodNames[iMethodID] << " will be reprocessed\n";
 			} else {
 				cout << cMethodNames[iMethodID] << " up to date, reprocess anyway <y|n>? ";
@@ -360,7 +360,7 @@ void Processor::ConfigTrees() {
 		tree->Branch("Source", cSource, "source[12]/B");
 		tree->Branch("ChannelMask", &usMask, "mask/s"); // general info on data run
 		tree->Branch("TriggerThreshold", uiThreshold, "threshold[8]/i");
-		tree->Branch("DC_offset", usDCOffset, "dc_off[8]/i"); // the numbers in this tree
+		tree->Branch("DC_offset", uiDCOffset, "dc_off[8]/i"); // the numbers in this tree
 		tree->Branch("Posttrigger", &iTrigPost, "tri_post/I"); // don't change, so it's only
 		tree->Branch("Eventlength", &iEventlength, "ev_len/I"); // written out once
 		tree->Branch("Chisquared_NDF", &iXSQ_ndf, "ndf/I");
@@ -390,7 +390,7 @@ void Processor::ConfigTrees() {
 		tree->Branch("Time", &iTimeNow, "time/I");
 		tree->Branch("Version", &fVersion, "version/F");
 		for (auto i = 0; i < NUM_METHODS; i++) if (bMethodActive[i]) {
-			strcpy(cMethodName, cMethodNames[i];
+			strcpy(cMethodName, cMethodNames[i]);
 			fVersion = cfMethodVersions[i];
 			iMethodID = i;
 			tree->Fill();
@@ -417,7 +417,7 @@ void Processor::ParseFileHeader() {
 	if (usMask != 0) return; // for the unlikely event this gets called twice
 	char cBuffer[sizeof_f_header];
 	fin.seekg(0, fin.end);
-	auto filesize = fin.tellg();
+	long filesize = fin.tellg();
 	fin.seekg(0, fin.beg);
 	fin.read(cBuffer, sizeof_f_header);
 	
@@ -493,13 +493,13 @@ void Processor::SetFileSet(string in) { // also opens raw and processed files
 	else sRootFile += "_ax.root";
 	fin.open(sRawDataFile.c_str(), ios::in | ios::bin);
 	if (!fin.is_open()) {
-		cout << "Error: " sRawDataFile << " not found\n";
+		cout << "Error: " << sRawDataFile << " not found\n";
 		iFailed != file_error;
 		throw ProcessorException();
 	}
 	f = unique_ptr<TFile>(new TFile(sRootFile.c_str(), "UPDATE"));
 	if (!f->IsOpen()) {
-		cout << "Error: could not open " sRootFile << '\n';
+		cout << "Error: could not open " << sRootFile << '\n';
 		iFailed |= file_error;
 		throw ProcessorException();
 	}

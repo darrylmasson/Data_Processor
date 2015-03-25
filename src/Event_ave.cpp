@@ -9,7 +9,7 @@ Event_ave::Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int
 	iSpecial = digitizer->Special();
 	iBaselength = digitizer->Baselength();
 	dTrace = nullptr;
-	threshold = threshold_in;
+	iThreshold = threshold_in;
 	iAverage = average_in;
 	dScale = 1./iAverage;
 	dZero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
@@ -18,7 +18,7 @@ Event_ave::Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int
 	if ((iAverage > 0) && (Event::siHowMany == 1)) Event::siLength -= iAverage;
 	iEventlength = Event::siLength;
 	try { dTrace = std::unique_ptr<double[]>(new double[iEventlength]);}
-	catch (std::bad_alloc& ba) {failed |= alloc_error; return;}
+	catch (std::bad_alloc& ba) {iFailed |= alloc_error; return;}
 }
 
 Event_ave::~Event_ave() {
@@ -59,7 +59,7 @@ void Event_ave::Set(unsigned short* in) {
 			dPeakY = dTrace[i];
 			usPeakX = i;
 		}
-		if ((usTrigger == 0) && (dTrace[i] < threshold)) usTrigger = i; // trigger
+		if ((usTrigger == 0) && (dTrace[i] < iThreshold)) usTrigger = i; // trigger
 	}
 	dBaseline /= iBaselength;
 	dBasePost /= iBaselength;

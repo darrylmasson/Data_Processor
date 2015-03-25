@@ -14,7 +14,7 @@ Event::Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int thresho
 	iBaselength = digitizer->Baselength();
 	usTrace = nullptr;
 	iThreshold = threshold_in;
-	d_zero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
+	dZero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
 	iFailed = 0;
 	if ((iSpecial == 0) && (Event::siHowMany == 1)) Event::siLength >>= 1;
 	iEventlength = Event::siLength;

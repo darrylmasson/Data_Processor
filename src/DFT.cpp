@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-float DFT::sf_version = 1.41;
+float DFT::sfVersion = 1.41;
 bool DFT::sbInitialized = false;
 unique_ptr<TTree> DFT::tree = nullptr;
 int DFT::siHowMany = 0;

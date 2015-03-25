@@ -4,7 +4,7 @@
 #include "TVectorT.h"
 #include <iostream> // remove
 
-float	XSQ::sf_version = 1.1;
+float	XSQ::sfVersion = 1.1;
 bool	XSQ::sbInitialized = false;
 int		XSQ::siHowMany = 0;
 
