@@ -16,6 +16,7 @@
 #endif
 
 class ProcessorException : public exception { // simpler than checking Failed() after every step in setup
+	public:
 	const char* what() const throw () {
 		return "Setup error: ";
 	}

@@ -13,7 +13,6 @@ SRCS = Digitizer.cpp \
 			 DFT.cpp \
 			 XSQ.cpp \
 			 LAP.cpp \
-			 Config.cpp \
 			 Processor.cpp \
 			 NG_dp.cpp
 OBJS = $(SRCS:.cpp=.o)
