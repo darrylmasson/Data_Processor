@@ -3,56 +3,50 @@
 #include <algorithm>
 #include <iostream>
 
-Event_ave::Event_ave(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in, int average_in) {
-	if (Event::siHowMany == 1) Event::siLength = len;
-	digitizer = dig;
-	iSpecial = digitizer->Special();
-	iBaselength = digitizer->Baselength();
-	dTrace = nullptr;
-	iThreshold = threshold_in;
-	iAverage = average_in;
-	dScale = 1./iAverage;
-	dZero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
-	iFailed = 0;
-	if ((iSpecial == 0) && (Event::siHowMany == 1)) Event::siLength >>= 1;
-	if ((iAverage > 0) && (Event::siHowMany == 1)) Event::siLength -= iAverage;
-	iEventlength = Event::siLength;
-	try { dTrace = std::unique_ptr<double[]>(new double[iEventlength]);}
-	catch (std::bad_alloc& ba) {iFailed |= alloc_error; return;}
+Event_ave::Event_ave(int len, shared_ptr<Digitizer> digitizer) : Event(len, digitizer) {
+	if (g_verbose) cout << "Event_ave " << Event::siHowMany << " c'tor\n";
+	try { dTrace = unique_ptr<double[]>(new double[iEventlength]);}
+	catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
 }
 
 Event_ave::~Event_ave() {
-	if (g_verbose) std::cout << " event_ave " << Event::siHowMany << " d'tor "; // d'tor for Event automatically called, so no decrement
+	if (g_verbose) cout << "Event_ave " << Event::siHowMany << " d'tor\n";
 	dTrace.reset();
-	digitizer.reset();
 }
 
-void Event_ave::Set(unsigned short* in) {
+Event_ave::SetAverage(int average) {
+	iAverage = average;
+	iEventlength -= iAverage;
+	Event::siLength = iEventlength;
+	dScale = 1./(iAverage ? iAverage : 1);
+}
+
+void Event_ave::Analyze() {
 	int i(0), j(0);
-	if (iSpecial > 0) for (i = 0; i < iEventlength; i++) dTrace[i] = in[i] >> iSpecial; // special resolution
-	if (iSpecial == 0) for (i = 0; i < iEventlength; i++) dTrace[i] = (in[2*i] + in[2*i+1]) >> 1; // special samplerate
+	if (iSpecial > 0) for (i = 0; i < iEventlength+iAverage; i++) dTrace[i] = uspTrace[i] >> iSpecial; // special resolution
+	if (iSpecial == 0) for (i = 0; i < iEventlength+iAverage; i++) dTrace[i] = (uspTrace[2*i] + uspTrace[2*i+1]) >> 1; // won't overrun
 	for (i = 0; i < iEventlength; i++) { // waveform averaging
 		dTrace[i] = 0;
-		for (j = 0; j < iAverage; j++) dTrace[i] += in[i+j];
+		for (j = 0; j < iAverage; j++) dTrace[i] += uspTrace[i+j];
 		dTrace[i] *= dScale;
 	}
 	dBaseline = 0;
 	dBaseSigma = 0;
-	dPeakY = 15000; // some arbitratily high number as -1 doesn't work for floats
+	dPeakY = 16000; // some arbitratily high number as -1 doesn't work for floats
 	usPeakX = 0;
 	dBasePkP = 0;
-	dBasePkN = 15000;
+	dBasePkN = 16000;
 	dPeakPos = 0;
 	usTrigger = 0;
 	dBasePost = 0;
 	dBasePostSigma = 0;
 	double dTemp(0);
 	for (i = 0; i < iEventlength; i++) {
-		dPeakPos = std::max(dPeakPos, dTrace[i]);
+		dPeakPos = max(dPeakPos, dTrace[i]);
 		if (i < iBaselength) {
 			dBaseline += dTrace[i]; // baseline at start
-			dBasePkP = std::max(dTrace[i],dBasePkP);
-			dBasePkN = std::min(dTrace[i],dBasePkN);
+			dBasePkP = max(dTrace[i],dBasePkP);
+			dBasePkN = min(dTrace[i],dBasePkN);
 			dBasePost += dTrace[iEventlength-iBaselength+i]; // baseline at end
 		}
 		if (dPeakY > dTrace[i]) { // peakfinder
@@ -61,14 +55,14 @@ void Event_ave::Set(unsigned short* in) {
 		}
 		if ((usTrigger == 0) && (dTrace[i] < iThreshold)) usTrigger = i; // trigger
 	}
-	dBaseline /= iBaselength;
-	dBasePost /= iBaselength;
+	dBaseline *= dBaseScale;
+	dBasePost *= dBaseScale;
 	for (i = 0; i < iBaselength; i++) { // RMS baseline deviation
 		dTemp = dTrace[i] - dBaseline;
 		dBaseSigma += dTemp*dTemp;
 		dTemp = dTrace[iEventlength-iBaselength+i] - dBasePost;
 		dBasePostSigma += dTemp*dTemp;
 	}
-	dBaseSigma = sqrt(dBaseSigma/iBaselength);
-	dBasePostSigma = sqrt(dBasePostSigma/iBaselength);
+	dBaseSigma = sqrt(dBaseSigma*dBaseScale);
+	dBasePostSigma = sqrt(dBasePostSigma*dBaseScale);
 }

@@ -26,10 +26,14 @@ double DFT::sdPhase[8][4]		= {	{0,0,0,0},
 									{0,0,0,0},
 									{0,0,0,0}};
 
-DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : ciOrder(3) {
-	iEventlength = len;
-	iFailed = 0;
-	id = ch;
+DFT::DFT() {
+	if (g_verbose) cout << "DFT c'tor\n";
+	DFT::siHowMany++;
+}
+
+DFT::DFT(int ch, int length, shared_ptr<Digitizer> digitizer) : ciOrder(3), Method(ch, length, digitizer) {
+	if (g_verbose) cout << "DFT " << id << " c'tor\n";
+	DFT::siHowMany++;
 	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
 	const int used_orders[] = {3,4,5}; // 4 orders incl 0th
 	double omega;
@@ -43,12 +47,11 @@ DFT::DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer) : c
 			dCos[n*iEventlength+t] = cos(omega*t);
 			dSin[n*iEventlength+t] = sin(omega*t); // simpler than using one table and sin(x) = cos(x-pi/2)
 	}	}
-	DFT::siHowMany++;
 	dScalefactor = 2./iEventlength; // 2/period
 }
 
 DFT::~DFT() {
-	if (g_verbose) cout << " DFT " << id << " d'tor ";
+	if (g_verbose) cout << "DFT " << id << " d'tor\n";
 	DFT::siHowMany--;
 	dCos.reset();
 	dSin.reset();
@@ -65,19 +68,18 @@ void DFT::root_init(TTree* tree_in) {
 	}
 }
 
-void DFT::evaluate(const shared_ptr<Event> event) {
+void DFT::Analyze(const shared_ptr<Event> event) {
 	auto dReal(0.), dImag(0.);
 	auto n(0), t(0), nt(0);
 
-	DFT::sdMagnitude[id][0] = 0;
-	DFT::sdPhase[id][0] = 0;
+	DFT::sdMagnitude[id][0] = 0; // phase[][0] never accessed so no need to reset it
 
 	for (t = 0; t < iEventlength; t++) DFT::sdMagnitude[id][0] += event->Trace(t);
-	DFT::sdMagnitude[id][0] *= dScalefactor/2;
+	DFT::sdMagnitude[id][0] *= 0.5*dScalefactor;
 	for (n = 0; n < ciOrder; n++) {
 		dReal = 0;
 		dImag = 0;
-		for (t = 0; t < iEventlength; t++) { // fourier series are pretty straightforward
+		for (t = 0; t < iEventlength; t++) { // fourier series
 			nt = n*iEventlength + t;
 			dReal += event->Trace(t)*dCos[nt];
 			dImag += event->Trace(t)*dSin[nt];

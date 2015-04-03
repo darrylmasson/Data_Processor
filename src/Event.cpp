@@ -6,31 +6,34 @@
 int Event::siLength = 0;
 int Event::siHowMany = 0;
 
-Event::Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in) {
+Event::Event() {
 	Event::siHowMany++;
-	if (Event::siHowMany == 1) Event::siLength = len;
-	digitizer = dig;
+	if (g_verbose) cout << "Event c'tor\n";
+}
+
+Event::Event(int len, shared_ptr<Digitizer> digitizer) : ciSamples(len) {
+	if (g_verbose) cout << "Event " << Event::siHowMany << " c'tor\n";
+	Event::siHowMany++;
+	iEventlength = ciSamples;
 	iSpecial = digitizer->Special();
 	iBaselength = digitizer->Baselength();
-	usTrace = nullptr;
-	iThreshold = threshold_in;
-	dZero = digitizer->Resolution()*(1. - (double)dc_offset/65535.); // conversion from wavedump documentation
+	dBaseScale = 1./iBaselength;
+	uspTrace = nullptr;
 	iFailed = 0;
-	if ((iSpecial == 0) && (Event::siHowMany == 1)) Event::siLength >>= 1;
-	iEventlength = Event::siLength;
+	if (iSpecial == 0) iEventlength >>= 1;
+	Event::siLength = iEventlength;
 }
 
 Event::~Event() {
-	if (g_verbose) std::cout << " event " << --Event::siHowMany << " d'tor "; // no ID tag on Event classes
-	usTrace = nullptr;
-	digitizer.reset();
+	Event::siHowMany--;
+	if (g_verbose) cout << "Event " << Event::siHowMany << " d'tor\n"; // no ID tag on Event classes
+	uspTrace = nullptr;
 }
 
-void Event::Set(unsigned short* in) {
-	usTrace = in;
+void Event::Analyze() {
 	int i(0);
-	if (iSpecial > 0) for (i = 0; i < iEventlength; i++) usTrace[i] >>= iSpecial; // special resolution
-	if (iSpecial == 0) for (i = 0; i < iEventlength; i++) usTrace[i] = (usTrace[2*i] + usTrace[2*i+1]) >> 1; // special samplerate
+	if (iSpecial > 0) for (i = 0; i < iEventlength; i++) uspTrace[i] >>= iSpecial; // special resolution
+	if (iSpecial == 0) for (i = 0; i < iEventlength; i++) uspTrace[i] = (uspTrace[2*i] + uspTrace[2*i+1]) >> 1; // special samplerate
 	dBaseline = 0;
 	dBaseSigma = 0;
 	usPeakY = -1;
@@ -43,27 +46,27 @@ void Event::Set(unsigned short* in) {
 	dBasePostSigma = 0;
 	double dTemp(0);
 	for (i = 0; i < iEventlength; i++) {
-		usPeakPos = std::max(usPeakPos, usTrace[i]);
+		usPeakPos = max(usPeakPos, uspTrace[i]);
 		if (i < iBaselength) {
-			dBaseline += usTrace[i]; // baseline at start of event
-			usBasePkP = std::max(usTrace[i],usBasePkP);
-			usBasePkN = std::min(usTrace[i],usBasePkN);
-			dBasePost += usTrace[iEventlength-iBaselength+i]; // baseline at end of event
+			dBaseline += uspTrace[i]; // baseline at start of event
+			usBasePkP = max(uspTrace[i],usBasePkP);
+			usBasePkN = min(uspTrace[i],usBasePkN);
+			dBasePost += uspTrace[iEventlength-iBaselength+i]; // baseline at end of event
 		}
-		if (usPeakY > usTrace[i]) { // finding primary peak
-			usPeakY = usTrace[i];
+		if (usPeakY > uspTrace[i]) { // finding primary peak
+			usPeakY = uspTrace[i];
 			usPeakX = i;
 		}
-		if ((usTrigger == 0) && (usTrace[i] < iThreshold)) usTrigger = i; // finding trigger
+		if ((usTrigger == 0) && (uspTrace[i] < iThreshold)) usTrigger = i; // finding trigger
 	}
-	dBaseline /= iBaselength;
-	dBasePost /= iBaselength;
+	dBaseline *= dBaseScale;
+	dBasePost *= dBaseScale;
 	for (i = 0; i < iBaselength; i++) { // RMS devations of baselines
-		dTemp = usTrace[i] - dBaseline;
+		dTemp = uspTrace[i] - dBaseline;
 		dBaseSigma += dTemp*dTemp;
-		dTemp = usTrace[iEventlength-iBaselength+i] - dBasePost;
+		dTemp = uspTrace[iEventlength-iBaselength+i] - dBasePost;
 		dBasePostSigma += dTemp*dTemp;
 	}
-	dBaseSigma = sqrt(dBaseSigma/iBaselength);
-	dBasePostSigma = sqrt(dBasePostSigma/iBaselength);
+	dBaseSigma = sqrt(dBaseSigma*dBaseScale);
+	dBasePostSigma = sqrt(dBasePostSigma*dBaseScale);
 }

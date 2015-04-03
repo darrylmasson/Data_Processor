@@ -42,9 +42,11 @@ class CCM : public Method { // also includes PGA
 		static double sdGradient[8]; // PGA value
 	
 	public:
-		CCM(const int ch, const int fast, const int slow, const int samples, const shared_ptr<Digitizer> digitizer);
+		CCM();
+		CCM(int ch, int length, shared_ptr<Digitizer> digitizer);
 		virtual ~CCM();
-		virtual void evaluate(const shared_ptr<Event> event);
+		virtual void Analyze(const shared_ptr<Event> event);
+		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer);
 		static void root_fill() {CCM::tree->Fill();}
 		static void root_init(TTree* tree_in);
 		static TTree* root_deinit() {return CCM::tree.release();} // returns the TTree pointer to Processor() for finishing and stuff

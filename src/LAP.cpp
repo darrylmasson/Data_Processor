@@ -11,24 +11,25 @@ int LAP::siHowMany = 0;
 double LAP::sdLaplace[8] = {0,0,0,0,0,0,0,0};
 double LAP::sdLongInt[8] = {0,0,0,0,0,0,0,0};
 
-LAP::LAP(int ch, int len, shared_ptr<Digitizer> digitizer) {
-	iFailed = 0;
-	id = ch;
+LAP::LAP() {
+	if (g_verbose) cout << "LAP c'tor\n";
+	LAP::siHowMany++;
+}
+
+LAP::LAP(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, length, digitizer) {
+	if (g_verbose) cout << "LAP " << id << " c'tor\n";
+	LAP::siHowMany++;
 	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
-	iEventlength = len;
 	try {dExp = unique_ptr<double[]>(new double[iEventlength]);}
 	catch (bad_alloc& ba) {
 		iFailed |= alloc_error;
 		return;
 	}
-	dScaleV = digitizer->ScaleV();
-	dScaleT = digitizer->ScaleT();
 	for (auto i = 0; i < iEventlength; i++) dExp[i] = exp(-LAP::sfS*i/dScaleT); // not sure if the time scale is correct here.
-	LAP::siHowMany++;
 }
 
 LAP::~LAP() {
-	if (g_verbose) cout << " LAP " << id << " d'tor ";
+	if (g_verbose) cout << "LAP " << id << " d'tor\n";
 	dExp.reset();
 	LAP::siHowMany--;
 }
@@ -44,7 +45,7 @@ void LAP::root_init(TTree* tree_in) {
 	}
 }
 
-void LAP::evaluate(const shared_ptr<Event> event) {
+void LAP::Analyze(const shared_ptr<Event> event) {
 	auto peak_x = event->Peak_x();
 	LAP::sdLaplace[id] = 0;
 	LAP::sdLongInt[id] = 0;

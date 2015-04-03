@@ -2,6 +2,7 @@
 #define PROCESSOR_H
 
 #include <fstream>
+#include <unistd.h>
 #ifndef CCM_H
 #include "CCM.h"
 #endif
@@ -23,7 +24,6 @@ class ProcessorException : public exception { // simpler than checking Failed() 
 };
 
 struct thread_data_t {
-	unsigned short*		uspData;
 	shared_ptr<Event>	event;
 	shared_ptr<Method>	methods[NUM_METHODS];
 	const bool*			cbpActivated;
@@ -52,10 +52,10 @@ class Processor {
 		char			cDigName[12];
 		char			cSource[12];
 		
-		unsigned short	usMask;
+		unsigned short	usMask; // mask of enabled channels
 		
-		int				iAverage;
-		int				iChan[MAX_CH]; // only the first nchan entries used
+		int				iAverage; // moving average
+		int				iChan[MAX_CH]; // only the first iNchan entries used
 		int				iEventlength; // samples
 		int				iEventsize; // bytes, incl event header
 		int				iFailed;
@@ -64,12 +64,12 @@ class Processor {
 		int				iNumEvents;
 		int				iPGASamples[MAX_CH];
 		int				iSlowTime[MAX_CH];
-		int				iSpecial;
-		int				iTrigPost;
+		int				iSpecial; // special processing options
+		int				iTrigPost; // percentage of event after trigger
 		int				iXSQ_ndf;
 		
-		unsigned int	uiDCOffset[MAX_CH];
-		unsigned int	uiThreshold[MAX_CH];
+		unsigned int	uiDCOffset[MAX_CH]; // DC offset for each channel
+		unsigned int	uiThreshold[MAX_CH]; // trigger thresholds
 		
 		float			fGain[MAX_CH][P]; // for fitter
 		

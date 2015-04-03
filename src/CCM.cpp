@@ -34,23 +34,31 @@ double CCM::sdPeakP[8]			= {0,0,0,0,0,0,0,0};
 
 double CCM::sdGradient[8]		= {0,0,0,0,0,0,0,0};
 
-CCM::CCM(const int ch, const int fast, const int slow, const int samples, const shared_ptr<Digitizer> digitizer) {
-	iFailed = 0;
-	iEventlength = Event::Length();
-	bool special = (digitizer->Special() == 0);
-	iFastTime = (special ? fast/2 : fast);
-	iSlowTime = (special ? slow/2 : slow);
-	iPGASamples = (special ? samples/2 : samples);
-	id = ch;
-	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
+CCM::CCM() {
 	CCM::siHowMany++;
-	dScaleV = digitizer->ScaleV();
-	dScaleT = digitizer->ScaleT();
+	if (g_verbose) cout << "CCM c'tor\n";
+}
+
+CCM::CCM(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, length, digitizer) {
+	CCM::siHowMany++;
+	if (g_verbose) cout << "CCM " << id << " c'tor\n";
+	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
 }
 
 CCM::~CCM() {
-	if (g_verbose) cout << " CCM " << id << " d'tor ";
+	if (g_verbose) cout << "CCM " << id << " d'tor\n";
 	CCM::siHowMany--;
+}
+
+void CCM::SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {
+	auto special = digitizer->Special();
+	int value = *((int*)val);
+	switch (which) {
+		case 0 : iFastTime = special ? value/2 : value; break;
+		case 1 : iSlowTime = special ? value/2 : value; break;
+		case 2 : iPGASamples = special ? value/2 : value; break;
+		default : break;
+	}
 }
 
 void CCM::root_init(TTree* tree_in) {
@@ -87,7 +95,7 @@ void CCM::root_init(TTree* tree_in) {
 	}
 }
 
-void CCM::evaluate(const shared_ptr<Event> event) {
+void CCM::Analyze(const shared_ptr<Event> event) {
 	auto iStart(0), iStop(iEventlength-1), i(0), iFast(0), iSlow(0);
 	auto lFastint(0l), lSlowint(0l), lFullint(0l);
 	auto dThreshold(event->Baseline() - 3*event->BaseSigma()), dTemp(0.);

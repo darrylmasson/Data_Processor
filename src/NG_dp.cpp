@@ -3,7 +3,6 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <unistd.h>
 #include <ctime>
 #include <chrono>
 #include <ratio>
@@ -28,7 +27,7 @@ char error_message[err_dummy_last][64] = {
 bool g_verbose(false);
 
 int main(int argc, char **argv) {
-	cout << "Neutron generator data processor v3_5\n";
+	cout << "Neutron generator raw data processor v3_5\n";
 	int i(0), iSpecial(-1), iAverage(0);
 	string sConfigFile = "\0", sFileset = "\0", sSource = "\0";
 	steady_clock::time_point t_start, t_end;
@@ -56,6 +55,8 @@ int main(int argc, char **argv) {
 	if (iAverage < 0) {
 		cout << "Invalid moving average: negative\n";
 		return 0;
+	} else if (iAverage > 0) {
+		cout << iAverage << "-point moving average\n";
 	}
 	switch(iSpecial) {
 		case -1: break; //cout << "No special options\n"; break; // default
