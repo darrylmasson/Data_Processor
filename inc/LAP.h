@@ -16,9 +16,11 @@ class LAP : public Method {
 		unique_ptr<double[]> dExp;
 		
 	public:
-		LAP(int ch, int len, shared_ptr<Digitizer> digitizer);
+		LAP();
+		LAP(int ch, int length, shared_ptr<Digitizer> digitizer);
 		virtual ~LAP();
-		virtual void evaluate(const shared_ptr<Event> event);
+		virtual void Analyze(const shared_ptr<Event> event);
+		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {}
 		static void root_fill() {LAP::tree->Fill();}
 		static void root_init(TTree* tree_in);
 		static TTree* root_deinit() {return LAP::tree.release();}

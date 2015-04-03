@@ -23,8 +23,10 @@ class Method {
 	
 	public:
 		Method() {};
+		Method(int ch, int length, shared_ptr<Digitizer> digitizer) : id(ch), iEventlength(length), dScaleT(digitizer->ScaleT()), dScaleV(digitizer->ScaleV()), iFailed(0) {}
 		virtual ~Method() {};
-		virtual void evaluate(const shared_ptr<Event>) = 0;
+		virtual void Analyze(const shared_ptr<Event>) = 0;
+		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) = 0;
 		int Failed() {return iFailed;}
 		int GetID() {return id;}
 };

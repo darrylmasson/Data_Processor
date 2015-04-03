@@ -12,32 +12,37 @@ class Event {
 		int iEventlength;
 		int iBaselength;
 		int iSpecial;
-		static int siLength; // number of samples in the waveform
+		const int ciSamples; // number of samples of pulse in memory (useful for Special or Average instances)
+		static int siLength; // number of samples in the waveform (not strictly ciSamples)
 		static int siHowMany;
 		
-		unsigned short usPeakY; // everything measured in ADC counts
-		unsigned short usBasePkP; // peak in baseline samples
-		unsigned short usBasePkN;
+		unsigned short usPeakY; // primary pulse peak, y coord.
+		unsigned short usBasePkP; // positive peak in baseline samples
+		unsigned short usBasePkN; // negative peak
 		unsigned short usPeakPos; // positive peak
-		unsigned short* usTrace;
+		unsigned short* uspTrace;
 		unsigned short usTrigger; // triggering sample
-		unsigned short usPeakX;
+		unsigned short usPeakX; // primary pulse peak, x coord
 		double dZero; // ADC bin for ground
 		double dBaseline;
 		double dBaseSigma;
 		double dBasePost;
 		double dBasePostSigma;
+		double dBaseScale; // 1/baselength
 
 	public:
-		Event() {++Event::siHowMany;} // for Event_ave
-		Event(int len, std::shared_ptr<Digitizer> dig, int dc_offset, int threshold_in);
+		Event();
+		Event(int len, shared_ptr<Digitizer> digitizer);
 		~Event();
-		virtual void Set(unsigned short* in);
+		virtual void SetAverage(int average)										{}
+		virtual void SetDCOffset(shared_ptr<Digitizer> digitizer, int dc_offset)	{dZero = digitizer->Resolution()*(1.-(double)dc_offset/65535.);}
+		virtual void SetThreshold(int threshold)									{iThreshold = threshold;}
+		virtual void SetTrace(unsigned short* trace)								{uspTrace = trace;}
+		virtual void Analyze();
 		int Failed() {return iFailed;}
-		static const int& Length() {return Event::siLength;}
-		std::shared_ptr<Digitizer> digitizer;
+		static const int& Length()			{return Event::siLength;}
 		virtual unsigned short& Trigger()	{return usTrigger;}
-		virtual double Trace(int i)			{return usTrace[i];}
+		virtual double Trace(int i)			{return ((i < 0) ? dBaseline : (i < ciSamples ? uspTrace[i] : dBasePost));} // hopefully the most efficient way to do the checks
 		virtual unsigned short& Peak_x()	{return usPeakX;}
 		virtual double Peak_y()				{return usPeakY;}
 		virtual double B_pk_p()				{return usBasePkP;}

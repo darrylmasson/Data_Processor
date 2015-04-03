@@ -21,9 +21,11 @@ class DFT : public Method {
 
 		
 	public:
-		DFT(const int ch, const int len, const shared_ptr<Digitizer> digitizer);
+		DFT();
+		DFT(int ch, int len, shared_ptr<Digitizer> digitizer);
 		virtual ~DFT();
-		virtual void evaluate(const shared_ptr<Event> event);
+		virtual void Analyze(const shared_ptr<Event> event);
+		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {}
 		static void root_fill() {DFT::tree->Fill();}
 		static void root_init(TTree* tree_in);
 		static TTree* root_deinit() {return DFT::tree.release();}

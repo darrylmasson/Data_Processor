@@ -31,4 +31,4 @@ $(L)%.o : %.cpp
 .PHONY: clean
 
 clean:
-	rm -f $(OBJDIR)/*.o test_exe ../NGrawDP
+	rm -f $(OBJDIR)/*.o test_exe ../NG_DP

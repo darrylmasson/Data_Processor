@@ -31,14 +31,14 @@ double XSQ::sdProb_y[4]			= {0,0,0,0};
 int XSQ::siFitStatus_n[4]		= {0,0,0,0};
 int XSQ::siFitStatus_y[4]		= {0,0,0,0};
 
-XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Digitizer> digitizer) : ciNPar(4) {
-	iFailed = 0;
-	id = ch;
-	iEventlength = len;
-	fGain[n] = gain_in[n];
-	fGain[y] = gain_in[y]; // n,y = enums
+XSQ::XSQ() {
+	if (g_verbose) cout << "XSQ c'tor\n";
 	XSQ::siHowMany++;
-//	char filename[64];
+}
+
+XSQ::XSQ(int ch, int length, shared_ptr<Digitizer> digitizer) : ciNPar(4), Method(ch, length, digitizer) {
+	if (g_verbose) cout << "XSQ " << id << " c'tor\n";
+	XSQ::siHowMany++;
 	unique_ptr<TFile> std_file = nullptr;
 	TVectorT<double>* pWave = nullptr;
 	int i(0), p(0);
@@ -65,12 +65,12 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 			iStdPeakX		= 35;
 			break;
 		case v1724 :
+		case invalid_dig :
 		default :
 			iFailed |= dig_error;
 			return;
 	}
 	
-//	sprintf(filename, "%s/config/standard_events.root", path);
 	try {std_file.reset(new TFile((path + "/config/standard_events.root").c_str(), "READ"));}
 	catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
 	if (!std_file->IsOpen()) {iFailed |= file_error; return;}
@@ -83,14 +83,14 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 		dStdPeak[p] = 1000;
 		switch(iStdLength) {
 			case 225 : // 500 MSa/s
-				for (i = 0; i < iStdLength; i++) {
-					dStdWave[p][i] = ((*pWave)[2*i] + (*pWave)[2*i+1])/2.; // averages
+				for (i = 0; i < iStdLength; i++) { // averages
+					dStdWave[p][i] = ((*pWave)[2*i] + (*pWave)[2*i+1])/2.;
 					if (i < digitizer->Baselength()) dStdBase[p] += dStdWave[p][i];
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 899 : // 2 GSa/s
-				for (i = 0; i < iStdLength; i++) {
-					dStdWave[p][i] = (i%2) ? ((*pWave)[(i+1)/2] + (*pWave)[(i-1)/2])/2. : (*pWave)[i/2]; // interpolates
+				for (i = 0; i < iStdLength; i++) { // interpolates
+					dStdWave[p][i] = (i%2) ? ((*pWave)[(i+1)/2] + (*pWave)[(i-1)/2])/2. : (*pWave)[i/2]; // i%2==1 so i/2 = (i-1)/2
 					if (i < digitizer->Baselength()) dStdBase[p] += dStdWave[p][i];
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
@@ -110,7 +110,7 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 	std_file = nullptr;
 	pWave = nullptr;
 	try {
-		dInputWave	= unique_ptr<double[]>(new double[iEventlength]);
+		dInputWave		= unique_ptr<double[]>(new double[iEventlength]);
 		dX				= unique_ptr<double[]>(new double[iEventlength]);
 		
 		dPars			= unique_ptr<double[]>(new double[ciNPar]);
@@ -126,7 +126,7 @@ XSQ::XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Di
 }
 
 XSQ::~XSQ() {
-	if (g_verbose) cout << " XSQ " << id << " d'tor ";
+	if (g_verbose) cout << "XSQ " << id << " d'tor\n";
 	XSQ::siHowMany--;
 	for (auto p = 0; p < P; p++) {
 		dStdWave[p].reset();
@@ -176,7 +176,15 @@ double XSQ::fitter(double* x, double* par) {
 	return dVal;
 }
 
-void XSQ::evaluate(const shared_ptr<Event> event) {
+void XSQ::SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {
+	switch (which) {
+		case n : fGain[n] = *((float*)val); break;
+		case y : fGain[y] = *((float*)val); break;
+		default: break;
+	}
+}
+
+void XSQ::Analyze(const shared_ptr<Event> event) {
 	for (auto i = 0; i < iEventlength; i++) dInputWave[i] = event->Trace(i);
 	try {graph.reset(new TGraph(iEventlength, dX.get(), dInputWave.get()));}
 	catch (bad_alloc& ba) { // error codes don't work here
