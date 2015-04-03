@@ -95,7 +95,7 @@ void CCM::root_init(TTree* tree_in) {
 	}
 }
 
-void CCM::Analyze(const shared_ptr<Event> event) {
+void CCM::Analyze() {
 	auto iStart(0), iStop(iEventlength-1), i(0), iFast(0), iSlow(0);
 	auto lFastint(0l), lSlowint(0l), lFullint(0l);
 	auto dThreshold(event->Baseline() - 3*event->BaseSigma()), dTemp(0.);

@@ -184,7 +184,7 @@ void XSQ::SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {
 	}
 }
 
-void XSQ::Analyze(const shared_ptr<Event> event) {
+void XSQ::Analyze() {
 	for (auto i = 0; i < iEventlength; i++) dInputWave[i] = event->Trace(i);
 	try {graph.reset(new TGraph(iEventlength, dX.get(), dInputWave.get()));}
 	catch (bad_alloc& ba) { // error codes don't work here

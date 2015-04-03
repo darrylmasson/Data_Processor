@@ -20,12 +20,13 @@ class Method {
 		int iEventlength;
 		double dScaleT; // scale factors from Digitizer class
 		double dScaleV;
+		shared_ptr<Event> event;
 	
 	public:
-		Method() {};
-		Method(int ch, int length, shared_ptr<Digitizer> digitizer) : id(ch), iEventlength(length), dScaleT(digitizer->ScaleT()), dScaleV(digitizer->ScaleV()), iFailed(0) {}
-		virtual ~Method() {};
-		virtual void Analyze(const shared_ptr<Event>) = 0;
+		Method(int ch, int length, shared_ptr<Digitizer> digitizer) : iFailed(0), id(ch), iEventlength(length), dScaleT(digitizer->ScaleT()), dScaleV(digitizer->ScaleV()) {}
+		virtual ~Method() {event.reset();}
+		virtual void Analyze() = 0;
+		virtual void SetEvent(shared_ptr<Event> ev) {event = ev;}
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) = 0;
 		int Failed() {return iFailed;}
 		int GetID() {return id;}

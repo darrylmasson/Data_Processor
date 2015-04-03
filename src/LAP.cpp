@@ -45,7 +45,7 @@ void LAP::root_init(TTree* tree_in) {
 	}
 }
 
-void LAP::Analyze(const shared_ptr<Event> event) {
+void LAP::Analyze() {
 	auto peak_x = event->Peak_x();
 	LAP::sdLaplace[id] = 0;
 	LAP::sdLongInt[id] = 0;

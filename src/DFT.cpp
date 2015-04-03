@@ -26,7 +26,7 @@ double DFT::sdPhase[8][4]		= {	{0,0,0,0},
 									{0,0,0,0},
 									{0,0,0,0}};
 
-DFT::DFT() {
+DFT::DFT() : ciOrder(3) {
 	if (g_verbose) cout << "DFT c'tor\n";
 	DFT::siHowMany++;
 }
@@ -68,7 +68,7 @@ void DFT::root_init(TTree* tree_in) {
 	}
 }
 
-void DFT::Analyze(const shared_ptr<Event> event) {
+void DFT::Analyze() {
 	auto dReal(0.), dImag(0.);
 	auto n(0), t(0), nt(0);
 

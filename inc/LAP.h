@@ -19,7 +19,7 @@ class LAP : public Method {
 		LAP();
 		LAP(int ch, int length, shared_ptr<Digitizer> digitizer);
 		virtual ~LAP();
-		virtual void Analyze(const shared_ptr<Event> event);
+		virtual void Analyze();
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {}
 		static void root_fill() {LAP::tree->Fill();}
 		static void root_init(TTree* tree_in);

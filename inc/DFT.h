@@ -24,7 +24,7 @@ class DFT : public Method {
 		DFT();
 		DFT(int ch, int len, shared_ptr<Digitizer> digitizer);
 		virtual ~DFT();
-		virtual void Analyze(const shared_ptr<Event> event);
+		virtual void Analyze();
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {}
 		static void root_fill() {DFT::tree->Fill();}
 		static void root_init(TTree* tree_in);

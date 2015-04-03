@@ -45,7 +45,7 @@ class CCM : public Method { // also includes PGA
 		CCM();
 		CCM(int ch, int length, shared_ptr<Digitizer> digitizer);
 		virtual ~CCM();
-		virtual void Analyze(const shared_ptr<Event> event);
+		virtual void Analyze();
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer);
 		static void root_fill() {CCM::tree->Fill();}
 		static void root_init(TTree* tree_in);

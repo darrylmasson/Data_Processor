@@ -36,8 +36,8 @@ auto (*root_deinit[])() -> TTree* = {
 
 void* Process(void* arg) {
 	thread_data_t* input = (thread_data_t*)arg;
-	input->event->Set();
-	for (int i = 0; i < NUM_METHODS; i++) if (input->cbpActivated[i]) input->methods[i]->evaluate(input->event);
+	input->event->Analyze();
+	for (int i = 0; i < NUM_METHODS; i++) if (input->cbpActivated[i]) input->methods[i]->Analyze(input->event);
 	return nullptr;
 }
 
@@ -85,7 +85,6 @@ Processor::Processor(int special, int average) {
 
 Processor::~Processor() {
 	for (auto ch = 0; ch < MAX_CH; ch++) {
-		td[ch].uspData = nullptr;
 		td[ch].event.reset();
 		for (auto m = 0; m < NUM_METHODS; m++) td[ch].methods[m].reset();
 		td[ch].cbpActivated = nullptr;
@@ -109,7 +108,7 @@ void Processor::BusinessTime() {
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	void* status = nullptr;
-
+	
 	unsigned long* ulpTimestamp = (unsigned long*)(buffer.get() + sizeof(long));
 	unsigned long ulTSFirst(0), ulTSLast(0);
 	
@@ -145,8 +144,8 @@ void Processor::BusinessTime() {
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.get(), iEventsize);
 		if (bMethodActive[XSQ_t]) for (ch = 0; ch < iNchan; ch++) {
-			td[ch].event->Set();
-			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) td[ch].methods[m]->evaluate(td[ch].event); // TF1 isn't thread-friendly
+			td[ch].event->Analyze();
+			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) td[ch].methods[m]->Analyze(td[ch].event); // TF1 isn't thread-friendly
 		} else {
 			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_create(&threads[ch], &attr, Process, (void*)&td[ch])) ) {iFailed |= thread_error; return;}
 			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {iFailed |= thread_error; return;}
@@ -223,7 +222,7 @@ void Processor::ClassAlloc() {
 			iFailed |= alloc_error;
 			throw ProcessorException();
 		}
-		td[ch].event->SetAverage(iAverage[iChan[ch]]);
+		td[ch].event->SetAverage(iAverage);
 		td[ch].event->SetDCOffset(digitizer, uiDCOffset[iChan[ch]]);
 		td[ch].event->SetThreshold(uiThreshold[iChan[ch]]);
 		td[ch].event->SetTrace(uspTrace + ch*iEventlength);
@@ -240,6 +239,7 @@ void Processor::ClassAlloc() {
 			td[ch].methods[CCM_t]->SetParameters(&iFastTime[iChan[ch]], 0, digitizer);
 			td[ch].methods[CCM_t]->SetParameters(&iSlowTime[iChan[ch]], 1, digitizer);
 			td[ch].methods[CCM_t]->SetParameters(&iPGASamples[iChan[ch]], 2, digitizer);
+			td[ch].methods[CCM_t]->SetEvent(td[ch].event);
 			if (td[ch].methods[CCM_t]->Failed()) {
 				iFailed |= method_error;
 				bMethodActive[CCM_t] = false;
@@ -255,6 +255,7 @@ void Processor::ClassAlloc() {
 				iFailed |= method_error;
 				bMethodActive[DFT_t] = false;
 			}
+			td[ch].methods[DFT_t]->SetEvent(td[ch].event);
 		}
 		if (bMethodActive[XSQ_t]) {
 			try {td[ch].methods[XSQ_t] = shared_ptr<Method>(new XSQ(iChan[ch], Event::Length(), digitizer));}
@@ -264,6 +265,7 @@ void Processor::ClassAlloc() {
 			}
 			td[ch].methods[XSQ_t]->SetParameters(&fGain[iChan[ch]][n], n, digitizer);
 			td[ch].methods[XSQ_t]->SetParameters(&fGain[iChan[ch]][y], y, digitizer);
+			td[ch].methods[XSQ_t]->SetEvent(td[ch].event);
 			if (td[ch].methods[XSQ_t]->Failed()) {
 				iFailed |= method_error;
 				bMethodActive[XSQ_t] = false;
@@ -275,7 +277,7 @@ void Processor::ClassAlloc() {
 				iFailed |= alloc_error;
 				bMethodActive[LAP_t] = false;
 			}
-			
+			td[ch].methods[LAP_t]->SetEvent(td[ch].event);
 			if (td[ch].methods[LAP_t]->Failed()) {
 				iFailed |= method_error;
 				bMethodActive[LAP_t] = false;

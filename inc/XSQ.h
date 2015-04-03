@@ -50,9 +50,10 @@ class XSQ : public Method {
 		static int siFitStatus_y[4];
 
 	public:
-		XSQ(const int ch, const int len, const float gain_in[], const shared_ptr<Digitizer> digitizer);
+		XSQ();
+		XSQ(int ch, int length, shared_ptr<Digitizer> digitizer);
 		virtual ~XSQ();
-		virtual void Analyze(const shared_ptr<Event> event);
+		virtual void Analyze();
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer);
 		static void root_fill() {XSQ::tree->Fill();}
 		static void root_init(TTree* tree_in);

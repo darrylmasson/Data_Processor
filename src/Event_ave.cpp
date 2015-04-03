@@ -14,7 +14,7 @@ Event_ave::~Event_ave() {
 	dTrace.reset();
 }
 
-Event_ave::SetAverage(int average) {
+void Event_ave::SetAverage(int average) {
 	iAverage = average;
 	iEventlength -= iAverage;
 	Event::siLength = iEventlength;
