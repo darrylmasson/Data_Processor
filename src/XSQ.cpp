@@ -31,7 +31,7 @@ double XSQ::sdProb_y[4]			= {0,0,0,0};
 int XSQ::siFitStatus_n[4]		= {0,0,0,0};
 int XSQ::siFitStatus_y[4]		= {0,0,0,0};
 
-XSQ::XSQ() {
+XSQ::XSQ() : ciNPar(4) {
 	if (g_verbose) cout << "XSQ c'tor\n";
 	XSQ::siHowMany++;
 }

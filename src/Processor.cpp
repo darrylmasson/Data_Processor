@@ -145,7 +145,7 @@ void Processor::BusinessTime() {
 		fin.read(buffer.get(), iEventsize);
 		if (bMethodActive[XSQ_t]) for (ch = 0; ch < iNchan; ch++) {
 			td[ch].event->Analyze();
-			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) td[ch].methods[m]->Analyze(td[ch].event); // TF1 isn't thread-friendly
+			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) td[ch].methods[m]->Analyze(); // TF1 isn't thread-friendly
 		} else {
 			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_create(&threads[ch], &attr, Process, (void*)&td[ch])) ) {iFailed |= thread_error; return;}
 			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {iFailed |= thread_error; return;}

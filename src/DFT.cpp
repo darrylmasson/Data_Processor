@@ -31,7 +31,7 @@ DFT::DFT() : ciOrder(3) {
 	DFT::siHowMany++;
 }
 
-DFT::DFT(int ch, int length, shared_ptr<Digitizer> digitizer) : ciOrder(3), Method(ch, length, digitizer) {
+DFT::DFT(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, length, digitizer), ciOrder(3) {
 	if (g_verbose) cout << "DFT " << id << " c'tor\n";
 	DFT::siHowMany++;
 	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
