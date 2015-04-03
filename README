@@ -24,14 +24,14 @@ The heirarchy of code is as follows:
 NGDP_types : contains fundamental types
 Digitizer : lowest level, contains information about digitizer characteristics.
 Event : one instance created per channel of data.  Contains baseline calculations and peakfinding algorithm.
+Event_ave : inherits from Event, does a moving average over the pulse
 Method : ABC for processing methods.  Mainly virtual functions for inheritance.
 CCM : integrator and pulse gradient.  Inherits from Method. Slow and fast integration times stored in config file. One instance per channel.
 DFT : fourier series. Inherits from Method. Once instance per channel.
 XSQ : fitting. Template waveforms stored in config/standard_events.root. Inherits from Method. One instance per channel.
 LAP : laplace transform. Runs for one value of s
-Processor : where most of the action happens. Instantiates all classes used and pushes all raw data through processing scripts.
-Config : Parses configuration file and raw data header.
-NG_dp : top level, contains interfacing and version checking.
+Processor : does most of the work for config file interfacing, memory allocs, version checking, all of that
+NG_dp : top level, doesn't do much interesting stuff.
 
 
 4. Maintenance
