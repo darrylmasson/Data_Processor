@@ -37,7 +37,7 @@ auto (*root_deinit[])() -> TTree* = {
 void* Process(void* arg) {
 	thread_data_t* input = (thread_data_t*)arg;
 	input->event->Analyze();
-	for (int i = 0; i < NUM_METHODS; i++) if (input->cbpActivated[i]) input->methods[i]->Analyze(input->event);
+	for (int i = 0; i < NUM_METHODS; i++) if (input->cbpActivated[i]) input->methods[i]->Analyze();
 	return nullptr;
 }
 
@@ -202,6 +202,7 @@ void Processor::BusinessTime() {
 		td[ch].event.reset();
 	}
 	auto i = system(("chmod g+w " + sRootFile).c_str());
+	i++; // to keep g++ happy about unused variables
 	cout << " done\n";
 	return;
 }

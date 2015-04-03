@@ -23,7 +23,8 @@ class Method {
 		shared_ptr<Event> event;
 	
 	public:
-		Method(int ch, int length, shared_ptr<Digitizer> digitizer) : iFailed(0), id(ch), iEventlength(length), dScaleT(digitizer->ScaleT()), dScaleV(digitizer->ScaleV()) {}
+		Method() : iFailed(0), id(-1), iEventlength(-1), dScaleT(-1), dScaleV(-1), event(nullptr) {}
+		Method(int ch, int length, shared_ptr<Digitizer> digitizer) : iFailed(0), id(ch), iEventlength(length), dScaleT(digitizer->ScaleT()), dScaleV(digitizer->ScaleV()), event(nullptr) {}
 		virtual ~Method() {event.reset();}
 		virtual void Analyze() = 0;
 		virtual void SetEvent(shared_ptr<Event> ev) {event = ev;}

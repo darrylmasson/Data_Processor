@@ -36,7 +36,7 @@ XSQ::XSQ() {
 	XSQ::siHowMany++;
 }
 
-XSQ::XSQ(int ch, int length, shared_ptr<Digitizer> digitizer) : ciNPar(4), Method(ch, length, digitizer) {
+XSQ::XSQ(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, length, digitizer), ciNPar(4) {
 	if (g_verbose) cout << "XSQ " << id << " c'tor\n";
 	XSQ::siHowMany++;
 	unique_ptr<TFile> std_file = nullptr;

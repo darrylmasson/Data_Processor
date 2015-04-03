@@ -6,7 +6,7 @@
 int Event::siLength = 0;
 int Event::siHowMany = 0;
 
-Event::Event() ciSamples(0) {
+Event::Event() : ciSamples(0) {
 	Event::siHowMany++;
 	if (g_verbose) cout << "Event c'tor\n";
 }
