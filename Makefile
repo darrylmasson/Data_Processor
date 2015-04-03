@@ -22,6 +22,7 @@ test :
 	$(CC) $(CFLAGS) $(TEST) $(addprefix $(SRCDIR)/,$(SRCS)) $(ROOT)
 
 install : $(L)$(OBJS)
+	mv $(OUTDIR)/NG_dp $(OUTDIR)/NG_dp_prev
 	$(CC) $(CFLAGS) $(INSTALL) $(addprefix $(OBJDIR)/,$(OBJS)) $(ROOT)
 
 $(L)%.o : %.cpp
