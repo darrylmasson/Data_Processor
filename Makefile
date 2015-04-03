@@ -4,7 +4,7 @@ OBJDIR = obj
 SRCDIR = src
 CFLAGS = -g -Wall -Iinc -O
 OUTDIR = /data/NeutronGenerator
-INSTALL = -o $(OUTDIR)/NGrawdp
+INSTALL = -o $(OUTDIR)/NG_dp
 TEST = -o test_exe
 SRCS = Digitizer.cpp \
 			 Event.cpp \
@@ -22,6 +22,7 @@ test :
 	$(CC) $(CFLAGS) $(TEST) $(addprefix $(SRCDIR)/,$(SRCS)) $(ROOT)
 
 install : $(L)$(OBJS)
+	mv $(OUTDIR)/NG_dp $(OUTDIR)/NG_dp_prev
 	$(CC) $(CFLAGS) $(INSTALL) $(addprefix $(OBJDIR)/,$(OBJS)) $(ROOT)
 
 $(L)%.o : %.cpp
