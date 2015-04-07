@@ -33,12 +33,12 @@ int main(int argc, char **argv) {
 	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v]";
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
-	unique_ptr<Processor> processor = nullptr;
+	Processor processor;
 	if (argc < 3) {
 		cout << sArgs << '\n';
 		return 0;
 	}
-	while ((i = getopt(argc, argv, "a:c:f:s:vx:")) != -1) { // command line options
+	while ((i = getopt(argc, argv, "a:c:f:s:p:vx:")) != -1) { // command line options
 		switch(i) {
 			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 			case 's': sSource = optarg;			break;
 			case 'v': g_verbose = true;			break;
 			case 'x': iSpecial = atoi(optarg);	break;
-			default: cout << sArgs << '\n'
+			default: cout << sArgs << '\n';
 				return -1;
 	}	}
 	if (sFileset == "\0") {
@@ -69,8 +69,9 @@ int main(int argc, char **argv) {
 		case 4: cout << "Special resolution: 10-bit\n"; break; // 10-bit simulation
 		default : cout << "Error: invalid special option specified\n"; return 0;
 	}
-	Processor processor(iSpecial, iAverage);
+
 	try { // general setup and preparatory steps
+		processor.SetSpecials(special, average);
 		processor.SetConfigFile(sConfigFile);
 		processor.SetFileSet(sFileset);
 		processor.SetSource(sSource);

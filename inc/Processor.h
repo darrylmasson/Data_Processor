@@ -92,6 +92,7 @@ class Processor {
 		void SetDetectorPositions(string in);
 		void SetFileSet(string in);
 		void SetSource(string in) {strcpy(cSource,in.c_str());}
+		void SetSpecials(int special, int average);
 };
 
 #endif // PROCESSOR_H

@@ -41,10 +41,10 @@ void* Process(void* arg) {
 	return nullptr;
 }
 
-Processor::Processor(int special, int average) {
+Processor::Processor() {
 	iFailed = 0;
-	iSpecial = special;
-	iAverage = average;
+	iSpecial = -1;
+	iAverage = 0;
 	strcpy(cMethodNames[0], "CCM_PGA");
 	strcpy(cMethodNames[1], "FOURIER");
 	strcpy(cMethodNames[2], "CHISQUARED");
@@ -515,6 +515,24 @@ void Processor::ParseConfigFile() {
 	return;
 }
 
+void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r2=#" or some permutation
+	if (in == "\0") {
+		bPositionsSet = false;
+		return;
+	}
+	unsigned int i(0), iCommas[2] = {0,1};
+	string glob; // for dealing with each each substring
+	for (i = 0; i < 6; i++) {
+		iCommas[1] = in.find(',',iCommas[0]);
+		glob = in.substr(iCommas[0],iCommas[1]-iCommas[0]); // grabs input between commas
+		if ((glob[0] == 'z') || (glob[0] == 'Z')) fDetectorZ[atoi(glob.c_str()+1)] = atof(glob.c_str()+glob.find('=')+1);
+		if ((glob[0] == 'r') || (glob[0] == 'R')) fDetectorR[atoi(glob.c_str()+1)] = atof(glob.c_str()+glob.find('=')+1);
+		iCommas[0] = iCommas[1]+1; // shift forward to next substring
+		if (iCommas[1] >= in.length()) break;
+	}
+	bPositionsSet = true;
+}
+
 void Processor::SetFileSet(string in) { // also opens raw and processed files
 	sRawDataFile = path + "/rawdata/" + in + ".dat";
 	sRootFile = path + "/prodata/" + in;
@@ -536,20 +554,7 @@ void Processor::SetFileSet(string in) { // also opens raw and processed files
 	}
 }
 
-void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r2=#" or some permutation
-	if (in == "\0") {
-		bPositionsSet = false;
-		return;
-	}
-	int i(0), iCommas[2] = {0,1};
-	string glob; // for dealing with each each substring
-	for (i = 0; i < 6; i++) {
-		iCommas[1] = in.find(',',iCommas[0]);
-		glob = in.substr(iCommas[0],iCommas[1]-iCommas[0]); // grabs input between commas
-		if ((glob[0] == 'z') || (glob[0] == 'Z')) fDetectorZ[atoi(glob.c_str()+1)] = atof(glob.c_str()+glob.find('=')+1);
-		if ((glob[0] == 'r') || (glob[0] == 'R')) fDetectorR[atoi(glob.c_str()+1)] = atof(glob.c_str()+glob.find('=')+1);
-		iCommas[0] = iCommas[1]+1; // shift
-		if (iCommas[1] >= in.length()) break;
-	}
-	bPositionsSet = true;
+void Processor::SetSpecials(int special, int average) {
+	iSpecial = special;
+	iAverage = average;
 }
