@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
 	}
 
 	try { // general setup and preparatory steps
-		processor.SetSpecials(special, average);
+		processor.SetSpecials(iSpecial, iAverage);
 		processor.SetConfigFile(sConfigFile);
 		processor.SetFileSet(sFileset);
 		processor.SetSource(sSource);

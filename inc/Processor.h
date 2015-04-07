@@ -80,7 +80,7 @@ class Processor {
 		thread_data_t	td[MAX_CH];
 		
 	public:
-		Processor(int special = -1, int average = 0);
+		Processor();
 		~Processor(); // handles cleanup
 		void BusinessTime(); // it's business, it's business time!
 		void ClassAlloc(); // all allocs
