@@ -29,12 +29,13 @@ bool g_verbose(false);
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v3_5\n";
 	int i(0), iSpecial(-1), iAverage(0);
-	string sConfigFile = "\0", sFileset = "\0", sSource = "\0";
+	string sConfigFile = "\0", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
+	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v]";
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
 	unique_ptr<Processor> processor = nullptr;
 	if (argc < 3) {
-		cout << "Arguments: -f file [-s source -c config -x special -a moving_average -v]\n";
+		cout << sArgs << '\n';
 		return 0;
 	}
 	while ((i = getopt(argc, argv, "a:c:f:s:vx:")) != -1) { // command line options
@@ -42,10 +43,11 @@ int main(int argc, char **argv) {
 			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;
 			case 'f': sFileset = optarg;		break;
+			case 'p': sDetectorPos = optarg;	break;
 			case 's': sSource = optarg;			break;
 			case 'v': g_verbose = true;			break;
 			case 'x': iSpecial = atoi(optarg);	break;
-			default: cout << "Arguments: -f file [-s source -c config -x special -a moving_average -v]\n";
+			default: cout << sArgs << '\n'
 				return -1;
 	}	}
 	if (sFileset == "\0") {
@@ -67,32 +69,27 @@ int main(int argc, char **argv) {
 		case 4: cout << "Special resolution: 10-bit\n"; break; // 10-bit simulation
 		default : cout << "Error: invalid special option specified\n"; return 0;
 	}
-	try {processor = unique_ptr<Processor>(new Processor(iSpecial, iAverage));}
-	catch (bad_alloc& ba) {
-		cout << "Error allocating memory\n";
-		return 0;
-	}
+	Processor processor(iSpecial, iAverage);
 	try { // general setup and preparatory steps
-		processor->SetConfigFile(sConfigFile);
-		processor->SetFileSet(sFileset);
-		processor->SetSource(sSource);
-		processor->ParseFileHeader();
-		processor->ParseConfigFile();
-		processor->ConfigTrees();
-		processor->ClassAlloc();
+		processor.SetConfigFile(sConfigFile);
+		processor.SetFileSet(sFileset);
+		processor.SetSource(sSource);
+		processor.ParseFileHeader();
+		processor.ParseConfigFile();
+		processor.SetDetectorPositions(sDetectorPos);
+		processor.ConfigTrees();
+		processor.ClassAlloc();
 	} catch (ProcessorException& e) {
 		cout << e.what();
-		cout << error_message[processor->Failed()] << '\n';
-		processor.reset();
+		cout << error_message[processor.Failed()] << '\n';
 		return 0;
 	}
 	
 	t_start = steady_clock::now();
-	processor->BusinessTime();
+	processor.BusinessTime();
 	t_end = steady_clock::now();
-	if (processor->Failed()) cout << error_message[processor->Failed()] << '\n';
+	if (processor.Failed()) cout << error_message[processor.Failed()] << '\n';
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
-	processor.reset();
 	cout << "Total time elapsed: " << t_elapsed.count() << "sec\n";
 	return 0;
 }

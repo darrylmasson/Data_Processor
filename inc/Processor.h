@@ -46,11 +46,13 @@ class Processor {
 		
 		bool			bMethodActive[NUM_METHODS]; // active for this run
 		bool			bMethodDone[NUM_METHODS]; // previously processed
+		bool			bPositionsSet;
 		bool			bRecordTimestamps;
 		
-		char			cMethodNames[NUM_METHODS][12];
 		char			cDigName[12];
+		char			cMethodNames[NUM_METHODS][12];
 		char			cSource[12];
+		char			cTreename[NUM_METHODS][4];
 		
 		unsigned short	usMask; // mask of enabled channels
 		
@@ -72,19 +74,22 @@ class Processor {
 		unsigned int	uiThreshold[MAX_CH]; // trigger thresholds
 		
 		float			fGain[MAX_CH][P]; // for fitter
+		float			fDetectorZ[3];
+		float			fDetectorR[3];
 		
 		thread_data_t	td[MAX_CH];
 		
 	public:
 		Processor(int special = -1, int average = 0);
-		~Processor();
+		~Processor(); // handles cleanup
 		void BusinessTime(); // it's business, it's business time!
-		void ClassAlloc();
+		void ClassAlloc(); // all allocs
 		void ConfigTrees(); // includes version checking
 		int Failed() {return iFailed;}
 		void ParseFileHeader();
 		void ParseConfigFile();
 		void SetConfigFile(string in) {sConfigFileName = in;}
+		void SetDetectorPositions(string in);
 		void SetFileSet(string in);
 		void SetSource(string in) {strcpy(cSource,in.c_str());}
 };

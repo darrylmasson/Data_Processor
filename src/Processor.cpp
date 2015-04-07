@@ -79,6 +79,8 @@ Processor::Processor(int special, int average) {
 	memset(uiThreshold, 0, sizeof(uiThreshold));
 	
 	memset(fGain, 0, sizeof(fGain));
+	memset(fDetectorZ, 0, sizeof(fDetectorZ));
+	memset(fDetectorR, 0, sizeof(fDetectorR));
 	
 	memset(td, 0, sizeof(td));
 }
@@ -103,7 +105,6 @@ void Processor::BusinessTime() {
 	}
 	int ch(0), ev(0), m(0), rc(0), iProgCheck(0), iRate(0), iTimeleft(0), iLivetime(0);
 	pthread_t threads[MAX_CH];
-	char cTreename[NUM_METHODS][4];
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -111,32 +112,12 @@ void Processor::BusinessTime() {
 	
 	unsigned long* ulpTimestamp = (unsigned long*)(buffer.get() + sizeof(long));
 	unsigned long ulTSFirst(0), ulTSLast(0);
+	if (bRecordTimestamps) tree->Branch("Timestamp", &ulpTimestamp[0], "time_stamp/l");
 	
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
 	iProgCheck = iNumEvents/100 + 1; // don't want it to be zero
-	f->cd();
 	
-	for (m = 0; m < NUM_METHODS; m++) { // setting up trees
-		sprintf(cTreename[m], "T%i", m);
-		if (bMethodActive[m]) {
-			try {tree = unique_ptr<TTree>(new TTree(cTreename[m], cMethodNames[m]));}
-			catch (bad_alloc& ba) {iFailed |= alloc_error; bMethodActive[m] = false;}
-			if (tree->IsZombie()) {iFailed |= root_error; bMethodActive[m] = false;}
-			root_init[m](tree.release());
-	}	}
-	
-	if (bRecordTimestamps) {
-		try {tree = unique_ptr<TTree>(new TTree("TS","Timestamps"));}
-		catch (bad_alloc& ba) {
-			iFailed |= alloc_error;
-			return;
-		} if (tree->IsZombie()) {
-			iFailed |= root_error;
-			return;
-		}
-		tree->Branch("Timestamp", &ulpTimestamp[0], "time_stamp/l");
-	}
 	t_that = steady_clock::now();
 	cout << "Processing:\n";
 	cout << "Completed\tRate (ev/s)\tTime left (s)\n";
@@ -194,13 +175,21 @@ void Processor::BusinessTime() {
 			tree.reset();
 		}
 	}
-	buffer.reset();
-	if (g_verbose) cout << " d'toring classes: ";
-	for (ch = 0; ch < iNchan; ch++) { // general d'tors
-		if (g_verbose) cout << "CH" << ch << " ";
-		for (m = 0; m < NUM_METHODS; m++) td[ch].methods[m] = nullptr;
-		td[ch].event.reset();
+	if (!bRecordTimestamps) { // check for existence of cuts file - only if reprocessing
+		string sCutsFile = sRootFile;
+		sCutsFile.insert(sRootFile.find('.'),"Cuts");
+		fin.open(sCutsFile.c_str(), ios::in);
+		if (fin.is_open()) {
+			fin.close();
+			for (m = 0; m < NUM_METHODS; m++) if (bMethodDone[m] || bMethodActive[m]) { // all existing trees
+				tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
+				tree->AddFriend("Tcuts",sCutsFile.c_str());
+				tree->Write("",TObject::kOverwrite);
+				tree.reset();
+			}
+		}
 	}
+	buffer.reset();
 	auto i = system(("chmod g+w " + sRootFile).c_str());
 	i++; // to keep g++ happy about unused variables
 	cout << " done\n";
@@ -214,6 +203,9 @@ void Processor::ClassAlloc() {
 		throw ProcessorException();
 	}
 	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
+	
+	f->cd();
+	
 	for (auto ch = 0; ch < iNchan; ch++) { // initializing all classes needed
 		if (g_verbose) cout << "CH" << ch << '\n';
 		try {
@@ -287,6 +279,27 @@ void Processor::ClassAlloc() {
 		td[ch].cbpActivated = bMethodActive;
 		if (g_verbose) cout << '\n';
 	}
+	
+	for (auto m = 0; m < NUM_METHODS; m++) { // setting up trees
+		sprintf(cTreename[m], "T%i", m);
+		if (bMethodActive[m]) {
+			try {tree = unique_ptr<TTree>(new TTree(cTreename[m], cMethodNames[m]));}
+			catch (bad_alloc& ba) {iFailed |= alloc_error; bMethodActive[m] = false;}
+			if (tree->IsZombie()) {iFailed |= root_error; bMethodActive[m] = false;}
+			root_init[m](tree.release());
+	}	}
+		
+	if (bRecordTimestamps) {
+		try {tree = unique_ptr<TTree>(new TTree("TS","Timestamps"));}
+		catch (bad_alloc& ba) {
+			iFailed |= alloc_error;
+			return;
+		} if (tree->IsZombie()) {
+			iFailed |= root_error;
+			return;
+		}	
+	}
+	
 	if (iFailed) throw ProcessorException();
 }
 
@@ -294,7 +307,7 @@ void Processor::ConfigTrees() {
 	bool bUpdate(false), bChecked[NUM_METHODS];
 	char overwrite(0), cMethodName[12];
 	int iMethodID(0), iDateNow(0), iTimeNow(0), iPGACheck[MAX_CH], iSlowCheck[MAX_CH], iFastCheck[MAX_CH];
-	float fDetPositionZ[3] = {0,0,0}, fDetPositionR[3] = {0,0,0}, fVersion(0);
+	float fVersion(0);
 	TTree* tc = nullptr;
 	memset(bChecked, 0, sizeof(bChecked));
 	time_t t_rawtime;
@@ -384,13 +397,14 @@ void Processor::ConfigTrees() {
 		if (iSpecial != -1) tree->Branch("Special", &iSpecial, "special/I");
 		if (iAverage != 0) tree->Branch("Moving_average", &iAverage, "average/I");
 		if (strcmp(cSource, "NG") == 0) {
-			cout << "Enter detector positions:\n";
-			for (auto i = 0; i < 3; i++) {
-				cout << "Detector " << i << " z: "; cin >> fDetPositionZ[i];
-				cout << "Detector " << i << " r: "; cin >> fDetPositionR[i];
-			}
-			tree->Branch("Detector_position_z", fDetPositionZ, "z_pos[3]/F");
-			tree->Branch("Detector_position_r", fDetPositionR, "r_pos[3]/F");
+			if (!bPositionsSet) {
+				cout << "Enter detector positions:\n";
+				for (auto i = 0; i < 3; i++) {
+					cout << "Detector " << i << " z: "; cin >> fDetectorZ[i];
+					cout << "Detector " << i << " r: "; cin >> fDetectorR[i];
+			}	}
+			tree->Branch("Detector_position_z", fDetectorZ, "z_pos[3]/F");
+			tree->Branch("Detector_position_r", fDetectorR, "r_pos[3]/F");
 		}
 		tree->Fill();
 		tree->Write();
@@ -520,4 +534,22 @@ void Processor::SetFileSet(string in) { // also opens raw and processed files
 		iFailed |= file_error;
 		throw ProcessorException();
 	}
+}
+
+void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r2=#" or some permutation
+	if (in == "\0") {
+		bPositionsSet = false;
+		return;
+	}
+	int i(0), iCommas[2] = {0,1};
+	string glob; // for dealing with each each substring
+	for (i = 0; i < 6; i++) {
+		iCommas[1] = in.find(',',iCommas[0]);
+		glob = in.substr(iCommas[0],iCommas[1]-iCommas[0]); // grabs input between commas
+		if ((glob[0] == 'z') || (glob[0] == 'Z')) fDetectorZ[atoi(glob.c_str()+1)] = atof(glob.c_str()+glob.find('=')+1);
+		if ((glob[0] == 'r') || (glob[0] == 'R')) fDetectorR[atoi(glob.c_str()+1)] = atof(glob.c_str()+glob.find('=')+1);
+		iCommas[0] = iCommas[1]+1; // shift
+		if (iCommas[1] >= in.length()) break;
+	}
+	bPositionsSet = true;
 }
