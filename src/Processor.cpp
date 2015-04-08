@@ -475,12 +475,13 @@ void Processor::ParseFileHeader() {
 
 void Processor::ParseConfigFile() {
 	if (g_verbose) cout << "Parsing config file\n";
-	ifstream fconf((path + "/config/" + sConfigFileName).c_str(),ios::in);
+	string sFilename = path + "/config/" + sConfigFileName;
+	ifstream fconf(sFilename.c_str(),ios::in);
 	if (!fconf.is_open()) {
-		cout << "Config file " << path << "/config/" << sConfigFileName << " not found\n";
+		cout << "Config file " << sFilename << " not found\n";
 		iFailed |= file_error;
 		throw ProcessorException();
-	}
+	} else if (g_verbose) cout << "Opened " << sFilename << '\n';
 	
 	char temp[32] = {'\0'}, cBuffer[64] = {'\0'};
 	int ch(-1), code(0);
@@ -492,11 +493,11 @@ void Processor::ParseConfigFile() {
 			while (strstr(cBuffer, "END") == NULL) {
 				sscanf(cBuffer, "%s %i", temp, &code);
 				for (int i = 0; i < NUM_METHODS; i++) if (strcmp(temp, cMethodNames[i]) == 0) bMethodActive[i] = code;
-				fin.getline(cBuffer, 64, '\n');
+				fconf.getline(cBuffer, 64, '\n');
 			} // end of while
 		} // end of if method
 		if (strcmp(cBuffer + 10, cDigName) == 0) {
-			fin.getline(cBuffer, 64, '\n');
+			fconf.getline(cBuffer, 64, '\n');
 			while (strstr(cBuffer, "END") == NULL) {
 				if (strstr(cBuffer, "CHANNEL") != NULL) { // loads processing parameters
 					ch = atoi(&cBuffer[8]);
