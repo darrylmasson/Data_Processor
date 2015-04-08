@@ -42,6 +42,7 @@ void* Process(void* arg) {
 }
 
 Processor::Processor() {
+	if (g_verbose) cout << "Processor c'tor\n";
 	iFailed = 0;
 	iSpecial = -1;
 	iAverage = 0;
@@ -197,6 +198,7 @@ void Processor::BusinessTime() {
 }
 
 void Processor::ClassAlloc() {
+	if (g_verbose) cout << "Alloc'ing\n";
 	try {buffer = unique_ptr<char[]>(new char[iEventsize]);}
 	catch (bad_alloc& ba) {
 		iFailed |= alloc_error;
@@ -445,6 +447,7 @@ void Processor::ConfigTrees() {
 }
 
 void Processor::ParseFileHeader() {
+	if (g_verbose) cout << "Parsing file header\n";
 	if (usMask != 0) return; // for the unlikely event this gets called twice
 	char cBuffer[sizeof_f_header];
 	fin.seekg(0, fin.end);
@@ -471,6 +474,7 @@ void Processor::ParseFileHeader() {
 }
 
 void Processor::ParseConfigFile() {
+	if (g_verbose) cout << "Parsing config file\n";
 	ifstream fconf((path + "/config/" + sConfigFileName).c_str(),ios::in);
 	if (!fconf.is_open()) {
 		cout << "Config file " << path << "/config/" << sConfigFileName << " not found\n";
@@ -520,6 +524,7 @@ void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r
 		bPositionsSet = false;
 		return;
 	}
+	if (g_verbose) cout << "Setting detector positions\n";
 	unsigned int i(0), iCommas[2] = {0,1};
 	string glob; // for dealing with each each substring
 	for (i = 0; i < 6; i++) {
@@ -534,6 +539,7 @@ void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r
 }
 
 void Processor::SetFileSet(string in) { // also opens raw and processed files
+	if (g_verbose) cout << "Opening files\n";
 	sRawDataFile = path + "/rawdata/" + in + ".dat";
 	sRootFile = path + "/prodata/" + in;
 	if ((iSpecial == -1) && (iAverage == 0)) sRootFile += ".root";
