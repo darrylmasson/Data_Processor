@@ -29,7 +29,7 @@ bool g_verbose(false);
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v3_5\n";
 	int i(0), iSpecial(-1), iAverage(0);
-	string sConfigFile = "\0", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
+	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
 	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v]";
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
