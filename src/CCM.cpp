@@ -54,9 +54,18 @@ void CCM::SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {
 	auto special = digitizer->Special();
 	int value = *((int*)val);
 	switch (which) {
-		case 0 : iFastTime = special ? value/2 : value; break;
-		case 1 : iSlowTime = special ? value/2 : value; break;
-		case 2 : iPGASamples = special ? value/2 : value; break;
+		case 0 :
+			iFastTime = special ? value : value/2; // special == 0 means half values. Derp.
+			if (g_verbose) cout << "Fast " << iFastTime << '\n';
+			break;
+		case 1 :
+			iSlowTime = special ? value : value/2;
+			if (g_verbose) cout << "Slow " << iSlowTime << '\n';
+			break;
+		case 2 :
+			iPGASamples = special ? value : value/2;
+			if (g_verbose) cout << "PGA " << iPGASamples << '\n';
+			break;
 		default : break;
 	}
 }
@@ -112,6 +121,7 @@ void CCM::Analyze() {
 	for (i = 0; i < iEventlength; i++) { // determine integration bounds
 		if ((iStop == (iEventlength-1)) && ((event->Peak_x() + i) < iEventlength) && (event->Trace(event->Peak_x() + i) > dThreshold)) iStop = (event->Peak_x() + i);
 		if ((iStart == 0) && ((event->Peak_x() - i) > -1) && (event->Trace(event->Peak_x() - i) > dThreshold)) iStart = (event->Peak_x() - i);
+		// first checks to see if start/stop has been found, then if the array index is valid, then checks the value
 		if ((iStart != 0) && (iStop != (iEventlength-1))) break;
 	}
 	
@@ -153,7 +163,7 @@ void CCM::Analyze() {
 	CCM::ssSlowStop[id] = (iStart + iSlow)*dScaleT;
 	
 	CCM::sdFullInt[id] = ((event->Baseline() * (iStop - iStart)) - (0.5*lFullint)) * dScaleV * dScaleT;
-	CCM::sdSlowInt[id] = ((event->Baseline() * (iSlow)) - (0.5*lSlowint)) * dScaleV * dScaleT;
+	CCM::sdSlowInt[id] = ((event->Baseline() * (iSlow)) - (0.5*lSlowint)) * dScaleV * dScaleT; // baseline subtraction
 	CCM::sdFastInt[id] = ((event->Baseline() * (iFast)) - (0.5*lFastint)) * dScaleV * dScaleT;
 	
 	if ((event->Peak_x() + iPGASamples + 1) < iEventlength) { // PGA
