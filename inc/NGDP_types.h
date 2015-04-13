@@ -11,7 +11,7 @@
 using namespace std;
 
 const int MAX_CH = 8;
-const string path = {"/data/NeutronGenerator"};
+const string path = "/data/NeutronGenerator";
 const int sizeof_f_header = 86; // sizeof(f_header_t) returns the wrong value
 const int sizeof_ev_header = 16;
 

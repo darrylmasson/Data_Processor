@@ -6,7 +6,7 @@
 Event_ave::Event_ave(int len, shared_ptr<Digitizer> digitizer) : Event(len, digitizer) {
 	if (g_verbose) cout << "Event_ave " << Event::siHowMany << " c'tor\n";
 	try { dTrace = unique_ptr<double[]>(new double[iEventlength]);}
-	catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
+	catch (bad_alloc& ba) {iFailed |= (1 << alloc_error); return;}
 }
 
 Event_ave::~Event_ave() {

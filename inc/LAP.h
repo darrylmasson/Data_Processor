@@ -23,7 +23,7 @@ class LAP : public Method {
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {}
 		static void root_fill() {LAP::tree->Fill();}
 		static void root_init(TTree* tree_in);
-		static TTree* root_deinit() {return LAP::tree.release();}
+		static void root_deinit() {LAP::tree.reset();} // friending is handled after the fact
 		static int HowMany() {return LAP::siHowMany;}
 		static float sfVersion;
 		static float sfS;

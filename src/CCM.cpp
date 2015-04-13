@@ -42,7 +42,7 @@ CCM::CCM() {
 CCM::CCM(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, length, digitizer) {
 	CCM::siHowMany++;
 	if (g_verbose) cout << "CCM " << id << " c'tor\n";
-	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
+	if ((id >= MAX_CH) || (id < 0)) iFailed |= (1 << method_error);
 }
 
 CCM::~CCM() {

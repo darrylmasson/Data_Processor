@@ -27,7 +27,7 @@ auto (*root_fill[])() -> void = {
 	LAP::root_fill
 };
 
-auto (*root_deinit[])() -> TTree* = {
+auto (*root_deinit[])() -> void = {
 	CCM::root_deinit,
 	DFT::root_deinit,
 	XSQ::root_deinit,
@@ -43,7 +43,6 @@ void* Process(void* arg) {
 
 Processor::Processor() {
 	if (g_verbose) cout << "Processor c'tor\n";
-	iFailed = 0;
 	iSpecial = -1;
 	iAverage = 0;
 	strcpy(cMethodNames[0], "CCM_PGA");
@@ -87,6 +86,7 @@ Processor::Processor() {
 }
 
 Processor::~Processor() {
+	if (g_verbose) cout << "Processor d'tor\n";
 	for (auto ch = 0; ch < MAX_CH; ch++) {
 		td[ch].event.reset();
 		for (auto m = 0; m < NUM_METHODS; m++) td[ch].methods[m].reset();
@@ -100,10 +100,6 @@ Processor::~Processor() {
 }
 
 void Processor::BusinessTime() {
-	if (memchr(bMethodActive, 1, NUM_METHODS) == nullptr) {
-		cout << "No processing method activated\n";
-		return;
-	}
 	int ch(0), ev(0), m(0), rc(0), iProgCheck(0), iRate(0), iTimeleft(0), iLivetime(0);
 	pthread_t threads[MAX_CH];
 	pthread_attr_t attr;
@@ -117,11 +113,20 @@ void Processor::BusinessTime() {
 	
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
-	iProgCheck = iNumEvents/100 + 1; // don't want it to be zero
+	iProgCheck = max(iNumEvents/100 + 1, 10000); // too many print statements slows the process
+	
+	if (memchr(bMethodActive, 1, NUM_METHODS) == nullptr) {
+		cout << "No processing method activated\n";
+		return;
+	} else {
+		cout << "Active methods: ";
+		for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) cout << cMethodNames[m] << " ";
+		cout << '\n';
+	}
 	
 	t_that = steady_clock::now();
 	cout << "Processing:\n";
-	cout << "Completed\tRate (ev/s)\tTime left (s)\n";
+	cout << "Completed\tRate (ev/s)\tTime left\n";
 	fin.seekg(sizeof_f_header, fin.beg);
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.get(), iEventsize);
@@ -129,12 +134,12 @@ void Processor::BusinessTime() {
 			td[ch].event->Analyze();
 			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) td[ch].methods[m]->Analyze(); // TF1 isn't thread-friendly
 		} else {
-			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_create(&threads[ch], &attr, Process, (void*)&td[ch])) ) {iFailed |= thread_error; return;}
-			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {iFailed |= thread_error; return;}
+			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_create(&threads[ch], &attr, Process, (void*)&td[ch])) ) {iFailed |= (1 << thread_error); return;}
+			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {iFailed |= (1 << thread_error); return;}
 		}
 		for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) root_fill[m]();
 		if (bRecordTimestamps) tree->Fill();
-		if (ev % iProgCheck == iProgCheck-1) { // progress updates
+		if (ev % iProgCheck == iProgCheck>>1) { // progress updates
 			cout << ev*100l/iNumEvents << "%\t\t";
 			t_this = steady_clock::now();
 			t_elapsed = duration_cast<duration<double>>(t_this-t_that);
@@ -142,7 +147,9 @@ void Processor::BusinessTime() {
 			iRate = t_elapsed.count() == 0 ? 9001 : iProgCheck/t_elapsed.count(); // it's OVER 9000!
 			cout << iRate << "\t\t";
 			iTimeleft = (iNumEvents - ev)/iRate;
-			cout << iTimeleft << "\n";
+			if (iTimeleft > (1 << 12)) cout << iTimeleft/3600 << "h" << iTimeleft%60 << "m\n";
+			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
+			else cout << iTimeleft << " s\n";
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];	
 	}
@@ -152,45 +159,12 @@ void Processor::BusinessTime() {
 	iLivetime = (ulTSLast - ulTSFirst)/125e6;
 	cout << "Acquisition livetime: " << iLivetime << "s\nBeginning cleanup: ";
 	fin.close();
-	if (bRecordTimestamps) {
-		f->cd();
-		tree->Write("",TObject::kOverwrite);
-		tree.reset();
-	}
-	if (g_verbose) cout << "making friends: ";
-	for (m = 0; m < NUM_METHODS; m++) {
-		if (bMethodActive[m]) { // processed this run
-			if (g_verbose) cout << cTreename[m] << "a ";
-			tree = unique_ptr<TTree>(root_deinit[m]());
-			tree->AddFriend("TS");
-			for (int i = 1; i < NUM_METHODS; i++) if ((bMethodDone[(m+i)%NUM_METHODS]) || (bMethodActive[(m+i)%NUM_METHODS])) tree->AddFriend(cTreename[(m+i)%NUM_METHODS]);
-			f->cd();
-			tree->Write("",TObject::kOverwrite);
-			tree.reset();
-		} else if ((bMethodDone[m]) && !(bMethodActive[m])) { // processed sometime previous
-			if (g_verbose) cout << cTreename[m] << "b ";
-			tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
-			for (int i = 1; i < NUM_METHODS; i++) if ((bMethodDone[(m+i)%NUM_METHODS]) || (bMethodActive[(m+i)%NUM_METHODS])) tree->AddFriend(cTreename[(m+i)%NUM_METHODS]);
-			f->cd();
-			tree->Write("",TObject::kOverwrite);
-			tree.reset();
-		}
-	}
-	if (!bRecordTimestamps) { // check for existence of cuts file - only if reprocessing
-		string sCutsFile = sRootFile;
-		sCutsFile.insert(sRootFile.find('.'),"Cuts");
-		fin.open(sCutsFile.c_str(), ios::in);
-		if (fin.is_open()) {
-			fin.close();
-			for (m = 0; m < NUM_METHODS; m++) if (bMethodDone[m] || bMethodActive[m]) { // all existing trees
-				tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
-				tree->AddFriend("Tcuts",sCutsFile.c_str());
-				tree->Write("",TObject::kOverwrite);
-				tree.reset();
-			}
-		}
-	}
+	f->cd();
+	f->Write("",TObject::kWriteDelete);
+	
+	for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) root_deinit[m]();
 	buffer.reset();
+	tree.reset();
 	auto i = system(("chmod g+w " + sRootFile).c_str());
 	i++; // to keep g++ happy about unused variables
 	cout << " done\n";
@@ -201,7 +175,7 @@ void Processor::ClassAlloc() {
 	if (g_verbose) cout << "Alloc'ing\n";
 	try {buffer = unique_ptr<char[]>(new char[iEventsize]);}
 	catch (bad_alloc& ba) {
-		iFailed |= alloc_error;
+		iFailed |= (1 << alloc_error);
 		throw ProcessorException();
 	}
 	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
@@ -214,7 +188,7 @@ void Processor::ClassAlloc() {
 			if (iAverage == 0) td[ch].event = shared_ptr<Event>(new Event(iEventlength, digitizer));
 			else td[ch].event = shared_ptr<Event_ave>(new Event_ave(iEventlength, digitizer));
 		} catch (bad_alloc& ba) {
-			iFailed |= alloc_error;
+			iFailed |= (1 << alloc_error);
 			throw ProcessorException();
 		}
 		td[ch].event->SetAverage(iAverage);
@@ -222,13 +196,13 @@ void Processor::ClassAlloc() {
 		td[ch].event->SetThreshold(uiThreshold[iChan[ch]]);
 		td[ch].event->SetTrace(uspTrace + ch*iEventlength);
 		if (td[ch].event->Failed()) {
-			iFailed |= method_error;
+			iFailed |= (1 << method_error);
 			throw ProcessorException();
 		}
 		if (bMethodActive[CCM_t]) {
 			try {td[ch].methods[CCM_t] = shared_ptr<Method>(new CCM(iChan[ch],Event::Length(),digitizer));}
 			catch (bad_alloc& ba) {
-				iFailed |= alloc_error;
+				iFailed |= (1 << alloc_error);
 				bMethodActive[CCM_t] = false;
 			}
 			td[ch].methods[CCM_t]->SetParameters(&iFastTime[iChan[ch]], 0, digitizer);
@@ -236,18 +210,18 @@ void Processor::ClassAlloc() {
 			td[ch].methods[CCM_t]->SetParameters(&iPGASamples[iChan[ch]], 2, digitizer);
 			td[ch].methods[CCM_t]->SetEvent(td[ch].event);
 			if (td[ch].methods[CCM_t]->Failed()) {
-				iFailed |= method_error;
+				iFailed |= (1 << method_error);
 				bMethodActive[CCM_t] = false;
 			}
 		}
 		if (bMethodActive[DFT_t]) {
 			try {td[ch].methods[DFT_t] = shared_ptr<Method>(new DFT(iChan[ch], Event::Length(), digitizer));}
 			catch (bad_alloc& ba) {
-				iFailed |= alloc_error;
+				iFailed |= (1 << alloc_error);
 				bMethodActive[DFT_t] = false;
 			}
 			if (td[ch].methods[DFT_t]->Failed()) {
-				iFailed |= method_error;
+				iFailed |= (1 << method_error);
 				bMethodActive[DFT_t] = false;
 			}
 			td[ch].methods[DFT_t]->SetEvent(td[ch].event);
@@ -255,26 +229,26 @@ void Processor::ClassAlloc() {
 		if (bMethodActive[XSQ_t]) {
 			try {td[ch].methods[XSQ_t] = shared_ptr<Method>(new XSQ(iChan[ch], Event::Length(), digitizer));}
 			catch (bad_alloc& ba) {
-				iFailed |= alloc_error;
+				iFailed |= (1 << alloc_error);
 				bMethodActive[XSQ_t] = false;
 			}
 			td[ch].methods[XSQ_t]->SetParameters(&fGain[iChan[ch]][n], n, digitizer);
 			td[ch].methods[XSQ_t]->SetParameters(&fGain[iChan[ch]][y], y, digitizer);
 			td[ch].methods[XSQ_t]->SetEvent(td[ch].event);
 			if (td[ch].methods[XSQ_t]->Failed()) {
-				iFailed |= method_error;
+				iFailed |= (1 << method_error);
 				bMethodActive[XSQ_t] = false;
 			}
 		}
 		if (bMethodActive[LAP_t]) {
 			try {td[ch].methods[LAP_t] = shared_ptr<Method>(new LAP(iChan[ch], Event::Length(), digitizer));}
 			catch (bad_alloc& ba) {
-				iFailed |= alloc_error;
+				iFailed |= (1 << alloc_error);
 				bMethodActive[LAP_t] = false;
 			}
 			td[ch].methods[LAP_t]->SetEvent(td[ch].event);
 			if (td[ch].methods[LAP_t]->Failed()) {
-				iFailed |= method_error;
+				iFailed |= (1 << method_error);
 				bMethodActive[LAP_t] = false;
 			}
 		}
@@ -286,18 +260,18 @@ void Processor::ClassAlloc() {
 		sprintf(cTreename[m], "T%i", m);
 		if (bMethodActive[m]) {
 			try {tree = unique_ptr<TTree>(new TTree(cTreename[m], cMethodNames[m]));}
-			catch (bad_alloc& ba) {iFailed |= alloc_error; bMethodActive[m] = false;}
-			if (tree->IsZombie()) {iFailed |= root_error; bMethodActive[m] = false;}
+			catch (bad_alloc& ba) {iFailed |= (1 << alloc_error); bMethodActive[m] = false;}
+			if (tree->IsZombie()) {iFailed |= (1 << root_error); bMethodActive[m] = false;}
 			root_init[m](tree.release());
 	}	}
 		
 	if (bRecordTimestamps) {
 		try {tree = unique_ptr<TTree>(new TTree("TS","Timestamps"));}
 		catch (bad_alloc& ba) {
-			iFailed |= alloc_error;
+			iFailed |= (1 << alloc_error);
 			return;
 		} if (tree->IsZombie()) {
-			iFailed |= root_error;
+			iFailed |= (1 << root_error);
 			return;
 		}	
 	}
@@ -341,7 +315,7 @@ void Processor::ConfigTrees() {
 		cin >> overwrite;
 		if (overwrite == 'y') f->Delete("*;*");
 		else {
-			iFailed |= root_error;
+			iFailed |= (1 << root_error);
 			throw ProcessorException();
 		}
 	}
@@ -385,7 +359,7 @@ void Processor::ConfigTrees() {
 		try {tree.reset(new TTree("TI","Info"));}
 		catch (bad_alloc& ba) {
 			cout << "Could not create info tree\n";
-			iFailed |= alloc_error;
+			iFailed |= (1 << alloc_error);
 			throw ProcessorException();
 		}
 		tree->Branch("Digitizer", cDigName, "name[12]/B");
@@ -414,7 +388,7 @@ void Processor::ConfigTrees() {
 		try {tree.reset(new TTree("TV","Versions"));}
 		catch (bad_alloc& ba) {
 			cout << "Could not create version tree\n";
-			iFailed |= alloc_error;
+			iFailed |= (1 << alloc_error);
 			throw ProcessorException();
 		}
 		tree->Branch("MethodName", cMethodName, "codename[12]/B");
@@ -433,7 +407,7 @@ void Processor::ConfigTrees() {
 		try {tree.reset(new TTree("TC","CCM_info"));}
 		catch (bad_alloc& ba) {
 			cout << "Could not create CCM info tree\n";
-			iFailed |= alloc_error;
+			iFailed |= (1 << alloc_error);
 			throw ProcessorException();
 		}
 		tree->Branch("PGA_samples", iPGASamples, "pga[8]/I");
@@ -446,9 +420,38 @@ void Processor::ConfigTrees() {
 	}
 }
 
+void Processor::FriendshipIsMagic() {
+	if (g_verbose) cout << "Making friends: ";
+	for (int m = 0; m < NUM_METHODS; m++) {
+		if ((bMethodDone[m])  || (bMethodActive[m])) { // all existing trees
+			if (g_verbose) cout << cTreename[m] << "\n";
+			tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
+			if (bMethodActive[m]) tree->AddFriend("TS");
+			for (int i = 1; i < NUM_METHODS; i++) if ((bMethodDone[(m+i)%NUM_METHODS]) || (bMethodActive[(m+i)%NUM_METHODS])) tree->AddFriend(cTreename[(m+i)%NUM_METHODS]);
+			f->cd();
+			tree->Write("",TObject::kOverwrite);
+			tree.reset();
+		}
+	}
+	if (!bRecordTimestamps) { // check for existence of cuts file - only if reprocessing
+		string sCutsFile = sRootFile;
+		sCutsFile.insert(sRootFile.find('.'),"Cuts");
+		fin.open(sCutsFile.c_str(), ios::in);
+		if (fin.is_open()) {
+			fin.close();
+			for (m = 0; m < NUM_METHODS; m++) if (bMethodDone[m] || bMethodActive[m]) { // all existing trees
+				tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
+				tree->AddFriend("Tcuts",sCutsFile.c_str());
+				tree->Write("",TObject::kOverwrite);
+				tree.reset();
+			}
+		}
+	}
+	return;
+}
+
 void Processor::ParseFileHeader() {
 	if (g_verbose) cout << "Parsing file header\n";
-	if (usMask != 0) return; // for the unlikely event this gets called twice
 	char cBuffer[sizeof_f_header];
 	fin.seekg(0, fin.end);
 	long filesize = fin.tellg();
@@ -479,7 +482,7 @@ void Processor::ParseConfigFile() {
 	ifstream fconf(sFilename.c_str(),ios::in);
 	if (!fconf.is_open()) {
 		cout << "Config file " << sFilename << " not found\n";
-		iFailed |= file_error;
+		iFailed |= (1 << file_error);
 		throw ProcessorException();
 	} else if (g_verbose) cout << "Opened " << sFilename << '\n';
 	
@@ -501,7 +504,7 @@ void Processor::ParseConfigFile() {
 			while (strstr(cBuffer, "END") == NULL) {
 				if (strstr(cBuffer, "CHANNEL") != NULL) { // loads processing parameters
 					ch = atoi(&cBuffer[8]);
-					if ((ch >= MAX_CH) || (ch < 0)) {iFailed |= config_file_error; throw ProcessorException();}
+					if ((ch >= MAX_CH) || (ch < 0)) {iFailed |= (1 << config_file_error); throw ProcessorException();}
 					fconf.getline(cBuffer, 64, '\n');
 					sscanf(cBuffer, "SLOW %i FAST %i PGA %i GAIN_N %f GAIN_Y %f", &iSlowTime[ch], &iFastTime[ch], &iPGASamples[ch], &fGain[ch][0], &fGain[ch][1]);
 				}
@@ -511,8 +514,8 @@ void Processor::ParseConfigFile() {
 	} // end of file
 	fconf.close();
 	try {digitizer = shared_ptr<Digitizer>(new Digitizer(cDigName, iSpecial));}
-	catch (bad_alloc& ba) {iFailed |= alloc_error; throw ProcessorException();}
-	if (digitizer->Failed()) iFailed |= method_error;
+	catch (bad_alloc& ba) {iFailed |= (1 << alloc_error); throw ProcessorException();}
+	if (digitizer->Failed()) iFailed |= (1 << method_error);
 	if ((digitizer->ID() > 2) && bMethodActive[XSQ_t]) {
 		cout << "Chisquare method not compatible with " << digitizer->Name() << '\n';
 		bMethodActive[XSQ_t] = false;
@@ -550,13 +553,13 @@ void Processor::SetFileSet(string in) { // also opens raw and processed files
 	fin.open(sRawDataFile.c_str(), ios::in | ios::binary);
 	if (!fin.is_open()) {
 		cout << "Error: " << sRawDataFile << " not found\n";
-		iFailed |= file_error;
+		iFailed |= (1 << file_error);
 		throw ProcessorException();
 	}
 	f = unique_ptr<TFile>(new TFile(sRootFile.c_str(), "UPDATE"));
 	if (!f->IsOpen()) {
 		cout << "Error: could not open " << sRootFile << '\n';
-		iFailed |= file_error;
+		iFailed |= (1 << file_error);
 		throw ProcessorException();
 	}
 }

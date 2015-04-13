@@ -19,10 +19,10 @@ LAP::LAP() {
 LAP::LAP(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, length, digitizer) {
 	if (g_verbose) cout << "LAP " << id << " c'tor\n";
 	LAP::siHowMany++;
-	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
+	if ((id >= MAX_CH) || (id < 0)) iFailed |= (1 << method_error);
 	try {dExp = unique_ptr<double[]>(new double[iEventlength]);}
 	catch (bad_alloc& ba) {
-		iFailed |= alloc_error;
+		iFailed |= (1 << alloc_error);
 		return;
 	}
 	for (auto i = 0; i < iEventlength; i++) dExp[i] = exp(-LAP::sfS*i/dScaleT); // not sure if the time scale is correct here.

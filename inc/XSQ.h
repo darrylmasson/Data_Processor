@@ -57,8 +57,7 @@ class XSQ : public Method {
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer);
 		static void root_fill() {XSQ::tree->Fill();}
 		static void root_init(TTree* tree_in);
-		static TTree* root_deinit() {return XSQ::tree.release();}
-		static int Std_Wave_init(const shared_ptr<Digitizer> digitizer);
+		static void root_deinit() {XSQ::tree.reset();} // friending is handled after the fact
 		static int HowMany() {return XSQ::siHowMany;}
 		double fitter(double* x, double* par);
 		static float sfVersion;

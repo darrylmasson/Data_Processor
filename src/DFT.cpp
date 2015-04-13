@@ -34,13 +34,13 @@ DFT::DFT() : ciOrder(3) {
 DFT::DFT(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, length, digitizer), ciOrder(3) {
 	if (g_verbose) cout << "DFT " << id << " c'tor\n";
 	DFT::siHowMany++;
-	if ((id >= MAX_CH) || (id < 0)) iFailed |= method_error;
+	if ((id >= MAX_CH) || (id < 0)) iFailed |= (1 << method_error);
 	const int used_orders[] = {3,4,5}; // 4 orders incl 0th
 	double omega;
 	try {
 		dCos = unique_ptr<double[]>(new double[ciOrder*iEventlength]); // simpler than two-dimensional arrays
 		dSin = unique_ptr<double[]>(new double[ciOrder*iEventlength]);
-	} catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
+	} catch (bad_alloc& ba) {iFailed |= (1 << alloc_error); return;}
 	for (auto n = 0; n < ciOrder; n++) {
 		omega = used_orders[n]*pi/(iEventlength*digitizer->ScaleT()); // GHz
 		for (auto t = 0; t < iEventlength; t++) {

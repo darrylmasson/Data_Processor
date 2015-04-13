@@ -62,7 +62,7 @@ class Processor {
 		int				iEventsize; // bytes, incl event header
 		int				iFailed;
 		int				iFastTime[MAX_CH];
-		int				iNchan;
+		int				iNchan; // number of enabled channels
 		int				iNumEvents;
 		int				iPGASamples[MAX_CH];
 		int				iSlowTime[MAX_CH];
@@ -86,6 +86,7 @@ class Processor {
 		void ClassAlloc(); // all allocs
 		void ConfigTrees(); // includes version checking
 		int Failed() {return iFailed;}
+		void FriendshipIsMagic(); // handles friending between trees
 		void ParseFileHeader();
 		void ParseConfigFile();
 		void SetConfigFile(string in) {sConfigFileName = in;}

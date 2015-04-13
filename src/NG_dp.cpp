@@ -82,15 +82,16 @@ int main(int argc, char **argv) {
 		processor.ClassAlloc();
 	} catch (ProcessorException& e) {
 		cout << e.what();
-		cout << error_message[processor.Failed()] << '\n';
+		for (i = 0; i < err_dummy_last; i++) if (processor.Failed() & (1 << i)) cout << error_message[i] << '\n';
 		return 0;
 	}
 	
 	t_start = steady_clock::now();
 	processor.BusinessTime();
+	processor.FriendshipIsMgic(); // yep
 	t_end = steady_clock::now();
-	if (processor.Failed()) cout << error_message[processor.Failed()] << '\n';
+	for (i = 0; i < err_dummy_last; i++) if (processor.Failed() & (1 << i)) cout << error_message[i] << '\n';
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
-	cout << "Total time elapsed: " << t_elapsed.count() << "sec\n";
+	cout << "Total time elapsed: " << t_elapsed.count() << "s\n";
 	return 0;
 }
