@@ -422,12 +422,13 @@ void Processor::ConfigTrees() {
 
 void Processor::FriendshipIsMagic() {
 	if (g_verbose) cout << "Making friends: ";
-	for (int m = 0; m < NUM_METHODS; m++) {
+	int m(0), i(0);
+	for (m = 0; m < NUM_METHODS; m++) {
 		if ((bMethodDone[m])  || (bMethodActive[m])) { // all existing trees
 			if (g_verbose) cout << cTreename[m] << "\n";
 			tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
 			if (bMethodActive[m]) tree->AddFriend("TS");
-			for (int i = 1; i < NUM_METHODS; i++) if ((bMethodDone[(m+i)%NUM_METHODS]) || (bMethodActive[(m+i)%NUM_METHODS])) tree->AddFriend(cTreename[(m+i)%NUM_METHODS]);
+			for (i = 1; i < NUM_METHODS; i++) if ((bMethodDone[(m+i)%NUM_METHODS]) || (bMethodActive[(m+i)%NUM_METHODS])) tree->AddFriend(cTreename[(m+i)%NUM_METHODS]);
 			f->cd();
 			tree->Write("",TObject::kOverwrite);
 			tree.reset();

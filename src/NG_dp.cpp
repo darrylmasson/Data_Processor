@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 	
 	t_start = steady_clock::now();
 	processor.BusinessTime();
-	processor.FriendshipIsMgic(); // yep
+	processor.FriendshipIsMagic(); // yep
 	t_end = steady_clock::now();
 	for (i = 0; i < err_dummy_last; i++) if (processor.Failed() & (1 << i)) cout << error_message[i] << '\n';
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
