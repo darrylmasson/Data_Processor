@@ -479,7 +479,7 @@ void Processor::ParseFileHeader() {
 
 void Processor::ParseConfigFile() {
 	if (g_verbose) cout << "Parsing config file\n";
-	string sFilename = path + "/config/" + sConfigFileName;
+	string sFilename = path + "/Data_Processor/config/" + sConfigFileName;
 	ifstream fconf(sFilename.c_str(),ios::in);
 	if (!fconf.is_open()) {
 		cout << "Config file " << sFilename << " not found\n";
