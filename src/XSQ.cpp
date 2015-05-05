@@ -71,7 +71,7 @@ XSQ::XSQ(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, lengt
 			return;
 	}
 	
-	try {std_file.reset(new TFile((path + "/config/standard_events.root").c_str(), "READ"));}
+	try {std_file.reset(new TFile((sWorkingDir + "/Data_Processor/config/standard_events.root").c_str(), "READ"));}
 	catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
 	if (!std_file->IsOpen()) {iFailed |= file_error; return;}
 	for (p = 0; p < P; p++) {

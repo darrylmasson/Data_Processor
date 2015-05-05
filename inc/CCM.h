@@ -49,7 +49,7 @@ class CCM : public Method { // also includes PGA
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer);
 		static void root_fill() {CCM::tree->Fill();}
 		static void root_init(TTree* tree_in);
-		static void root_deinit() {CCM::tree.reset();} // friending is handled after the fact
+		static void root_deinit() {CCM::tree.reset();} // friending is handled after the fact, writing by the TFile
 		static int HowMany() {return CCM::siHowMany;}
 		static float sfVersion;
 };

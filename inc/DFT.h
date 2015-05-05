@@ -28,7 +28,7 @@ class DFT : public Method {
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {}
 		static void root_fill() {DFT::tree->Fill();}
 		static void root_init(TTree* tree_in);
-		static void root_deinit() {DFT::tree.reset();} // friending is handled after the fact
+		static void root_deinit() {DFT::tree.reset();} // friending is handled after the fact, writing by the TFile
 		static int HowMany() {return DFT::siHowMany;}
 		static float sfVersion;
 };

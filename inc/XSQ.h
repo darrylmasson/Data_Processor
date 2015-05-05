@@ -57,7 +57,7 @@ class XSQ : public Method {
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer);
 		static void root_fill() {XSQ::tree->Fill();}
 		static void root_init(TTree* tree_in);
-		static void root_deinit() {XSQ::tree.reset();} // friending is handled after the fact
+		static void root_deinit() {XSQ::tree.reset();} // friending is handled after the fact, writing by the TFile
 		static int HowMany() {return XSQ::siHowMany;}
 		double fitter(double* x, double* par);
 		static float sfVersion;

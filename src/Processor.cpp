@@ -147,7 +147,7 @@ void Processor::BusinessTime() {
 			iRate = t_elapsed.count() == 0 ? 9001 : iProgCheck/t_elapsed.count(); // it's OVER 9000!
 			cout << iRate << "\t\t";
 			iTimeleft = (iNumEvents - ev)/iRate;
-			if (iTimeleft > (1 << 12)) cout << iTimeleft/3600 << "h" << iTimeleft%60 << "m\n";
+			if (iTimeleft > (1 << 12)) cout << iTimeleft/3600 << "h" << (iTimeleft%3600)/60 << "m\n";
 			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
 			else cout << iTimeleft << " s\n";
 		}
@@ -328,6 +328,7 @@ void Processor::ConfigTrees() {
 		for (auto i = tree->GetEntries()-1; i >= 0; i--) { // most recent entries will be last in the tree
 			tree->GetEntry(i);
 			if (bChecked[iMethodID] || !bMethodActive[iMethodID]) continue;
+			if (g_verbose) cout << "Checking " << cMethodNames << '\n';
 			bChecked[iMethodID] = true;
 			bUpdate = false;
 			if (iMethodID == CCM_t) {
@@ -339,6 +340,7 @@ void Processor::ConfigTrees() {
 				bUpdate |= (memcmp(iPGACheck, iPGASamples, sizeof(iPGACheck)) != 0);
 				bUpdate |= (memcmp(iFastCheck, iFastTime, sizeof(iFastCheck)) != 0); // checks CCM parameters
 				bUpdate |= (memcmp(iSlowCheck, iSlowTime, sizeof(iSlowCheck)) != 0);
+				tc = nullptr;
 			}
 			if ((fVersion < cfMethodVersions[iMethodID]) || bUpdate) {
 				cout << cMethodNames[iMethodID] << " will be reprocessed\n";
@@ -352,7 +354,6 @@ void Processor::ConfigTrees() {
 				}
 			}
 		}
-		tc = nullptr;
 	} else { // not already processed
 		cout << "Creating config trees\n";
 		bRecordTimestamps = true;
@@ -370,6 +371,7 @@ void Processor::ConfigTrees() {
 		tree->Branch("Posttrigger", &iTrigPost, "tri_post/I"); // don't change, so it's only
 		tree->Branch("Eventlength", &iEventlength, "ev_len/I"); // written out once
 		tree->Branch("Chisquared_NDF", &iXSQ_ndf, "ndf/I");
+		tree->Branch("Build_ID", sBuildID.c_str(), "buildid[21]/B");
 		if (iSpecial != -1) tree->Branch("Special", &iSpecial, "special/I");
 		if (iAverage != 0) tree->Branch("Moving_average", &iAverage, "average/I");
 		if (strcmp(cSource, "NG") == 0) {
@@ -422,32 +424,30 @@ void Processor::ConfigTrees() {
 
 void Processor::FriendshipIsMagic() {
 	if (g_verbose) cout << "Making friends: ";
+	bool bCuts(false);
 	int m(0), i(0);
+	string sCutsFile = sRootFile;
+	sCutsFile.insert(sRootFile.find('.'),"Cuts");
+	if (!bRecordTimestamps) { // check for existence of cuts file - only if reprocessing
+		fin.open(sCutsFile.c_str(), ios::in);
+		if (fin.is_open()) {
+			fin.close();
+			bCuts = true;
+		}
+	}
 	for (m = 0; m < NUM_METHODS; m++) {
 		if ((bMethodDone[m])  || (bMethodActive[m])) { // all existing trees
 			if (g_verbose) cout << cTreename[m] << "\n";
 			tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
 			if (bMethodActive[m]) tree->AddFriend("TS");
 			for (i = 1; i < NUM_METHODS; i++) if ((bMethodDone[(m+i)%NUM_METHODS]) || (bMethodActive[(m+i)%NUM_METHODS])) tree->AddFriend(cTreename[(m+i)%NUM_METHODS]);
+			if (bCuts) tree->AddFriend("Tcuts",sCutsFile.c_str());
 			f->cd();
 			tree->Write("",TObject::kOverwrite);
 			tree.reset();
 		}
 	}
-	if (!bRecordTimestamps) { // check for existence of cuts file - only if reprocessing
-		string sCutsFile = sRootFile;
-		sCutsFile.insert(sRootFile.find('.'),"Cuts");
-		fin.open(sCutsFile.c_str(), ios::in);
-		if (fin.is_open()) {
-			fin.close();
-			for (m = 0; m < NUM_METHODS; m++) if (bMethodDone[m] || bMethodActive[m]) { // all existing trees
-				tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
-				tree->AddFriend("Tcuts",sCutsFile.c_str());
-				tree->Write("",TObject::kOverwrite);
-				tree.reset();
-			}
-		}
-	}
+	
 	return;
 }
 
@@ -479,7 +479,7 @@ void Processor::ParseFileHeader() {
 
 void Processor::ParseConfigFile() {
 	if (g_verbose) cout << "Parsing config file\n";
-	string sFilename = path + "/config/" + sConfigFileName;
+	string sFilename = sWorkingDir + "/config/" + sConfigFileName;
 	ifstream fconf(sFilename.c_str(),ios::in);
 	if (!fconf.is_open()) {
 		cout << "Config file " << sFilename << " not found\n";
@@ -545,8 +545,8 @@ void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r
 
 void Processor::SetFileSet(string in) { // also opens raw and processed files
 	if (g_verbose) cout << "Opening files\n";
-	sRawDataFile = path + "/rawdata/" + in + ".dat";
-	sRootFile = path + "/prodata/" + in;
+	sRawDataFile = sWorkingDir + "/rawdata/" + in + ".dat";
+	sRootFile = sWorkingDir + "/prodata/" + in;
 	if ((iSpecial == -1) && (iAverage == 0)) sRootFile += ".root";
 	else if ((iSpecial == -1) && (iAverage != 0)) sRootFile += "_a.root";
 	else if ((iSpecial != -1) && (iAverage == 0)) sRootFile += "_x.root";
