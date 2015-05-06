@@ -23,11 +23,7 @@ test :
 	$(CC) $(CFLAGS) $(DEFS) $(TEST) $(addprefix $(SRCDIR)/,$(SRCS)) $(ROOT)
 
 install : $(L)$(OBJS)
-	mv $(OUTDIR)NG_dp $(OUTDIR)NG_dp_prev
-	$(CC) $(CFLAGS) $(DEFS) $(INSTALL) $(addprefix $(OBJDIR)/,$(OBJS)) $(ROOT)
-
-$(L)%.o : %.cpp
-	$(CC) $(CFLAGS) $(DEFS) -c $< -o $(OBJDIR)/$@ $(ROOT)
+	$(CC) $(CFLAGS) $(OPT) $(INSTALL) $(addprefix $(OBJDIR)/,$(OBJS)) $(ROOT)
 
 .PHONY: clean
 
