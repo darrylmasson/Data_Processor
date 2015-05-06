@@ -2,7 +2,7 @@ CC = g++
 ROOT = $(shell root-config --cflags --libs)
 OBJDIR = obj
 SRCDIR = src
-CFLAGS = -g -Wall -Iinc -O2 -std=c++11
+CFLAGS = -g -Wall -Iinc -std=c++11
 DEFS = -DWORKING_DIR=\"$(shell pwd)\"
 OUTDIR = $(shell pwd)/../
 INSTALL = -o $(OUTDIR)NG_dp
