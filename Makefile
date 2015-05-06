@@ -6,6 +6,7 @@ CFLAGS = -g -Wall -Iinc -O2 -std=c++11
 DEFS = -DWORKING_DIR=\"$(shell pwd)\"
 OUTDIR = $(shell pwd)/../
 INSTALL = -o $(OUTDIR)NG_dp
+OPT = -O2
 TEST = -o test_exe
 SRCS = Digitizer.cpp \
 	Event.cpp \
@@ -23,7 +24,10 @@ test :
 	$(CC) $(CFLAGS) $(DEFS) $(TEST) $(addprefix $(SRCDIR)/,$(SRCS)) $(ROOT)
 
 install : $(L)$(OBJS)
-	$(CC) $(CFLAGS) $(OPT) $(INSTALL) $(addprefix $(OBJDIR)/,$(OBJS)) $(ROOT)
+	$(CC) $(CFLAGS) $(OPT) $(DEFS) $(INSTALL) $(addprefix $(OBJDIR)/,$(OBJS)) $(ROOT)
+
+$(L)%.o : %.cpp
+	$(CC) $(CFLAGS) $(OPT) $(DEFS) -c $< -o $(OBJDIR)/$@ $(ROOT)
 
 .PHONY: clean
 
