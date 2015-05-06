@@ -49,6 +49,7 @@ class Processor {
 		bool			bPositionsSet;
 		bool			bRecordTimestamps;
 		
+		char			cBuildID[21];
 		char			cDigName[12];
 		char			cMethodNames[NUM_METHODS][12];
 		char			cSource[12];

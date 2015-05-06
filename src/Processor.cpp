@@ -363,6 +363,7 @@ void Processor::ConfigTrees() {
 			iFailed |= (1 << alloc_error);
 			throw ProcessorException();
 		}
+		strcpy(cBuildID, sBuildID.c_str());
 		tree->Branch("Digitizer", cDigName, "name[12]/B");
 		tree->Branch("Source", cSource, "source[12]/B");
 		tree->Branch("ChannelMask", &usMask, "mask/s"); // general info on data run
@@ -371,7 +372,7 @@ void Processor::ConfigTrees() {
 		tree->Branch("Posttrigger", &iTrigPost, "tri_post/I"); // don't change, so it's only
 		tree->Branch("Eventlength", &iEventlength, "ev_len/I"); // written out once
 		tree->Branch("Chisquared_NDF", &iXSQ_ndf, "ndf/I");
-		tree->Branch("Build_ID", sBuildID.c_str(), "buildid[21]/B");
+		tree->Branch("Build_ID", cBuildID, "buildid[21]/B");
 		if (iSpecial != -1) tree->Branch("Special", &iSpecial, "special/I");
 		if (iAverage != 0) tree->Branch("Moving_average", &iAverage, "average/I");
 		if (strcmp(cSource, "NG") == 0) {
