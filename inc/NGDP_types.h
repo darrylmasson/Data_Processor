@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <cstdint>
 
 // note on variable names:
 // most variables have their type as a one or two character prefix
