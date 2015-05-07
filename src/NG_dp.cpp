@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 		cout << sArgs << '\n';
 		return 0;
 	}
-	while ((i = getopt(argc, argv, "a:c:f:s:p:vx:")) != -1) { // command line options
+	while ((i = getopt(argc, argv, "a:c:f:s:p:qvx:")) != -1) { // command line options
 		switch(i) {
 			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;

@@ -4,7 +4,7 @@
 #include "TVectorT.h"
 #include <iostream> // remove
 
-float	XSQ::sfVersion = 1.1;
+float	XSQ::sfVersion = 1.15;
 bool	XSQ::sbInitialized = false;
 int		XSQ::siHowMany = 0;
 
@@ -185,22 +185,20 @@ void XSQ::SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer) {
 }
 
 void XSQ::Analyze() {
-	for (auto i = 0; i < iEventlength; i++) dInputWave[i] = event->Trace(i);
-	try {graph.reset(new TGraph(iEventlength, dX.get(), dInputWave.get()));}
-	catch (bad_alloc& ba) { // error codes don't work here
+	if (event->Baseline() - event->Peak_y() < 4) { // cut noise to save processing time
 		XSQ::sdXsq_n[id]		= -1;
-		XSQ::sdPeakheight_n[id]	= -1;
-		XSQ::sdBaseline_n[id]	= -1;
-		XSQ::sdOffset_n[id]		= -1;
+		XSQ::sdPeakheight_n[id]	= (event->Baseline() - event->Peak_y())*dStdNorm[n]*fGain[n];
+		XSQ::sdBaseline_n[id]	= event->Baseline() - dStdBase[n];
+		XSQ::sdOffset_n[id]		= event->Trigger() - iStdTrig;
 		XSQ::sdProb_n[id]		= -1;
 		XSQ::sdPeakErr_n[id]	= -1;
 		XSQ::sdBaseErr_n[id]	= -1;
 		XSQ::sdOffsetErr_n[id]	= -1;
 		
 		XSQ::sdXsq_y[id]		= -1;
-		XSQ::sdPeakheight_y[id]	= -1;
-		XSQ::sdBaseline_y[id]	= -1;
-		XSQ::sdOffset_y[id]		= -1;
+		XSQ::sdPeakheight_y[id]	= (event->Baseline() - event->Peak_y())*dStdNorm[y]*fGain[y];
+		XSQ::sdBaseline_y[id]	= event->Baseline() - dStdBase[y];
+		XSQ::sdOffset_y[id]		= event->Trigger() - iStdTrig;
 		XSQ::sdProb_y[id]		= -1;
 		XSQ::sdPeakErr_y[id]	= -1;
 		XSQ::sdBaseErr_y[id]	= -1;
@@ -208,46 +206,71 @@ void XSQ::Analyze() {
 		
 		XSQ::siFitStatus_n[id]	= -1;
 		XSQ::siFitStatus_y[id]	= -1;
+	} else {
+		for (auto i = 0; i < iEventlength; i++) dInputWave[i] = event->Trace(i);
+		try {graph.reset(new TGraph(iEventlength, dX.get(), dInputWave.get()));}
+		catch (bad_alloc& ba) { // error codes don't work here
+			XSQ::sdXsq_n[id]		= -1;
+			XSQ::sdPeakheight_n[id]	= -1;
+			XSQ::sdBaseline_n[id]	= -1;
+			XSQ::sdOffset_n[id]		= -1;
+			XSQ::sdProb_n[id]		= -1;
+			XSQ::sdPeakErr_n[id]	= -1;
+			XSQ::sdBaseErr_n[id]	= -1;
+			XSQ::sdOffsetErr_n[id]	= -1;
+			
+			XSQ::sdXsq_y[id]		= -1;
+			XSQ::sdPeakheight_y[id]	= -1;
+			XSQ::sdBaseline_y[id]	= -1;
+			XSQ::sdOffset_y[id]		= -1;
+			XSQ::sdProb_y[id]		= -1;
+			XSQ::sdPeakErr_y[id]	= -1;
+			XSQ::sdBaseErr_y[id]	= -1;
+			XSQ::sdOffsetErr_y[id]	= -1;
+			
+			XSQ::siFitStatus_n[id]	= -1;
+			XSQ::siFitStatus_y[id]	= -1;
+			
+			return;
+		}
 		
-		return;
+		dPars[0] = (event->Baseline() - event->Peak_y())*dStdNorm[n];
+		dPars[1] = event->Baseline() - dStdBase[n];
+		dPars[2] = event->Trigger() - iStdTrig;
+		dPars[3] = n;
+		fit->SetParameters(dPars.get());
+		fit->FixParameter(3, n);
+		
+		XSQ::siFitStatus_n[id]	= graph->Fit(fit.get(), "Q N R"); // quiet, no-plot, specified range
+
+		XSQ::sdXsq_n[id]		= fit->GetChisquare();
+		XSQ::sdPeakheight_n[id]	= fit->GetParameter(0)*fGain[n]; // detectors have different gains
+		XSQ::sdBaseline_n[id]	= fit->GetParameter(1);
+		XSQ::sdOffset_n[id]		= fit->GetParameter(2);
+		XSQ::sdProb_n[id]		= fit->GetProb();
+
+		XSQ::sdPeakErr_n[id]	= fit->GetParError(0)*fGain[n];
+		XSQ::sdBaseErr_n[id]	= fit->GetParError(1);
+		XSQ::sdOffsetErr_n[id]	= fit->GetParError(2);
+
+		
+		dPars[0] = (event->Baseline() - event->Peak_y())*dStdNorm[y];
+		dPars[1] = event->Baseline() - dStdBase[y];
+		dPars[2] = event->Trigger() - iStdTrig;
+		dPars[3] = y;
+		fit->SetParameters(dPars.get());
+		fit->FixParameter(3, y);
+		
+		XSQ::siFitStatus_y[id]	= graph->Fit(fit.get(), "Q N R");
+
+		XSQ::sdXsq_y[id]		= fit->GetChisquare();
+		XSQ::sdPeakheight_y[id]	= fit->GetParameter(0)*fGain[y];
+		XSQ::sdBaseline_y[id]	= fit->GetParameter(1);
+		XSQ::sdOffset_y[id]		= fit->GetParameter(2);
+		XSQ::sdProb_y[id]		= fit->GetProb();
+
+		XSQ::sdPeakErr_y[id]	= fit->GetParError(0)*fGain[y];
+		XSQ::sdBaseErr_y[id]	= fit->GetParError(1);
+		XSQ::sdOffsetErr_y[id]	= fit->GetParError(2);
 	}
-	
-	dPars[0] = (event->Baseline() - event->Peak_y())*dStdNorm[n];
-	dPars[1] = event->Baseline() - dStdBase[n];
-	dPars[2] = event->Trigger() - iStdTrig;
-	dPars[3] = n;
-	fit->SetParameters(dPars.get());
-	fit->FixParameter(3, n);
-	
-	XSQ::siFitStatus_n[id]	= graph->Fit(fit.get(), "Q N R"); // quiet, no-plot, specified range
-
-	XSQ::sdXsq_n[id]		= fit->GetChisquare();
-	XSQ::sdPeakheight_n[id]	= fit->GetParameter(0)*fGain[n]; // detectors have different gains
-	XSQ::sdBaseline_n[id]	= fit->GetParameter(1);
-	XSQ::sdOffset_n[id]		= fit->GetParameter(2);
-	XSQ::sdProb_n[id]		= fit->GetProb();
-
-	XSQ::sdPeakErr_n[id]	= fit->GetParError(0)*fGain[n];
-	XSQ::sdBaseErr_n[id]	= fit->GetParError(1);
-	XSQ::sdOffsetErr_n[id]	= fit->GetParError(2);
-
-	
-	dPars[0] = (event->Baseline() - event->Peak_y())*dStdNorm[y];
-	dPars[1] = event->Baseline() - dStdBase[y];
-	dPars[2] = event->Trigger() - iStdTrig;
-	dPars[3] = y;
-	fit->SetParameters(dPars.get());
-	fit->FixParameter(3, y);
-	
-	XSQ::siFitStatus_y[id]	= graph->Fit(fit.get(), "Q N R");
-
-	XSQ::sdXsq_y[id]		= fit->GetChisquare();
-	XSQ::sdPeakheight_y[id]	= fit->GetParameter(0)*fGain[y];
-	XSQ::sdBaseline_y[id]	= fit->GetParameter(1);
-	XSQ::sdOffset_y[id]		= fit->GetParameter(2);
-	XSQ::sdProb_y[id]		= fit->GetProb();
-
-	XSQ::sdPeakErr_y[id]	= fit->GetParError(0)*fGain[y];
-	XSQ::sdBaseErr_y[id]	= fit->GetParError(1);
-	XSQ::sdOffsetErr_y[id]	= fit->GetParError(2);
 }
