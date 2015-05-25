@@ -150,6 +150,7 @@ void Processor::BusinessTime() {
 			if (iTimeleft > (1 << 12)) cout << iTimeleft/3600 << "h" << (iTimeleft%3600)/60 << "m\n";
 			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
 			else cout << iTimeleft << " s\n";
+			f->Write();
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];	
 	}
@@ -160,7 +161,7 @@ void Processor::BusinessTime() {
 	cout << "Acquisition livetime: " << iLivetime << "s\nBeginning cleanup: ";
 	fin.close();
 	f->cd();
-	f->Write("",TObject::kWriteDelete);
+	f->Write();
 	
 	for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) root_deinit[m]();
 	buffer.reset();
