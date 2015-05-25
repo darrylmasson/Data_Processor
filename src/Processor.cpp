@@ -375,7 +375,7 @@ void Processor::ConfigTrees() {
 			}
 		}
 		tree->Write("",TObject::kOverwrite);
-		if (bMethodActive[CCM_t]) tc->Write("",TOject::kOverwrite);
+		if (bMethodActive[CCM_t]) tc->Write("",TObject::kOverwrite);
 	} else { // not already processed
 		cout << "Creating config trees\n";
 		bRecordTimestamps = true;
