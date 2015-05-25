@@ -278,7 +278,7 @@ void XSQ::Analyze() {
 				dChiSquare = FindChisquare(p, dPeak, dBase, iOff);
 				dDiff = dChiSquare - dChiSquareLast;
 				if (dDiff < 0) dDiff *= -1;
-				if (dDiff/dChiSquareLast < dConvergence) { // convergence check
+				if (dDiff/dChiSquareLast < dConvergence) { // convergence check, 0.1%
 					if (p) {
 						XSQ::sdXsq_y[id]		= dChiSquare;
 						XSQ::sdPeakheight_y[id]	= dPeak*fGain[y]/iResolutionScale;

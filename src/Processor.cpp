@@ -27,6 +27,13 @@ auto (*root_fill[])() -> void = {
 	LAP::root_fill
 };
 
+auto (*root_write[])() -> void = {
+	CCM::root_write,
+	DFT::root_write,
+	XSQ::root_write,
+	LAP::root_write,
+};
+
 auto (*root_deinit[])() -> void = {
 	CCM::root_deinit,
 	DFT::root_deinit,
@@ -113,7 +120,7 @@ void Processor::BusinessTime() {
 	
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
-	iProgCheck = max(iNumEvents/100 + 1, 10000); // too many print statements slows the process
+	iProgCheck = max(iNumEvents/100 + 1, 10000); // too many print statements slows the process, every 1% or 10000 events
 	
 	if (memchr(bMethodActive, 1, NUM_METHODS) == nullptr) {
 		cout << "No processing method activated\n";
@@ -128,12 +135,13 @@ void Processor::BusinessTime() {
 	cout << "Processing:\n";
 	cout << "Completed\tRate (ev/s)\tTime left\n";
 	fin.seekg(sizeof_f_header, fin.beg);
+	f->cd();
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.get(), iEventsize);
-		if (bMethodActive[XSQ_t]) for (ch = 0; ch < iNchan; ch++) {
+		if ((iXSQ_fitter == XSQ::VAR_TF1) && (bMethodActive[XSQ_t])) for (ch = 0; ch < iNchan; ch++) { // TF1 isn't thread-friendly
 			td[ch].event->Analyze();
-			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) td[ch].methods[m]->Analyze(); // TF1 isn't thread-friendly
-		} else {
+			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) td[ch].methods[m]->Analyze();
+		} else { // but Newton's method is
 			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_create(&threads[ch], &attr, Process, (void*)&td[ch])) ) {iFailed |= (1 << thread_error); return;}
 			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {iFailed |= (1 << thread_error); return;}
 		}
@@ -150,7 +158,7 @@ void Processor::BusinessTime() {
 			if (iTimeleft > (1 << 12)) cout << iTimeleft/3600 << "h" << (iTimeleft%3600)/60 << "m\n";
 			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
 			else cout << iTimeleft << "s\n";
-			f->Write();
+//			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) root_write[m]();
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];	
 	}
@@ -160,10 +168,10 @@ void Processor::BusinessTime() {
 	iLivetime = (ulTSLast - ulTSFirst)/125e6;
 	cout << "Acquisition livetime: " << iLivetime << "s\nBeginning cleanup: ";
 	fin.close();
-	f->cd();
-	f->Write("",TObject::kWriteDelete);
-	
-	for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) root_deinit[m]();
+	for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) {
+		root_write[m]();
+		root_deinit[m]();
+	}
 	buffer.reset();
 	tree.reset();
 	auto i = system(("chmod g+w " + sRootFile).c_str());
@@ -285,7 +293,7 @@ void Processor::ConfigTrees() {
 	char overwrite(0), cMethodName[12];
 	int iMethodID(0), iDateNow(0), iTimeNow(0), iPGACheck[MAX_CH], iSlowCheck[MAX_CH], iFastCheck[MAX_CH];
 	float fVersion(0);
-	TTree* tc = nullptr;
+	unique_ptr<TTree> tc = nullptr;
 	memset(bChecked, 0, sizeof(bChecked));
 	time_t t_rawtime;
 	tm* t_today;
@@ -322,6 +330,7 @@ void Processor::ConfigTrees() {
 	}
 	tree.reset((TTree*)f->Get("TV"));
 	if (tree) { // already processed, checking versions
+		tc.reset((TTree*)f->Get("TC"));
 		bRecordTimestamps = false;
 		cout << "Config trees already exist, checking versions\n";
 		tree->SetBranchAddress("MethodID", &iMethodID);
@@ -333,7 +342,6 @@ void Processor::ConfigTrees() {
 			bChecked[iMethodID] = true;
 			bUpdate = false;
 			if (iMethodID == CCM_t) {
-				tc = (TTree*)f->Get("TC");
 				tc->SetBranchAddress("PGA_samples", iPGACheck);
 				tc->SetBranchAddress("Fast_window", iFastCheck);
 				tc->SetBranchAddress("Slow_window", iSlowCheck);
@@ -341,7 +349,7 @@ void Processor::ConfigTrees() {
 				bUpdate |= (memcmp(iPGACheck, iPGASamples, sizeof(iPGACheck)) != 0);
 				bUpdate |= (memcmp(iFastCheck, iFastTime, sizeof(iFastCheck)) != 0); // checks CCM parameters
 				bUpdate |= (memcmp(iSlowCheck, iSlowTime, sizeof(iSlowCheck)) != 0);
-				tc = nullptr;
+				tc.reset();
 			}
 			if ((fVersion < cfMethodVersions[iMethodID]) || bUpdate) {
 				cout << cMethodNames[iMethodID] << " will be reprocessed\n";
@@ -354,7 +362,20 @@ void Processor::ConfigTrees() {
 					bMethodActive[iMethodID] = false;
 				}
 			}
+		} // end of checking
+		for (auto i = 0; i < NUM_METHODS; i++) if (bMethodActive[i]) {
+			iMethodID = i;
+			fVersion = cfMethodVersions[i];
+			tree->Fill();
+			if (i == CCM_t) {
+				memcpy(iPGACheck, iPGASamples, sizeof(iPGACheck));
+				memcpy(iFastCheck, iFastTime, sizeof(iFastCheck));
+				memcpy(iSlowCheck, iSlowTime, sizeof(iSlowCheck));
+				tc->Fill();
+			}
 		}
+		tree->Write("",TObject::kOverwrite);
+		if (bMethodActive[CCM_t]) tc->Write("",TOject::kOverwrite);
 	} else { // not already processed
 		cout << "Creating config trees\n";
 		bRecordTimestamps = true;
@@ -373,10 +394,11 @@ void Processor::ConfigTrees() {
 		tree->Branch("Posttrigger", &iTrigPost, "tri_post/I"); // don't change, so it's only
 		tree->Branch("Eventlength", &iEventlength, "ev_len/I"); // written out once
 		tree->Branch("Chisquared_NDF", &iXSQ_ndf, "ndf/I");
+		tree->Branch("Fitter", &iXSQ_fitter, "fitter/I");
 		tree->Branch("Build_ID", cBuildID, "buildid[21]/B");
 		if (iSpecial != -1) tree->Branch("Special", &iSpecial, "special/I");
 		if (iAverage != 0) tree->Branch("Moving_average", &iAverage, "average/I");
-		if (strcmp(cSource, "NG") == 0) {
+		if ((strcmp(cSource, "NG") == 0) || (strstr(cSource, "252") != nullptr)) { // NG or Cf-252
 			if (!bPositionsSet) {
 				cout << "Enter detector positions:\n";
 				for (auto i = 0; i < 3; i++) {
@@ -418,10 +440,12 @@ void Processor::ConfigTrees() {
 		tree->Branch("Fast_window", iFastTime, "fast[8]/I"); // this tree holds configuration parameters for CCM
 		tree->Branch("Slow_window", iSlowTime, "slow[8]/I");
 		tree->Fill();
-		tree->Write();
+		tree->Write("",TObject::kOverwrite);
 		
 		tree.reset();
 	}
+	tree.reset();
+	tc.reset();
 }
 
 void Processor::FriendshipIsMagic() {
