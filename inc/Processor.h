@@ -70,11 +70,12 @@ class Processor {
 		int				iSpecial; // special processing options
 		int				iTrigPost; // percentage of event after trigger
 		int				iXSQ_ndf;
+		int				iXSQ_fitter;
 		
 		unsigned int	uiDCOffset[MAX_CH]; // DC offset for each channel
 		unsigned int	uiThreshold[MAX_CH]; // trigger thresholds
 		
-		float			fGain[MAX_CH][P]; // for fitter
+		float			fGain[MAX_CH][2]; // for fitter
 		float			fDetectorZ[3];
 		float			fDetectorR[3];
 		
@@ -86,14 +87,15 @@ class Processor {
 		void BusinessTime(); // it's business, it's business time!
 		void ClassAlloc(); // all allocs
 		void ConfigTrees(); // includes version checking
-		int Failed() {return iFailed;}
+		int Failed()								{return iFailed;}
 		void FriendshipIsMagic(); // handles friending between trees
 		void ParseFileHeader();
 		void ParseConfigFile();
-		void SetConfigFile(string in) {sConfigFileName = in;}
+		void SetConfigFile(string in)				{sConfigFileName = in;}
 		void SetDetectorPositions(string in);
 		void SetFileSet(string in);
-		void SetSource(string in) {strcpy(cSource,in.c_str());}
+		void SetFitter(int in)						{iXSQ_fitter = in;}
+		void SetSource(string in)					{strcpy(cSource,in.c_str());}
 		void SetSpecials(int special, int average);
 };
 

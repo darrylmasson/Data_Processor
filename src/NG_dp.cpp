@@ -28,9 +28,9 @@ bool g_verbose(false);
 
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v3_5\n";
-	int i(0), iSpecial(-1), iAverage(0);
+	int i(0), iSpecial(-1), iAverage(0), iFitVar(XSQ::VAR_NEW);
 	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
-	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v]";
+	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v -t]";
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
 	Processor processor;
@@ -38,13 +38,14 @@ int main(int argc, char **argv) {
 		cout << sArgs << '\n';
 		return 0;
 	}
-	while ((i = getopt(argc, argv, "a:c:f:s:p:qvx:")) != -1) { // command line options
+	while ((i = getopt(argc, argv, "a:c:f:s:p:qtvx:")) != -1) { // command line options
 		switch(i) {
 			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;
 			case 'f': sFileset = optarg;		break;
 			case 'p': sDetectorPos = optarg;	break;
 			case 's': sSource = optarg;			break;
+			case 't': iFitVar = XSQ::VAR_TF1;	break;
 			case 'v': g_verbose = true;			break;
 			case 'x': iSpecial = atoi(optarg);	break;
 			default: cout << sArgs << '\n';
@@ -75,6 +76,7 @@ int main(int argc, char **argv) {
 		processor.SetConfigFile(sConfigFile);
 		processor.SetFileSet(sFileset);
 		processor.SetSource(sSource);
+		processor.SetFitter(iFitVar);
 		processor.ParseFileHeader();
 		processor.ParseConfigFile();
 		processor.SetDetectorPositions(sDetectorPos);

@@ -139,7 +139,7 @@ void Processor::BusinessTime() {
 		}
 		for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) root_fill[m]();
 		if (bRecordTimestamps) tree->Fill();
-		if (ev % iProgCheck == iProgCheck>>1) { // progress updates
+		if (ev % iProgCheck == iProgCheck-1) { // progress updates
 			cout << ev*100l/iNumEvents << "%\t\t";
 			t_this = steady_clock::now();
 			t_elapsed = duration_cast<duration<double>>(t_this-t_that);
@@ -149,7 +149,7 @@ void Processor::BusinessTime() {
 			iTimeleft = (iNumEvents - ev)/iRate;
 			if (iTimeleft > (1 << 12)) cout << iTimeleft/3600 << "h" << (iTimeleft%3600)/60 << "m\n";
 			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
-			else cout << iTimeleft << " s\n";
+			else cout << iTimeleft << "s\n";
 			f->Write();
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];	
@@ -228,13 +228,13 @@ void Processor::ClassAlloc() {
 			td[ch].methods[DFT_t]->SetEvent(td[ch].event);
 		}
 		if (bMethodActive[XSQ_t]) {
-			try {td[ch].methods[XSQ_t] = shared_ptr<Method>(new XSQ(iChan[ch], Event::Length(), digitizer));}
+			try {td[ch].methods[XSQ_t] = shared_ptr<Method>(new XSQ(iChan[ch], Event::Length(), digitizer, iXSQ_fitter));}
 			catch (bad_alloc& ba) {
 				iFailed |= (1 << alloc_error);
 				bMethodActive[XSQ_t] = false;
 			}
-			td[ch].methods[XSQ_t]->SetParameters(&fGain[iChan[ch]][n], n, digitizer);
-			td[ch].methods[XSQ_t]->SetParameters(&fGain[iChan[ch]][y], y, digitizer);
+			td[ch].methods[XSQ_t]->SetParameters(&fGain[iChan[ch]][0], 0, digitizer);
+			td[ch].methods[XSQ_t]->SetParameters(&fGain[iChan[ch]][1], 1, digitizer);
 			td[ch].methods[XSQ_t]->SetEvent(td[ch].event);
 			if (td[ch].methods[XSQ_t]->Failed()) {
 				iFailed |= (1 << method_error);
