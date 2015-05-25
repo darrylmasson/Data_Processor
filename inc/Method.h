@@ -16,7 +16,7 @@
 class Method {
 	protected:
 		int iFailed;
-		int id; // which entry in the array to use
+		const int id; // which entry in the array to use
 		int iEventlength;
 		double dScaleT; // scale factors from Digitizer class
 		double dScaleV;

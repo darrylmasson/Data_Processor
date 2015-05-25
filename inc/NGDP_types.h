@@ -41,8 +41,6 @@ enum ret_codes_t {
 	err_dummy_last
 };
 
-enum particle {n = 0, y, P}; // used exclusively by XSQ
-
 enum dig_id_t { // easy way for internal identification of digitizer
 	dt5751 = 0,
 	dt5751des,

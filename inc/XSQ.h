@@ -6,23 +6,38 @@
 #endif
 #include "TGraph.h"
 #include "TF1.h"
+#include <vector>
+
+struct fit_results_t { // for later, keeping track of used parameters to eliminate unnecessary evaluations and speed convergence
+	double peak;
+	double base;
+	int offset;
+	double xsq;
+};
 
 class XSQ : public Method {
 	private:
-		unique_ptr<TGraph> graph;
-		const int ciNPar; // 4: peakheight, baseline offset, trigger offset, particle (fixed)
+		enum { ciNPar = 3, TF1_pars}; // peakheight, baseline, trigger offset (and particle)
+		enum { n = 0, y, P};
 		float fGain[P];
-		unique_ptr<double[]> dPars;
-		unique_ptr<double[]> dInputWave; // doubles in case we're using averaged events
-		unique_ptr<double[]> dX;
+		int iPeakCut; // 4mV
+		int iResolutionScale;
 		int iStdLength; // 450ns
 		int iStdTrig; // 64ns
-		int iStdPeakX; // 71 ns;
-		unique_ptr<double[]> dStdWave[P];
-		unique_ptr<TF1> fit;
-		double dStdPeak[P];
-		double dStdBase[P];
+		int iIterations; // 5, usually
+		const int ciVariant;
+		unique_ptr<double[]> dInputWave; // only used for TF1 variant
+		unique_ptr<double[]> dStdWave[P]; // both
+		unique_ptr<double[]> dX; // only TF1
+		double dConvergence; // Newton's
+		double dGradient[ciNPar]; // Newton's
+		double dHessianInv[ciNPar][ciNPar]; // Newton's
 		double dStdNorm[P];
+		double dStdPeak[P];
+		double dStep[ciNPar]; // Newton's
+		unique_ptr<TF1> fit;
+		unique_ptr<TGraph> graph; // only TF1
+//		vector<fit_results_t> fit_results_v;
 		
 		static unique_ptr<TTree> tree;
 		static int siHowMany;
@@ -30,28 +45,24 @@ class XSQ : public Method {
 		// only three eljen detectors but may use CH3 in DT5751DES
 		static double sdXsq_n[4]; // chisquared for neutron
 		static double sdPeakheight_n[4]; // peak scale factor
-		static double sdBaseline_n[4]; // baseline shift
+		static double sdBaseline_n[4]; // baseline
 		static double sdOffset_n[4]; // trigger shift
-		static double sdPeakErr_n[4]; // errors in fit params
-		static double sdBaseErr_n[4];
-		static double sdOffsetErr_n[4];
-		static double sdProb_n[4]; // fit probability
 		
 		static double sdXsq_y[4]; // same, but for gamma
 		static double sdPeakheight_y[4];
 		static double sdBaseline_y[4];
 		static double sdOffset_y[4];
-		static double sdPeakErr_y[4];
-		static double sdBaseErr_y[4];
-		static double sdOffsetErr_y[4];
-		static double sdProb_y[4];
 		
-		static int siFitStatus_n[4]; // fit status. Usually 4
-		static int siFitStatus_y[4];
+		static double sdPeak_err_n[4]; // errors
+		static double sdBase_err_n[4];
+		static double sdOff_err_n[4];
+		static double sdPeak_err_y[4];
+		static double sdBase_err_y[4];
+		static double sdOff_err_y[4];
 
 	public:
 		XSQ();
-		XSQ(int ch, int length, shared_ptr<Digitizer> digitizer);
+		XSQ(int ch, int length, shared_ptr<Digitizer> digitizer, int variant);
 		virtual ~XSQ();
 		virtual void Analyze();
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer);
@@ -59,8 +70,12 @@ class XSQ : public Method {
 		static void root_init(TTree* tree_in);
 		static void root_deinit() {XSQ::tree.reset();} // friending is handled after the fact, writing by the TFile
 		static int HowMany() {return XSQ::siHowMany;}
-		double fitter(double* x, double* par);
+		double FindChisquare(int p, double dPeak, double dBase, int iOff);
+		void SetDefaultParameters();
+		double TF1_fit_func(double* x, double* par);
 		static float sfVersion;
+		enum { VAR_TF1 = 0, VAR_NEW };
+		
 };
 
 #endif // XSQ_H
