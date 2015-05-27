@@ -8,19 +8,12 @@
 #include "TF1.h"
 #include <vector>
 
-struct fit_results_t { // for later, keeping track of used parameters to eliminate unnecessary evaluations and speed convergence
-	double peak;
-	double base;
-	int offset;
-	double xsq;
-};
-
 class XSQ : public Method {
 	private:
 		enum { ciNPar = 3, TF1_pars}; // peakheight, baseline, trigger offset (and particle)
 		enum { n = 0, y, P};
 		float fGain[P];
-		int iPeakCut; // 4mV
+		int iPeakCut; // 4mV in bins
 		int iResolutionScale;
 		int iStdLength; // 450ns
 		int iStdTrig; // 64ns
@@ -37,7 +30,6 @@ class XSQ : public Method {
 		double dStep[ciNPar]; // Newton's
 		unique_ptr<TF1> fit;
 		unique_ptr<TGraph> graph; // only TF1
-//		vector<fit_results_t> fit_results_v;
 		
 		static unique_ptr<TTree> tree;
 		static int siHowMany;
@@ -59,6 +51,8 @@ class XSQ : public Method {
 		static double sdPeak_err_y[4];
 		static double sdBase_err_y[4];
 		static double sdOff_err_y[4];
+		
+		static short ssIterations[2][4]; // for debugging, mainly
 
 	public:
 		XSQ();

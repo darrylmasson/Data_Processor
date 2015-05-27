@@ -28,7 +28,7 @@ bool g_verbose(false);
 
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v3_5\n";
-	int i(0), iSpecial(-1), iAverage(0), iFitVar(XSQ::VAR_NEW);
+	int i(0), iSpecial(-1), iAverage(0), iFitVar(XSQ::VAR_NEW), iElapsed(0);
 	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
 	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v -t]";
 	steady_clock::time_point t_start, t_end;
@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
 	t_end = steady_clock::now();
 	for (i = 0; i < err_dummy_last; i++) if (processor.Failed() & (1 << i)) cout << error_message[i] << '\n';
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
-	cout << "Total time elapsed: " << t_elapsed.count() << "s\n";
+	iElapsed = t_elapsed.count();
+	cout << "Total time elapsed: " << iElapsed/3600 << 'h' << (iElapsed%3600)/60 << 'm' << iElapsed%60 << "s\n";
 	return 0;
 }

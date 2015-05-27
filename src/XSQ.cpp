@@ -26,6 +26,8 @@ double XSQ::sdPeak_err_y[4]		= {0,0,0,0};
 double XSQ::sdBase_err_y[4]		= {0,0,0,0};
 double XSQ::sdOff_err_y[4]		= {0,0,0,0};
 
+short XSQ::ssIterations[2][4]		= {{0,0,0,0},{0,0,0,0}};
+
 XSQ::XSQ() : ciVariant(-1) {
 	if (g_verbose) cout << "XSQ c'tor\n";
 	XSQ::siHowMany++;
@@ -40,13 +42,12 @@ XSQ::XSQ(int ch, int length, shared_ptr<Digitizer> digitizer, int variant) : Met
 	if ((id > 3) || (id < 0)) iFailed |= (1 << method_error);
 	switch (digitizer->ID()) { // setting the length and stuff for the standard events
 		case dt5751 :
+			iPeakCut = 4;
 			if (digitizer->Special() == 0) {
-				iPeakCut	= 4;
 				iStdLength	= 225;
 				iStdTrig	= 32;
 				iResolutionScale = 1;
 			} else {
-				iPeakCut	= 4;
 				iStdLength	= 450;
 				iStdTrig	= 64;
 				iResolutionScale = 1;
@@ -153,6 +154,8 @@ void XSQ::root_init(TTree* tree_in) {
 		XSQ::tree->Branch("Peak_err_y",		XSQ::sdPeak_err_y,		"pkerry[4]/D");
 		XSQ::tree->Branch("Base_err_y",		XSQ::sdBase_err_y,		"baerry[4]/D");
 		XSQ::tree->Branch("Off_err_y",		XSQ::sdOff_err_y,		"oferry[4]/D");
+		
+		XSQ::tree->Branch("Iterations",		XSQ::ssIterations,		"iters[2][4]/S");
 
 		XSQ::sbInitialized = true;
 	}
@@ -175,6 +178,9 @@ void XSQ::SetDefaultParameters() { // for convenience
 	XSQ::sdBase_err_y[id]	= -1;
 	XSQ::sdOff_err_n[id]	= -1;
 	XSQ::sdOff_err_y[id]	= -1;
+	
+	XSQ::ssIterations[0][id] = -1;
+	XSQ::ssIterations[1][id] = -1;
 
 	return;
 }
@@ -215,21 +221,19 @@ void XSQ::Analyze() {
 	double dEpsilonP(0.0005), dEpsilonB(0.0001), dPeak(0), dBase(0); // looking in a small region
 	double dDet(0), a(0), b(0), c(0), d(0), e(0), f(0), dDiff(0);
 	double d000(0), dp00(0), d0p0(0), d00p(0), dpp0(0), dp0p(0), d0pp(0), dm00(0), d0m0(0), d00m(0);
-	double dChiSquareLast(0), dChiSquare(0), dEpsilonO(0), iOff(0);
-//	fit_results_t fit_results;
-	if (event->Baseline() - event->Peak_y() < iPeakCut) { // cut noise to save processing time
+	double dChiSquareLast(0), dChiSquare(0), dEpsilonO(1), iOff(0);
+/*	if (event->Baseline() - event->Peak_y() < iPeakCut) { // cut noise to save processing time
 		SetDefaultParameters();
 		return;
-	}
+	} */
 	if (ciVariant) { // Newton's method, could use some optimization
 		for (int p = 0; p < P; p++) {
-//			fit_results_v.clear();
+			ssIterations[p][id] = 0;
 			iter = iIterations; // in case extra time was used
 			dPeak = (event->Baseline() - event->Peak_y())*dStdNorm[p];
 			dBase = event->Baseline();
 			iOff = event->Trigger() - iStdTrig;
 			dChiSquare = FindChisquare(p, dPeak, dBase, iOff);
-//			fit_results_v.push_back(fit_results_t{dPeak, dBase, iOff, dChiSquare});
 			for (i = 0; i < iter; i++) { // x_n+1 = x_n - (main step size)(inverse Hessian matrix)(gradient of function at x_n)
 				d000 = dChiSquareLast = dChiSquare;
 				dp00 = FindChisquare(p, dPeak + dEpsilonP, dBase, iOff);
@@ -288,6 +292,7 @@ void XSQ::Analyze() {
 						XSQ::sdPeak_err_y[id]	= dStep[0] > 0 ? dStep[0] : -dStep[0];
 						XSQ::sdBase_err_y[id]	= dStep[1] > 0 ? dStep[1] : -dStep[1];
 						XSQ::sdOff_err_y[id]	= dStep[2] > 0 ? dStep[2] : -dStep[2];
+						
 					} else {
 						XSQ::sdXsq_n[id]		= dChiSquare;
 						XSQ::sdPeakheight_n[id]	= dPeak*fGain[n]/iResolutionScale;
@@ -298,6 +303,7 @@ void XSQ::Analyze() {
 						XSQ::sdBase_err_n[id]	= dStep[1] > 0 ? dStep[1] : -dStep[1];
 						XSQ::sdOff_err_n[id]	= dStep[2] > 0 ? dStep[2] : -dStep[2];
 					}
+					XSQ::ssIterations[p][id] = i;
 					break; // break from iterations
 				} else if (i == iIterations-1) { // more time to converge, only once
 					iter += iIterations; 
