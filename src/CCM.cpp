@@ -1,7 +1,4 @@
 #include "CCM.h"
-#include <cstdlib>
-#include <cmath>
-#include <iostream>
 
 float CCM::sfVersion = 2.81;
 bool CCM::sbInitialized = false;
@@ -107,7 +104,7 @@ void CCM::root_init(TTree* tree_in) {
 void CCM::Analyze() {
 	auto iStart(0), iStop(iEventlength-1), i(0), iFast(0), iSlow(0);
 	auto lFastint(0l), lSlowint(0l), lFullint(0l);
-	auto dThreshold(event->Baseline() - 3*event->BaseSigma()), dTemp(0.);
+	auto dThreshold(event->Baseline() - 3*event->BaseSigma()), dTemp(0.); // different threshold for decaying edge?
 	
 	// normalizing baseline values
 	CCM::sdBaseline[id] = (event->Baseline() - event->Zero())*dScaleV;
@@ -119,9 +116,9 @@ void CCM::Analyze() {
 	CCM::sdBasePostSigma[id] = event->BasePostSigma()*dScaleV;
 
 	for (i = 0; i < iEventlength; i++) { // determine integration bounds
+		// first checks to see if start/stop has been found, then if the array index is valid, then checks the value
 		if ((iStop == (iEventlength-1)) && ((event->Peak_x() + i) < iEventlength) && (event->Trace(event->Peak_x() + i) > dThreshold)) iStop = (event->Peak_x() + i);
 		if ((iStart == 0) && ((event->Peak_x() - i) > -1) && (event->Trace(event->Peak_x() - i) > dThreshold)) iStart = (event->Peak_x() - i);
-		// first checks to see if start/stop has been found, then if the array index is valid, then checks the value
 		if ((iStart != 0) && (iStop != (iEventlength-1))) break;
 	}
 	

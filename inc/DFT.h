@@ -7,17 +7,19 @@
 
 class DFT : public Method {
 	private:
-		const int ciOrder; // 3 non-zero
+		enum { ciOrder = 17}; // not including zero
 		double dScalefactor;
-		unique_ptr<double[]> dCos;
-		unique_ptr<double[]> dSin;
+		vector<double> dCos[ciOrder];
+		vector<double> dSin[ciOrder];
 
 		static unique_ptr<TTree> tree;
 		static int siHowMany;
 		static bool sbInitialized;
 		
-		static double sdMagnitude[8][4]; // order = 3
-		static double sdPhase[8][4]; // but we want 0th as well
+		static double sdMagnitude[8][ciOrder];
+		static double sdPhase[8][ciOrder];
+		static double sdOdd[8]; // discrimination parameters
+		static double sdEven[8];
 
 		
 	public:

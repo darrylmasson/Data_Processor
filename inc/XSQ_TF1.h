@@ -1,16 +1,15 @@
-#ifndef XSQ_H // chi-squared test
-#define XSQ_H
+#ifndef XSQ_TF1_H // chi-squared test
+#define XSQ_TF1_H
 
 #ifndef METHOD_H
 #include "Method.h"
 #endif
 #include "TGraph.h"
 #include "TF1.h"
-#include <vector>
 
-class XSQ : public Method {
+class XSQ_TF1 : public Method {
 	private:
-		enum { ciNPar = 3, TF1_pars}; // peakheight, baseline, trigger offset (and particle)
+		enum { ciNPar = 4}; // peakheight, baseline, trigger offset, and particle
 		enum { n = 0, y, P};
 		float fGain[P];
 		int iPeakCut; // 4mV in bins
@@ -18,16 +17,11 @@ class XSQ : public Method {
 		int iStdLength; // 450ns
 		int iStdTrig; // 64ns
 		int iIterations; // 5, usually
-		const int ciVariant;
 		unique_ptr<double[]> dInputWave; // only used for TF1 variant
 		unique_ptr<double[]> dStdWave[P]; // both
 		unique_ptr<double[]> dX; // only TF1
-		double dConvergence; // Newton's
-		double dGradient[ciNPar]; // Newton's
-		double dHessianInv[ciNPar][ciNPar]; // Newton's
 		double dStdNorm[P];
 		double dStdPeak[P];
-		double dStep[ciNPar]; // Newton's
 		unique_ptr<TF1> fit;
 		unique_ptr<TGraph> graph; // only TF1
 		
@@ -51,26 +45,21 @@ class XSQ : public Method {
 		static double sdPeak_err_y[4];
 		static double sdBase_err_y[4];
 		static double sdOff_err_y[4];
-		
-		static short ssIterations[2][4]; // for debugging, mainly
 
 	public:
-		XSQ();
-		XSQ(int ch, int length, shared_ptr<Digitizer> digitizer, int variant);
-		virtual ~XSQ();
+		XSQ_TF1();
+		XSQ_TF1(int ch, int length, shared_ptr<Digitizer> digitizer);
+		virtual ~XSQ_TF1();
 		virtual void Analyze();
 		virtual void SetParameters(void* val, int which, shared_ptr<Digitizer> digitizer);
 		static void root_init(TTree* tree_in);
-		static void root_fill()		{XSQ::tree->Fill();}
-		static void root_write()	{XSQ::tree->Write();}
-		static void root_deinit()	{XSQ::tree.reset();} // friending is handled after the fact, writing by the TFile or root_write
-		static int HowMany() {return XSQ::siHowMany;}
-		double FindChisquare(int p, double dPeak, double dBase, int iOff);
+		static void root_fill()		{XSQ_TF1::tree->Fill();}
+		static void root_write()	{XSQ_TF1::tree->Write();}
+		static void root_deinit()	{XSQ_TF1::tree.reset();} // friending is handled after the fact, writing by the TFile or root_write
+		static int HowMany()		{return XSQ_TF1::siHowMany;}
 		void SetDefaultParameters();
 		double TF1_fit_func(double* x, double* par);
 		static float sfVersion;
-		enum { VAR_TF1 = 0, VAR_NEW };
-		
 };
 
-#endif // XSQ_H
+#endif // XSQ_TF1_H

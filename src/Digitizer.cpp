@@ -1,6 +1,4 @@
 #include "Digitizer.h"
-#include <cstring>
-#include <iostream>
 
 Digitizer::Digitizer(char in[], int special_in) {
 	strcpy(cName,in);
@@ -44,7 +42,7 @@ Digitizer::Digitizer(char in[], int special_in) {
 	}
 	
 	dScaleV = dVpp/(double)sResolution; // volts/bin
-	dScaleT = 1E9/dSamplerate; // ns
+	dScaleT = 1E9/dSamplerate; // ns/Sa
 }
 
 Digitizer::~Digitizer() {

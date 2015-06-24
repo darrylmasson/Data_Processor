@@ -1,8 +1,6 @@
 #include "LAP.h"
-#include <cmath>
-#include <iostream>
 
-float LAP::sfVersion = 1.2;
+float LAP::sfVersion = 1.25;
 float LAP::sfS = 1.5;
 bool LAP::sbInitialized = false;
 unique_ptr<TTree> LAP::tree = nullptr;
@@ -25,7 +23,7 @@ LAP::LAP(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, lengt
 		iFailed |= (1 << alloc_error);
 		return;
 	}
-	for (auto i = 0; i < iEventlength; i++) dExp[i] = exp(-LAP::sfS*i/dScaleT); // not sure if the time scale is correct here.
+	for (auto i = 0; i < iEventlength; i++) dExp[i] = exp(-LAP::sfS*i*dScaleT);
 }
 
 LAP::~LAP() {

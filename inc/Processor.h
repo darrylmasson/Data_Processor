@@ -9,11 +9,14 @@
 #ifndef DFT_H
 #include "DFT.h"
 #endif
-#ifndef XSQ_H
-#include "XSQ.h"
+#ifndef XSQ_TF1_H
+#include "XSQ_TF1.h"
 #endif
 #ifndef LAP_H
 #include "LAP.h"
+#endif
+#ifndef XSQ_NEW_H
+#include "XSQ_NEW.h"
 #endif
 
 class ProcessorException : public exception { // simpler than checking Failed() after every step in setup
@@ -94,7 +97,6 @@ class Processor {
 		void SetConfigFile(string in)				{sConfigFileName = in;}
 		void SetDetectorPositions(string in);
 		void SetFileSet(string in);
-		void SetFitter(int in)						{iXSQ_fitter = in;}
 		void SetSource(string in)					{strcpy(cSource,in.c_str());}
 		void SetSpecials(int special, int average);
 };

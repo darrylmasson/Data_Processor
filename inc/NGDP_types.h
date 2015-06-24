@@ -3,7 +3,11 @@
 
 #include <memory>
 #include <string>
+#include <cstring>
 #include <cstdint>
+#include <iostream>
+#include <cmath>
+#include <algorithm>
 
 // note on variable names:
 // most variables have their type as a one or two character prefix
@@ -14,7 +18,7 @@ using namespace std;
 const int MAX_CH = 8;
 const string sWorkingDir(WORKING_DIR, string(WORKING_DIR).find_last_of('/'));
 const string sBuildID(string(__DATE__) + " " + string(__TIME__));
-const int sizeof_f_header = 86; // sizeof(f_header_t) returns the wrong value
+const int sizeof_f_header = 86; // sizeof(f_header_t) returns the wrong value due to padding
 const int sizeof_ev_header = 16;
 
 extern bool g_verbose; // for debugging purposes
@@ -25,7 +29,8 @@ class Event_ave;
 class Method;
 class CCM;
 class DFT;
-class XSQ;
+class XSQ_TF1;
+class XSQ_NEW;
 class LAP;
 
 enum ret_codes_t {
@@ -52,7 +57,8 @@ enum dig_id_t { // easy way for internal identification of digitizer
 enum methods_t {
 	CCM_t = 0,
 	DFT_t,
-	XSQ_t,
+	XSQ_TF1_t,
+	XSQ_NEW_t,
 	LAP_t,
 	
 	NUM_METHODS // add others before this

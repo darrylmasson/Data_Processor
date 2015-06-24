@@ -1,7 +1,4 @@
 #include "Event_ave.h"
-#include <cmath>
-#include <algorithm>
-#include <iostream>
 
 Event_ave::Event_ave(int len, shared_ptr<Digitizer> digitizer) : Event(len, digitizer) {
 	if (g_verbose) cout << "Event_ave " << Event::siHowMany << " c'tor\n";

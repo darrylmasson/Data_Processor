@@ -1,7 +1,4 @@
 #include "Event.h"
-#include <cmath>
-#include <algorithm>
-#include <iostream>
 
 int Event::siLength = 0;
 int Event::siHowMany = 0;

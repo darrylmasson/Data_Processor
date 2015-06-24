@@ -13,7 +13,8 @@ SRCS = Digitizer.cpp \
 	Event_ave.cpp \
 	CCM.cpp \
 	DFT.cpp \
-	XSQ.cpp \
+	XSQ_TF1.cpp \
+	XSQ_NEW.cpp \
 	LAP.cpp \
 	Processor.cpp \
 	NG_dp.cpp

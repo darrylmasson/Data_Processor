@@ -9,36 +9,41 @@ using namespace std::chrono;
 const float cfMethodVersions[NUM_METHODS] = {
 	CCM::sfVersion,
 	DFT::sfVersion,
-	XSQ::sfVersion,
-	LAP::sfVersion
+	XSQ_TF1::sfVersion,
+	LAP::sfVersion,
+	XSQ_NEW::sfVersion
 };
 
 auto (*root_init[])(TTree*) -> void = {
 	CCM::root_init,
 	DFT::root_init,
-	XSQ::root_init,
-	LAP::root_init
+	XSQ_TF1::root_init,
+	LAP::root_init,
+	XSQ_NEW::root_init
 };
 
 auto (*root_fill[])() -> void = {
 	CCM::root_fill,
 	DFT::root_fill,
-	XSQ::root_fill,
-	LAP::root_fill
+	XSQ_TF1::root_fill,
+	LAP::root_fill,
+	XSQ_NEW::root_fill
 };
 
 auto (*root_write[])() -> void = {
 	CCM::root_write,
 	DFT::root_write,
-	XSQ::root_write,
+	XSQ_TF1::root_write,
 	LAP::root_write,
+	XSQ_NEW::root_write
 };
 
 auto (*root_deinit[])() -> void = {
 	CCM::root_deinit,
 	DFT::root_deinit,
-	XSQ::root_deinit,
-	LAP::root_deinit
+	XSQ_TF1::root_deinit,
+	LAP::root_deinit,
+	XSQ_NEW::root_deinit
 };
 
 void* Process(void* arg) {
@@ -54,8 +59,9 @@ Processor::Processor() {
 	iAverage = 0;
 	strcpy(cMethodNames[0], "CCM_PGA");
 	strcpy(cMethodNames[1], "FOURIER");
-	strcpy(cMethodNames[2], "CHISQUARED");
+	strcpy(cMethodNames[2], "FIT_TF1");
 	strcpy(cMethodNames[3], "LAPLACE");
+	strcpy(cMethodNames[4], "FIT_NEW");
 	
 	sConfigFileName = "\0";
 	sRawDataFile = "\0";
@@ -115,8 +121,11 @@ void Processor::BusinessTime() {
 	void* status = nullptr;
 	
 	unsigned long* ulpTimestamp = (unsigned long*)(buffer.get() + sizeof(long));
-	unsigned long ulTSFirst(0), ulTSLast(0);
-	if (bRecordTimestamps) tree->Branch("Timestamp", &ulpTimestamp[0], "time_stamp/l");
+	unsigned long ulTSFirst(0), ulTSLast(0), ulTSPrev(0);
+	if (bRecordTimestamps) {
+		tree->Branch("Timestamp", &ulpTimestamp[0], "time_stamp/l");
+		tree->Branch("Timestamp_prev", &ulTSPrev, "time_stamp_prev/l");
+	}
 	
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
@@ -138,7 +147,7 @@ void Processor::BusinessTime() {
 	f->cd();
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.get(), iEventsize);
-		if ((iXSQ_fitter == XSQ::VAR_TF1) && (bMethodActive[XSQ_t])) for (ch = 0; ch < iNchan; ch++) { // TF1 isn't thread-friendly
+		if (bMethodActive[XSQ_TF1_t]) for (ch = 0; ch < iNchan; ch++) { // TF1 isn't thread-friendly
 			td[ch].event->Analyze();
 			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) td[ch].methods[m]->Analyze();
 		} else { // but Newton's method is
@@ -146,7 +155,10 @@ void Processor::BusinessTime() {
 			for (ch = 0; ch < iNchan; ch++) if ( (rc = pthread_join(threads[ch], &status)) ) {iFailed |= (1 << thread_error); return;}
 		}
 		for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) root_fill[m]();
-		if (bRecordTimestamps) tree->Fill();
+		if (bRecordTimestamps) {
+			tree->Fill();
+			ulTSPrev = ulpTimestamp[0];
+		}
 		if (ev % iProgCheck == iProgCheck-1) { // progress updates
 			cout << ev*100l/iNumEvents << "%\t\t";
 			t_this = steady_clock::now();
@@ -158,7 +170,6 @@ void Processor::BusinessTime() {
 			if (iTimeleft > (1 << 12)) cout << iTimeleft/3600 << "h" << (iTimeleft%3600)/60 << "m\n";
 			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
 			else cout << iTimeleft << "s\n";
-//			for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) root_write[m]();
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];	
 	}
@@ -235,18 +246,18 @@ void Processor::ClassAlloc() {
 			}
 			td[ch].methods[DFT_t]->SetEvent(td[ch].event);
 		}
-		if (bMethodActive[XSQ_t]) {
-			try {td[ch].methods[XSQ_t] = shared_ptr<Method>(new XSQ(iChan[ch], Event::Length(), digitizer, iXSQ_fitter));}
+		if (bMethodActive[XSQ_TF1_t]) {
+			try {td[ch].methods[XSQ_TF1_t] = shared_ptr<Method>(new XSQ_TF1(iChan[ch], Event::Length(), digitizer));}
 			catch (bad_alloc& ba) {
 				iFailed |= (1 << alloc_error);
-				bMethodActive[XSQ_t] = false;
+				bMethodActive[XSQ_TF1_t] = false;
 			}
-			td[ch].methods[XSQ_t]->SetParameters(&fGain[iChan[ch]][0], 0, digitizer);
-			td[ch].methods[XSQ_t]->SetParameters(&fGain[iChan[ch]][1], 1, digitizer);
-			td[ch].methods[XSQ_t]->SetEvent(td[ch].event);
-			if (td[ch].methods[XSQ_t]->Failed()) {
+			td[ch].methods[XSQ_TF1_t]->SetParameters(&fGain[iChan[ch]][0], 0, digitizer);
+			td[ch].methods[XSQ_TF1_t]->SetParameters(&fGain[iChan[ch]][1], 1, digitizer);
+			td[ch].methods[XSQ_TF1_t]->SetEvent(td[ch].event);
+			if (td[ch].methods[XSQ_TF1_t]->Failed()) {
 				iFailed |= (1 << method_error);
-				bMethodActive[XSQ_t] = false;
+				bMethodActive[XSQ_TF1_t] = false;
 			}
 		}
 		if (bMethodActive[LAP_t]) {
@@ -259,6 +270,20 @@ void Processor::ClassAlloc() {
 			if (td[ch].methods[LAP_t]->Failed()) {
 				iFailed |= (1 << method_error);
 				bMethodActive[LAP_t] = false;
+			}
+		}
+		if (bMethodActive[XSQ_NEW_t]) {
+			try {td[ch].methods[XSQ_NEW_t] = shared_ptr<Method>(new XSQ_NEW(iChan[ch], Event::Length(), digitizer));}
+			catch (bad_alloc& ba) {
+				iFailed |= (1 << alloc_error);
+				bMethodActive[XSQ_NEW_t] = false;
+			}
+			td[ch].methods[XSQ_NEW_t]->SetParameters(&fGain[iChan[ch]][0], 0, digitizer);
+			td[ch].methods[XSQ_NEW_t]->SetParameters(&fGain[iChan[ch]][1], 1, digitizer);
+			td[ch].methods[XSQ_NEW_t]->SetEvent(td[ch].event);
+			if (td[ch].methods[XSQ_NEW_t]->Failed()) {
+				iFailed |= (1 << method_error);
+				bMethodActive[XSQ_NEW_t] = false;
 			}
 		}
 		td[ch].cbpActivated = bMethodActive;
@@ -450,7 +475,7 @@ void Processor::ConfigTrees() {
 
 void Processor::FriendshipIsMagic() {
 	if (g_verbose) cout << "Making friends: ";
-	bool bCuts(false);
+	bool bCuts(false), bTree[NUM_METHODS];
 	int m(0), i(0);
 	string sCutsFile = sRootFile;
 	sCutsFile.insert(sRootFile.find('.'),"Cuts");
@@ -461,19 +486,24 @@ void Processor::FriendshipIsMagic() {
 			bCuts = true;
 		}
 	}
+	f->cd();
 	for (m = 0; m < NUM_METHODS; m++) {
-		if ((bMethodDone[m])  || (bMethodActive[m])) { // all existing trees
+		tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
+		if (tree) bTree[m] = true;
+		else bTree[m] = false;
+	}
+	for (m = 0; m < NUM_METHODS; m++) {
+		if (bTree[m]) { // all existing trees
 			if (g_verbose) cout << cTreename[m] << "\n";
 			tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
 			if (bMethodActive[m]) tree->AddFriend("TS");
-			for (i = 1; i < NUM_METHODS; i++) if ((bMethodDone[(m+i)%NUM_METHODS]) || (bMethodActive[(m+i)%NUM_METHODS])) tree->AddFriend(cTreename[(m+i)%NUM_METHODS]);
+			for (i = 1; i < NUM_METHODS; i++) if (bTree[(m+i)%NUM_METHODS]) tree->AddFriend(cTreename[(m+i)%NUM_METHODS]);
 			if (bCuts) tree->AddFriend("Tcuts",sCutsFile.c_str());
-			f->cd();
 			tree->Write("",TObject::kOverwrite);
 			tree.reset();
 		}
 	}
-	
+	tree.reset();
 	return;
 }
 
@@ -543,9 +573,9 @@ void Processor::ParseConfigFile() {
 	try {digitizer = shared_ptr<Digitizer>(new Digitizer(cDigName, iSpecial));}
 	catch (bad_alloc& ba) {iFailed |= (1 << alloc_error); throw ProcessorException();}
 	if (digitizer->Failed()) iFailed |= (1 << method_error);
-	if ((digitizer->ID() > 2) && bMethodActive[XSQ_t]) {
+	if ((digitizer->ID() > 2) && (bMethodActive[XSQ_TF1_t] || bMethodActive[XSQ_NEW_t])) {
 		cout << "Chisquare method not compatible with " << digitizer->Name() << '\n';
-		bMethodActive[XSQ_t] = false;
+		bMethodActive[XSQ_TF1_t] = bMethodActive[XSQ_NEW_t] = false;
 	}
 	return;
 }
