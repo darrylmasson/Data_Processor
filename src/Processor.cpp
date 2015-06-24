@@ -59,9 +59,9 @@ Processor::Processor() {
 	iAverage = 0;
 	strcpy(cMethodNames[0], "CCM_PGA");
 	strcpy(cMethodNames[1], "FOURIER");
-	strcpy(cMethodNames[2], "FIT_TF1");
+	strcpy(cMethodNames[2], "XSQ_TF1");
 	strcpy(cMethodNames[3], "LAPLACE");
-	strcpy(cMethodNames[4], "FIT_NEW");
+	strcpy(cMethodNames[4], "XSQ_NEW");
 	
 	sConfigFileName = "\0";
 	sRawDataFile = "\0";
