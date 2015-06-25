@@ -173,7 +173,7 @@ void Processor::BusinessTime() {
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];	
 	}
-
+	tree->Write();
 	cout << "Processing completed\n";
 	ulTSLast = ulpTimestamp[0];
 	iLivetime = (ulTSLast - ulTSFirst)/125e6;
@@ -496,7 +496,7 @@ void Processor::FriendshipIsMagic() {
 		if (bTree[m]) { // all existing trees
 			if (g_verbose) cout << cTreename[m] << "\n";
 			tree = unique_ptr<TTree>((TTree*)f->Get(cTreename[m]));
-			if (bMethodActive[m]) tree->AddFriend("TS");
+			tree->AddFriend("TS");
 			for (i = 1; i < NUM_METHODS; i++) if (bTree[(m+i)%NUM_METHODS]) tree->AddFriend(cTreename[(m+i)%NUM_METHODS]);
 			if (bCuts) tree->AddFriend("Tcuts",sCutsFile.c_str());
 			tree->Write("",TObject::kOverwrite);
