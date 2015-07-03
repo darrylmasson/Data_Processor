@@ -37,6 +37,7 @@ class XSQ_NEW : public Method {
 		static double sdOff_err[2][4];
 		
 		static short ssIterations[2][4]; // for debugging, mainly
+		static double sdConvergence[2][4];
 
 	public:
 		XSQ_NEW();

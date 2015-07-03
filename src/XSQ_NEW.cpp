@@ -1,7 +1,7 @@
 #include "XSQ_NEW.h"
 #include "TVectorT.h"
 
-float	XSQ_NEW::sfVersion = 1.0;
+float	XSQ_NEW::sfVersion = 1.05;
 bool	XSQ_NEW::sbInitialized = false;
 int		XSQ_NEW::siHowMany = 0;
 
@@ -17,6 +17,7 @@ double XSQ_NEW::sdBase_err[2][4]	= {{0,0,0,0},{0,0,0,0}};
 double XSQ_NEW::sdOff_err[2][4]		= {{0,0,0,0},{0,0,0,0}};
 
 short XSQ_NEW::ssIterations[2][4]	= {{0,0,0,0},{0,0,0,0}};
+double XSQ_NEW::sdConvergence[2][4]	= {{0,0,0,0},{0,0,0,0}};
 
 XSQ_NEW::XSQ_NEW() {
 	if (g_verbose) cout << "XSQ_NEW c'tor\n";
@@ -122,6 +123,7 @@ void XSQ_NEW::root_init(TTree* tree_in) {
 		XSQ_NEW::tree->Branch("Off_err",	XSQ_NEW::sdOff_err,		"oferr[2][4]/D");
 		
 		XSQ_NEW::tree->Branch("Iterations",	XSQ_NEW::ssIterations,	"iters[2][4]/S");
+		XSQ_NEW::tree->Branch("Convergence",XSQ_NEW::sdConvergence, "conv[2][4]/D");
 
 		XSQ_NEW::sbInitialized = true;
 	}
@@ -154,8 +156,8 @@ double XSQ_NEW::FindChisquare(int p, double dPeak, double dBase, int iOff) {
 	int iSample(0);
 	for (int i = 0; i < iEventlength; i++) {
 		dTrace = event->Trace(i);
-		iSample = i - iOff;
 		if (dTrace == 0) continue;
+		iSample = i - iOff;
 		dVal = dBase;
 		if ((iSample > -1) && (iSample < iStdLength)) dVal += dPeak*dStdWave[p][iSample];
 		dDiff = dTrace-dVal;
@@ -244,5 +246,7 @@ void XSQ_NEW::Analyze() {
 		XSQ_NEW::sdPeak_err[p][id]		= dStep[0] > 0 ? dStep[0] : -dStep[0];
 		XSQ_NEW::sdBase_err[p][id]		= dStep[1] > 0 ? dStep[1] : -dStep[1];
 		XSQ_NEW::sdOff_err[p][id]		= dStep[2] > 0 ? dStep[2] : -dStep[2];
+		
+		XSQ_NEW::sdConvergence[p][id]	= dDiff/dChiSquareLast;
 	} // p loop
 }

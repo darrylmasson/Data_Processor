@@ -1,6 +1,6 @@
 #include "CCM.h"
 
-float CCM::sfVersion = 2.81;
+float CCM::sfVersion = 2.82;
 bool CCM::sbInitialized = false;
 unique_ptr<TTree> CCM::tree = nullptr;
 int CCM::siHowMany = 0;
@@ -14,6 +14,7 @@ short CCM::ssFastStop[8]		= {0,0,0,0,0,0,0,0};
 short CCM::ssRise[8]			= {0,0,0,0,0,0,0,0};
 short CCM::ssPeakX[8]			= {0,0,0,0,0,0,0,0};
 short CCM::ssSlowStop[8]		= {0,0,0,0,0,0,0,0};
+short CCM::ssTrigger[8]			= {0,0,0,0,0,0,0,0};
 
 double CCM::sdBaseline[8]		= {0,0,0,0,0,0,0,0};
 double CCM::sdBaseSigma[8]		= {0,0,0,0,0,0,0,0};
@@ -80,6 +81,7 @@ void CCM::root_init(TTree* tree_in) {
 		CCM::tree->Branch("Faststop",		CCM::ssFastStop,		"fstop[8]/S");
 		CCM::tree->Branch("Slowstop",		CCM::ssSlowStop,		"sstop[8]/S");
 		CCM::tree->Branch("Peakx",			CCM::ssPeakX,			"peakx[8]/S");
+		CCM::tree->Branch("Trigger",		CCM::ssTrigger,			"trigger[8]/S");
 		
 		CCM::tree->Branch("Peakheight0",	CCM::sdPeak0,			"pk_height0[8]/D");
 		CCM::tree->Branch("Peakheight1",	CCM::sdPeak1,			"pk_height1[8]/D");
@@ -104,16 +106,17 @@ void CCM::root_init(TTree* tree_in) {
 void CCM::Analyze() {
 	auto iStart(0), iStop(iEventlength-1), i(0), iFast(0), iSlow(0);
 	auto lFastint(0l), lSlowint(0l), lFullint(0l);
-	auto dThreshold(event->Baseline() - 3*event->BaseSigma()), dTemp(0.); // different threshold for decaying edge?
+	auto dThreshold(event->Baseline() - 3*event->BaseSigma()), dTemp(0.);
 	
 	// normalizing baseline values
-	CCM::sdBaseline[id] = (event->Baseline() - event->Zero())*dScaleV;
-	CCM::sdBaseSigma[id] = event->BaseSigma()*dScaleV;
-	CCM::sdBasePeakP[id] = (event->B_pk_p() - event->Baseline())*dScaleV;
-	CCM::sdBasePeakN[id] = (event->Baseline() - event->B_pk_n())*dScaleV;
-	CCM::sdPeakP[id] = (event->Peak_pos() - event->Baseline())*dScaleV;
-	CCM::sdBasePost[id] = (event->BasePost() - event->Zero())*dScaleV;
-	CCM::sdBasePostSigma[id] = event->BasePostSigma()*dScaleV;
+	CCM::sdBaseline[id]			= (event->Baseline() - event->Zero())*dScaleV;
+	CCM::sdBaseSigma[id]		= event->BaseSigma()*dScaleV;
+	CCM::sdBasePeakP[id]		= (event->B_pk_p() - event->Baseline())*dScaleV;
+	CCM::sdBasePeakN[id]		= (event->Baseline() - event->B_pk_n())*dScaleV;
+	CCM::sdPeakP[id]			= (event->Peak_pos() - event->Baseline())*dScaleV;
+	CCM::sdBasePost[id]			= (event->BasePost() - event->Zero())*dScaleV;
+	CCM::sdBasePostSigma[id]	= event->BasePostSigma()*dScaleV;
+	CCM::ssTrigger[id]			= event->Trigger()*dScaleT;
 
 	for (i = 0; i < iEventlength; i++) { // determine integration bounds
 		// first checks to see if start/stop has been found, then if the array index is valid, then checks the value
@@ -123,9 +126,9 @@ void CCM::Analyze() {
 	}
 	
 	// boolean results
-	CCM::sbFullWave[id] = (iStop != (iEventlength-1));
-	CCM::sbSaturated[id] = (event->Peak_y() == 0);
-	CCM::sbTruncated[id] = ((iStart + iSlowTime) >= iEventlength);
+	CCM::sbFullWave[id]		= (iStop != (iEventlength-1));
+	CCM::sbSaturated[id]	= (event->Peak_y() == 0);
+	CCM::sbTruncated[id]	= ((iStart + iSlowTime) >= iEventlength);
 	
 	iFast = min(iFastTime, iEventlength -1 - iStart);
 	iSlow = min(iSlowTime, iEventlength -1 - iStart); // local integration limits for fast and slow
@@ -152,12 +155,11 @@ void CCM::Analyze() {
 	lFastint -= (event->Trace(iStart) + event->Trace(iStart + iFast));
 	lSlowint -= (event->Trace(iStart) + event->Trace(iStart + iSlow));
 	
-	CCM::ssRise[id] = (event->Peak_x() - iStart)*dScaleT;
-	CCM::ssDecay[id] = (iStop - event->Peak_x())*dScaleT;
-
-	CCM::ssPeakX[id] = event->Peak_x()*dScaleT;
-	CCM::ssFastStop[id] = (iStart + iFast)*dScaleT;
-	CCM::ssSlowStop[id] = (iStart + iSlow)*dScaleT;
+	CCM::ssRise[id]		= (event->Peak_x() - iStart)*dScaleT;
+	CCM::ssDecay[id]	= (iStop - event->Peak_x())*dScaleT;
+	CCM::ssPeakX[id]	= event->Peak_x()*dScaleT;
+	CCM::ssFastStop[id]	= (iStart + iFast)*dScaleT;
+	CCM::ssSlowStop[id]	= (iStart + iSlow)*dScaleT;
 	
 	CCM::sdFullInt[id] = ((event->Baseline() * (iStop - iStart)) - (0.5*lFullint)) * dScaleV * dScaleT;
 	CCM::sdSlowInt[id] = ((event->Baseline() * (iSlow)) - (0.5*lSlowint)) * dScaleV * dScaleT; // baseline subtraction

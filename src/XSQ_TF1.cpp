@@ -1,7 +1,7 @@
 #include "XSQ_TF1.h"
 #include "TVectorT.h"
 
-float	XSQ_TF1::sfVersion = 1.5;
+float	XSQ_TF1::sfVersion = 1.55;
 bool	XSQ_TF1::sbInitialized = false;
 int		XSQ_TF1::siHowMany = 0;
 
@@ -16,6 +16,9 @@ double XSQ_TF1::sdXsq_y[4]			= {0,0,0,0};
 double XSQ_TF1::sdPeakheight_y[4]	= {0,0,0,0};
 double XSQ_TF1::sdBaseline_y[4]		= {0,0,0,0};
 double XSQ_TF1::sdOffset_y[4]		= {0,0,0,0};
+
+double XSQ_TF1::sdBaseline_a[4]		= {0,0,0,0};
+double XSQ_TF1::sdSigma_a[4]		= {0,0,0,0};
 
 double XSQ_TF1::sdPeak_err_n[4]		= {0,0,0,0};
 double XSQ_TF1::sdBase_err_n[4]		= {0,0,0,0};
@@ -106,7 +109,7 @@ XSQ_TF1::XSQ_TF1(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(c
 	try {
 		dInputWave = unique_ptr<double[]>(new double[iEventlength]);
 		dX = unique_ptr<double[]>(new double[iEventlength]);
-		fit = unique_ptr<TF1>(new TF1("fit",this,&XSQ_TF1::TF1_fit_func,0,min(iStdLength, iEventlength),ciNPar));
+		fit = unique_ptr<TF1>(new TF1("fit",this,&XSQ_TF1::TF1_fit_func,0,iEventlength,ciNPar));
 	} catch (bad_alloc& ba) {
 		iFailed |= (1 << alloc_error);
 		return;
@@ -141,6 +144,9 @@ void XSQ_TF1::root_init(TTree* tree_in) {
 		XSQ_TF1::tree->Branch("Base_shift_y",	XSQ_TF1::sdBaseline_y,		"baseshifty[4]/D");
 		XSQ_TF1::tree->Branch("Offset_y",		XSQ_TF1::sdOffset_y,		"offsety[4]/D");
 		
+		XSQ_TF1::tree->Branch("Base",			XSQ_TF1::sdBaseline_a,		"baseline[4]/D");
+		XSQ_TF1::tree->Branch("Sigma",			XSQ_TF1::sdSigma_a,			"sigma[4]/D");
+		
 		XSQ_TF1::tree->Branch("Peak_err_n",		XSQ_TF1::sdPeak_err_n,		"pkerrn[4]/D");
 		XSQ_TF1::tree->Branch("Base_err_n",		XSQ_TF1::sdBase_err_n,		"baerrn[4]/D");
 		XSQ_TF1::tree->Branch("Off_err_n",		XSQ_TF1::sdOff_err_n,		"oferrn[4]/D");
@@ -162,6 +168,9 @@ void XSQ_TF1::SetDefaultParameters() { // for convenience
 	XSQ_TF1::sdPeakheight_y[id]	= (event->Baseline() - event->Peak_y())*dStdNorm[y]*fGain[y];
 	XSQ_TF1::sdBaseline_y[id]	= event->Baseline();
 	XSQ_TF1::sdOffset_y[id]		= event->Trigger() - iStdTrig;
+	
+	XSQ_TF1::sdBaseline_a[id]	= event->Baseline();
+	XSQ_TF1::sdSigma_a[id]		= event->BaseSigma();
 
 	XSQ_TF1::sdPeak_err_n[id]	= -1;
 	XSQ_TF1::sdPeak_err_y[id]	= -1;

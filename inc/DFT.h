@@ -16,8 +16,8 @@ class DFT : public Method {
 		static int siHowMany;
 		static bool sbInitialized;
 		
-		static double sdMagnitude[8][ciOrder];
-		static double sdPhase[8][ciOrder];
+		double dMagnitude[ciOrder];
+		double dPhase[ciOrder];
 		static double sdOdd[8]; // discrimination parameters
 		static double sdEven[8];
 

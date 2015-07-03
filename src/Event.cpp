@@ -50,11 +50,11 @@ void Event::Analyze() {
 			usBasePkN = min(uspTrace[i],usBasePkN);
 			dBasePost += uspTrace[iEventlength-iBaselength+i]; // baseline at end of event
 		}
-		if (usPeakY > uspTrace[i]) { // finding primary peak
+		if (usPeakY > uspTrace[i]) { // finding primary peak, new logic?
 			usPeakY = uspTrace[i];
 			usPeakX = i;
 		}
-		if ((usTrigger == 0) && (uspTrace[i] < iThreshold)) usTrigger = i; // finding trigger
+		if ((usTrigger == 0) && (uspTrace[i] < iThreshold)) usTrigger = i; // finding trigger, add more complex logic here?
 	}
 	dBaseline *= dBaseScale;
 	dBasePost *= dBaseScale;

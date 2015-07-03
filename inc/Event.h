@@ -13,7 +13,7 @@ class Event {
 		int iBaselength;
 		int iSpecial;
 		const int ciSamples; // number of samples of pulse in memory (useful for Special or Average instances)
-		static int siLength; // number of samples in the waveform (generally not strictly ciSamples)
+		static int siLength; // number of samples in the waveform (generally but not strictly ciSamples)
 		static int siHowMany;
 		
 		unsigned short usPeakY; // primary pulse peak, y coord.

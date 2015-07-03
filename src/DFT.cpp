@@ -1,27 +1,11 @@
 #include "DFT.h"
 
-float DFT::sfVersion = 1.5;
+float DFT::sfVersion = 1.51;
 bool DFT::sbInitialized = false;
 unique_ptr<TTree> DFT::tree = nullptr;
 int DFT::siHowMany = 0;
 const double pi = 3.14159265358979;
 
-double DFT::sdMagnitude[8][ciOrder]	= { {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, // 8 channels
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, // 17 orders
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-double DFT::sdPhase[8][ciOrder]		= {	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-										{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 double DFT::sdOdd[8]	= {0,0,0,0,0,0,0,0};
 double DFT::sdEven[8]	= {0,0,0,0,0,0,0,0};
 
@@ -60,11 +44,9 @@ DFT::~DFT() {
 void DFT::root_init(TTree* tree_in) {
 	if (!DFT::sbInitialized) {
 		DFT::tree = unique_ptr<TTree>(tree_in);
-		
-		DFT::tree->Branch("Amplitude",	DFT::sdMagnitude,	"mag[8][17]/D");
-		DFT::tree->Branch("Phase",		DFT::sdPhase,		"phase[8][17]/D");
-		DFT::tree->Branch("Even",		DFT::sdEven,		"even[8]/D");
-		DFT::tree->Branch("Odd",		DFT::sdOdd,			"odd[8]/D");
+
+		DFT::tree->Branch("Even",	DFT::sdEven,	"even[8]/D");
+		DFT::tree->Branch("Odd",	DFT::sdOdd,		"odd[8]/D");
 		
 		DFT::sbInitialized = true;
 	}
@@ -80,10 +62,10 @@ void DFT::Analyze() {
 			dReal += event->Trace(t)*dCos[n][t];
 			dImag += event->Trace(t)*dSin[n][t];
 		}
-		DFT::sdMagnitude[id][n] = dScalefactor*sqrt(dReal*dReal + dImag*dImag);
-		DFT::sdPhase[id][n] = atan2(dImag,dReal);
-		DFT::sdEven[id] = sdOdd[id] = 0;
-		for (t = 2; t < ciOrder; t++) (t%2 ? sdEven[id] : sdOdd[id]) += (sdMagnitude[id][t]-sdMagnitude[id][(t%2?0:1)])/sdMagnitude[id][(t%2?0:1)];
+		dMagnitude[n] = dScalefactor*sqrt(dReal*dReal + dImag*dImag);
+		dPhase[n] = atan2(dImag,dReal);
+		DFT::sdEven[id] = DFT::sdOdd[id] = 0;
+		for (t = 2; t < ciOrder; t++) (t%2 ? sdEven[id] : sdOdd[id]) += (dMagnitude[t]-dMagnitude[(t%2?0:1)])/dMagnitude[(t%2?0:1)];
 	}
 }
 

@@ -24,6 +24,7 @@ class CCM : public Method { // also includes PGA
 		static short ssRise[8]; // risetime
 		static short ssPeakX[8]; // x location of peak
 		static short ssSlowStop[8]; // stop point for slow integral
+		static short ssTrigger[8];
 		
 		static double sdBaseline[8];
 		static double sdBaseSigma[8];

@@ -39,6 +39,9 @@ class XSQ_TF1 : public Method {
 		static double sdBaseline_y[4];
 		static double sdOffset_y[4];
 		
+		static double sdBaseline_a[4]; // baseline in samples, useful for discrimination
+		static double sdSigma_a[4];
+		
 		static double sdPeak_err_n[4]; // errors
 		static double sdBase_err_n[4];
 		static double sdOff_err_n[4];
