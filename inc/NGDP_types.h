@@ -58,8 +58,8 @@ enum methods_t {
 	CCM_t = 0,
 	DFT_t,
 	XSQ_TF1_t,
-	XSQ_NEW_t,
 	LAP_t,
+	XSQ_NEW_t,
 	
 	NUM_METHODS // add others before this
 };

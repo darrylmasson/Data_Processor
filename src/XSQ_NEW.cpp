@@ -1,7 +1,7 @@
 #include "XSQ_NEW.h"
 #include "TVectorT.h"
 
-float	XSQ_NEW::sfVersion = 1.05;
+float	XSQ_NEW::sfVersion = 1.06;
 bool	XSQ_NEW::sbInitialized = false;
 int		XSQ_NEW::siHowMany = 0;
 
@@ -139,6 +139,8 @@ void XSQ_NEW::SetDefaultParameters() { // for convenience
 		XSQ_NEW::sdPeak_err[p][id]		= -1;
 		XSQ_NEW::sdBase_err[p][id]		= -1;
 		XSQ_NEW::sdOff_err[p][id]		= -1;
+		
+		XSQ_NEW::sdConvergence[p][id]	= -1;
 	}
 	return;
 }

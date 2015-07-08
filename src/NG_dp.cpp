@@ -24,26 +24,36 @@ char error_message[err_dummy_last][64] = {
 
 bool g_verbose(false);
 
+void PrintVersions() {
+	cout << "Versions installed:\n";
+	cout << "CCM: " << CCM::sfVersion << '\n';
+	cout << "DFT: " << DFT::sfVersion << '\n';
+	cout << "TF1: " << XSQ_TF1::sfVersion << '\n';
+	cout << "LAP: " << LAP::sfVersion << '\n';
+	cout << "NEW: " << XSQ_NEW::sfVersion << '\n';
+}
+
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v3_5\n";
 	int i(0), iSpecial(-1), iAverage(0), iElapsed(0);
 	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
-	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v]";
+	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v -e]";
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
 	Processor processor;
-	if (argc < 3) {
+	if (argc < 2) {
 		cout << sArgs << '\n';
 		return 0;
 	}
-	while ((i = getopt(argc, argv, "a:c:f:s:p:qtvx:")) != -1) { // command line options
+	while ((i = getopt(argc, argv, "a:c:ef:s:p:qtvx:")) != -1) { // command line options
 		switch(i) {
 			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;
+			case 'e': g_verbose = true;			break;
 			case 'f': sFileset = optarg;		break;
 			case 'p': sDetectorPos = optarg;	break;
 			case 's': sSource = optarg;			break;
-			case 'v': g_verbose = true;			break;
+			case 'v': PrintVersions();			return 0;
 			case 'x': iSpecial = atoi(optarg);	break;
 			default: cout << sArgs << '\n';
 				return -1;
