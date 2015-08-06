@@ -1,6 +1,6 @@
 #include "DFT.h"
 
-float DFT::sfVersion = 1.51;
+float DFT::sfVersion = 1.52;
 bool DFT::sbInitialized = false;
 unique_ptr<TTree> DFT::tree = nullptr;
 int DFT::siHowMany = 0;
@@ -47,7 +47,7 @@ void DFT::root_init(TTree* tree_in) {
 
 		DFT::tree->Branch("Even",	DFT::sdEven,	"even[8]/D");
 		DFT::tree->Branch("Odd",	DFT::sdOdd,		"odd[8]/D");
-		
+
 		DFT::sbInitialized = true;
 	}
 }
@@ -65,7 +65,8 @@ void DFT::Analyze() {
 		dMagnitude[n] = dScalefactor*sqrt(dReal*dReal + dImag*dImag);
 		dPhase[n] = atan2(dImag,dReal);
 		DFT::sdEven[id] = DFT::sdOdd[id] = 0;
-		for (t = 2; t < ciOrder; t++) (t%2 ? sdEven[id] : sdOdd[id]) += (dMagnitude[t]-dMagnitude[(t%2?0:1)])/dMagnitude[(t%2?0:1)];
+		for (t = 2; t < ciOrder; t++)
+			(t%2 ? sdEven[id] : sdOdd[id]) += (dMagnitude[t]-dMagnitude[(t%2?0:1)])*(dMagnitude[t]-dMagnitude[(t%2?0:1)])/(dMagnitude[(t%2?0:1)]*dMagnitude[(t%2?0:1)]);
 	}
 }
 
