@@ -1,7 +1,7 @@
 #include "XSQ_TF1.h"
 #include "TVectorT.h"
 
-float	XSQ_TF1::sfVersion = 1.55;
+float	XSQ_TF1::sfVersion = 1.56;
 bool	XSQ_TF1::sbInitialized = false;
 int		XSQ_TF1::siHowMany = 0;
 
@@ -219,11 +219,11 @@ void XSQ_TF1::Analyze() {
 	graph->Fit(fit.get(), "Q N R"); // quiet, no-plot, range
 	
 	XSQ_TF1::sdXsq_n[id]		= fit->GetChisquare();
-	XSQ_TF1::sdPeakheight_n[id]	= fit->GetParameter(0)*fGain[n]/iResolutionScale;
+	XSQ_TF1::sdPeakheight_n[id]	= fit->GetParameter(0)/fGain[n]/iResolutionScale;
 	XSQ_TF1::sdBaseline_n[id]	= fit->GetParameter(1);
 	XSQ_TF1::sdOffset_n[id]		= fit->GetParameter(2);
 	
-	XSQ_TF1::sdPeak_err_n[id]	= fit->GetParError(0)*fGain[n]/iResolutionScale;
+	XSQ_TF1::sdPeak_err_n[id]	= fit->GetParError(0)/fGain[n]/iResolutionScale;
 	XSQ_TF1::sdBase_err_n[id]	= fit->GetParError(1);
 	XSQ_TF1::sdOff_err_n[id]	= fit->GetParError(2);
 	
@@ -236,11 +236,11 @@ void XSQ_TF1::Analyze() {
 	graph->Fit(fit.get(), "Q N R");
 	
 	XSQ_TF1::sdXsq_y[id]		= fit->GetChisquare();
-	XSQ_TF1::sdPeakheight_y[id]	= fit->GetParameter(0)*fGain[y]/iResolutionScale;
+	XSQ_TF1::sdPeakheight_y[id]	= fit->GetParameter(0)/fGain[y]/iResolutionScale;
 	XSQ_TF1::sdBaseline_y[id]	= fit->GetParameter(1);
 	XSQ_TF1::sdOffset_y[id]		= fit->GetParameter(2);
 	
-	XSQ_TF1::sdPeak_err_y[id]	= fit->GetParError(0)*fGain[y]/iResolutionScale;
+	XSQ_TF1::sdPeak_err_y[id]	= fit->GetParError(0)/fGain[y]/iResolutionScale;
 	XSQ_TF1::sdBase_err_y[id]	= fit->GetParError(1);
 	XSQ_TF1::sdOff_err_y[id]	= fit->GetParError(2);
 
