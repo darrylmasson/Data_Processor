@@ -1,6 +1,6 @@
 #include "DFT.h"
 
-float DFT::sfVersion = 1.53;
+float DFT::sfVersion = 1.54;
 bool DFT::sbInitialized = false;
 unique_ptr<TTree> DFT::tree = nullptr;
 int DFT::siHowMany = 0;
@@ -63,12 +63,8 @@ void DFT::Analyze() {
 			dImag += event->Trace(t)*dSin[n][t];
 		}
 		dMagnitude[n] = dScalefactor*sqrt(dReal*dReal + dImag*dImag);
-//		dPhase[n] = atan2(dImag,dReal);
 		DFT::sdEven[id] = DFT::sdOdd[id] = 0;
-		for (t = 2; t < ciOrder; t++)
-			(t%2 ? DFT::sdOdd[id] : DFT::sdEven[id]) += (dMagnitude[t]-dMagnitude[(t%2?1:0)])*(dMagnitude[t]-dMagnitude[(t%2?1:0)])/(dMagnitude[(t%2?1:0)]*dMagnitude[(t%2?1:0)]);
-//			if (t%2) sdOdd[id] += (dMagnitude[t]-dMagnitude[1])*(dMagnitude[t]-dMagnitude[1])/(dMagnitude[1]*dMagnitude[1]);
-//			else sdEven[id] += (dMagnitude[t]-dMagnitude[0])*(dMagnitude[t]-dMagnitude[0])/(dMagnitude[0]*dMagnitude[(t%2?0:1)]);
+		for (t = 2; t < ciOrder; t++) (t%2 ? DFT::sdOdd[id] : DFT::sdEven[id]) += (dMagnitude[t]-dMagnitude[(t%2?1:0)])/dMagnitude[(t%2?1:0)];
 	}
 }
 

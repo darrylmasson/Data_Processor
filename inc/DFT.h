@@ -17,7 +17,6 @@ class DFT : public Method {
 		static bool sbInitialized;
 
 		double dMagnitude[ciOrder];
-//		double dPhase[ciOrder];
 		static double sdOdd[8]; // discrimination parameters
 		static double sdEven[8];
 
