@@ -1,6 +1,6 @@
 #include "CCM.h"
 
-float CCM::sfVersion = 2.85;
+float CCM::sfVersion = 2.9;
 bool CCM::sbInitialized = false;
 unique_ptr<TTree> CCM::tree = nullptr;
 int CCM::siHowMany = 0;
@@ -30,7 +30,7 @@ double CCM::sdPeak1[8]			= {0,0,0,0,0,0,0,0};
 double CCM::sdPeak2[8]			= {0,0,0,0,0,0,0,0};
 double CCM::sdPeakP[8]			= {0,0,0,0,0,0,0,0};
 
-double CCM::sdGradient[8]		= {0,0,0,0,0,0,0,0};
+double CCM::sdSample[8]			= {0,0,0,0,0,0,0,0};
 
 CCM::CCM() {
 	CCM::siHowMany++;
@@ -97,7 +97,7 @@ void CCM::root_init(TTree* tree_in) {
 		CCM::tree->Branch("SlowInt",		CCM::sdSlowInt,			"slowintegral[8]/D");
 		CCM::tree->Branch("FastInt",		CCM::sdFastInt,			"fastintegral[8]/D");
 
-		CCM::tree->Branch("Gradient",		CCM::sdGradient,		"gradient[8]/D");
+		CCM::tree->Branch("Sample",			CCM::sdSample,			"sample[8]/D");
 
 		CCM::sbInitialized = true;
 	}
@@ -166,11 +166,10 @@ void CCM::Analyze() {
 	CCM::sdFastInt[id] = ((event->Baseline() * (iFast)) - (0.5*lFastint)) * dScaleV * dScaleT;
 
 	if ((event->Peak_x() + iPGASamples + iPGA_average) < iEventlength) { // PGA
-		dTemp = 0;
-		for (i = -iPGA_average; i <= iPGA_average; i++) dTemp += event->Trace(event->Peak_x() + iPGASamples + i); // average to reduce statistical fluctuations
-		dTemp /= (2.*iPGA_average + 1);
-		CCM::sdGradient[id] = (iPGASamples * (event->Baseline() - event->Peak_y()) == 0) ? -1 : (dTemp - event->Peak_y())/(double)(iPGASamples * (event->Baseline() - event->Peak_y()));
-	} else CCM::sdGradient[id] = -1;
+		CCM::sdSample[id] = 0;
+		for (i = -iPGA_average; i <= iPGA_average; i++) CCM::sdSample[id] += event->Trace(event->Peak_x() + iPGASamples + i); // average to reduce statistical fluctuations
+		CCM::sdSample[id] /= (2.*iPGA_average + 1);
+	} else CCM::sdSample[id] = -1;
 
 	return;
 }

@@ -10,22 +10,22 @@ class CCM : public Method { // also includes PGA
 		int iFastTime;
 		int iSlowTime; // fast and slow integral window lengths
 		int iPGASamples; // PGA method
-		
+
 		static unique_ptr<TTree> tree;
 		static int siHowMany;
 		static bool sbInitialized;
-		
+
 		static bool sbFullWave[8]; // waveform decays before end of event
 		static bool sbSaturated[8]; // voltage saturation on digitizer
 		static bool sbTruncated[8]; // slow end > eventlength
-		
+
 		static short ssDecay[8]; // decay time
 		static short ssFastStop[8]; // stop point for fast integral
 		static short ssRise[8]; // risetime
 		static short ssPeakX[8]; // x location of peak
 		static short ssSlowStop[8]; // stop point for slow integral
 		static short ssTrigger[8];
-		
+
 		static double sdBaseline[8];
 		static double sdBaseSigma[8];
 		static double sdBasePost[8];
@@ -39,9 +39,9 @@ class CCM : public Method { // also includes PGA
 		static double sdPeak1[8]; // peakheights
 		static double sdPeak2[8];
 		static double sdPeakP[8];
-		
-		static double sdGradient[8]; // PGA value
-	
+
+		static double sdSample[8]; // sample used for PGA
+
 	public:
 		CCM();
 		CCM(int ch, int length, shared_ptr<Digitizer> digitizer);

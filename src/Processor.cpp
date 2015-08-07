@@ -62,20 +62,20 @@ Processor::Processor() {
 	strcpy(cMethodNames[2], "XSQ_TF1");
 	strcpy(cMethodNames[3], "LAPLACE");
 	strcpy(cMethodNames[4], "XSQ_NEW");
-	
+
 	sConfigFileName = "\0";
 	sRawDataFile = "\0";
 	sRootFile = "\0";
-	
+
 	memset(bMethodActive, 0, sizeof(bMethodActive));
 	memset(bMethodDone, 0, sizeof(bMethodDone));
 	bRecordTimestamps = false;
-	
+
 	cDigName[0] = '\0';
 	cSource[0] = '\0';
-	
+
 	usMask = 0;
-	
+
 	memset(iChan, 0, sizeof(iChan));
 	iEventlength = 0;
 	iEventsize = 0;
@@ -87,14 +87,14 @@ Processor::Processor() {
 	memset(iSlowTime, 0, sizeof(iSlowTime));
 	iTrigPost = 0;
 	iXSQ_ndf = 0;
-	
+
 	memset(uiDCOffset, 0, sizeof(uiDCOffset));
 	memset(uiThreshold, 0, sizeof(uiThreshold));
-	
+
 	memset(fGain, 0, sizeof(fGain));
 	memset(fDetectorZ, 0, sizeof(fDetectorZ));
 	memset(fDetectorR, 0, sizeof(fDetectorR));
-	
+
 	memset(td, 0, sizeof(td));
 }
 
@@ -119,18 +119,18 @@ void Processor::BusinessTime() {
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	void* status = nullptr;
-	
+
 	unsigned long* ulpTimestamp = (unsigned long*)(buffer.get() + sizeof(long));
 	unsigned long ulTSFirst(0), ulTSLast(0), ulTSPrev(0);
 	if (bRecordTimestamps) {
 		tree->Branch("Timestamp", &ulpTimestamp[0], "time_stamp/l");
 		tree->Branch("Timestamp_prev", &ulTSPrev, "time_stamp_prev/l");
 	}
-	
+
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
 	iProgCheck = max(iNumEvents/100 + 1, 10000); // too many print statements slows the process, every 1% or 10000 events
-	
+
 	if (memchr(bMethodActive, 1, NUM_METHODS) == nullptr) {
 		cout << "No processing method activated\n";
 		return;
@@ -139,7 +139,7 @@ void Processor::BusinessTime() {
 		for (m = 0; m < NUM_METHODS; m++) if (bMethodActive[m]) cout << cMethodNames[m] << " ";
 		cout << '\n';
 	}
-	
+
 	t_that = steady_clock::now();
 	cout << "Processing:\n";
 	cout << "Completed\tRate (ev/s)\tTime left\n";
@@ -171,7 +171,7 @@ void Processor::BusinessTime() {
 			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
 			else cout << iTimeleft << "s\n";
 		}
-		if (ev == 0) ulTSFirst = ulpTimestamp[0];	
+		if (ev == 0) ulTSFirst = ulpTimestamp[0];
 	}
 	tree->Write();
 	cout << "Processing completed\n";
@@ -199,9 +199,9 @@ void Processor::ClassAlloc() {
 		throw ProcessorException();
 	}
 	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
-	
+
 	f->cd();
-	
+
 	for (auto ch = 0; ch < iNchan; ch++) { // initializing all classes needed
 		if (g_verbose) cout << "CH" << ch << '\n';
 		try {
@@ -289,7 +289,7 @@ void Processor::ClassAlloc() {
 		td[ch].cbpActivated = bMethodActive;
 		if (g_verbose) cout << '\n';
 	}
-	
+
 	for (auto m = 0; m < NUM_METHODS; m++) { // setting up trees
 		sprintf(cTreename[m], "T%i", m);
 		if (bMethodActive[m]) {
@@ -298,7 +298,7 @@ void Processor::ClassAlloc() {
 			if (tree->IsZombie()) {iFailed |= (1 << root_error); bMethodActive[m] = false;}
 			root_init[m](tree.release());
 	}	}
-		
+
 	if (bRecordTimestamps) {
 		try {tree = unique_ptr<TTree>(new TTree("TS","Timestamps"));}
 		catch (bad_alloc& ba) {
@@ -307,9 +307,9 @@ void Processor::ClassAlloc() {
 		} if (tree->IsZombie()) {
 			iFailed |= (1 << root_error);
 			return;
-		}	
+		}
 	}
-	
+
 	if (iFailed) throw ProcessorException();
 }
 
@@ -327,7 +327,7 @@ void Processor::ConfigTrees() {
 	iTimeNow = (t_today->tm_hour)*100 + t_today->tm_min; // hhmm
 	iDateNow = (t_today->tm_year-100)*10000 + (t_today->tm_mon+1)*100 + t_today->tm_mday; // yymmdd
 	switch (digitizer->ID()) {
-		case dt5751 : 
+		case dt5751 :
 			if (digitizer->Special() == 0) iXSQ_ndf = min(iEventlength/2, 225)-3; // length - number of free parameters
 			else iXSQ_ndf = min(iEventlength, 450)-3;
 			break;
@@ -363,7 +363,7 @@ void Processor::ConfigTrees() {
 		for (auto i = tree->GetEntries()-1; i >= 0; i--) { // most recent entries will be last in the tree
 			tree->GetEntry(i);
 			if (bChecked[iMethodID] || !bMethodActive[iMethodID]) continue;
-			if (g_verbose) cout << "Checking " << cMethodNames << '\n';
+			if (g_verbose) cout << "Checking " << cMethodNames[iMethodID] << '\n';
 			bChecked[iMethodID] = true;
 			bUpdate = false;
 			if (iMethodID == CCM_t) {
@@ -435,7 +435,7 @@ void Processor::ConfigTrees() {
 		}
 		tree->Fill();
 		tree->Write();
-		
+
 		try {tree.reset(new TTree("TV","Versions"));}
 		catch (bad_alloc& ba) {
 			cout << "Could not create version tree\n";
@@ -454,7 +454,7 @@ void Processor::ConfigTrees() {
 			tree->Fill();
 		}
 		tree->Write();
-		
+
 		try {tree.reset(new TTree("TC","CCM_info"));}
 		catch (bad_alloc& ba) {
 			cout << "Could not create CCM info tree\n";
@@ -466,7 +466,7 @@ void Processor::ConfigTrees() {
 		tree->Branch("Slow_window", iSlowTime, "slow[8]/I");
 		tree->Fill();
 		tree->Write("",TObject::kOverwrite);
-		
+
 		tree.reset();
 	}
 	tree.reset();
@@ -514,19 +514,19 @@ void Processor::ParseFileHeader() {
 	long filesize = fin.tellg();
 	fin.seekg(0, fin.beg);
 	fin.read(cBuffer, sizeof_f_header);
-	
+
 	strncpy(cDigName, cBuffer, sizeof(cDigName)); // digitizer name
-	
+
 	memcpy(&usMask, cBuffer + 12, sizeof(usMask)); // channel mask
-	
+
 	memcpy(&iEventlength, cBuffer + 14, sizeof(iEventlength)); // eventlength
-	
+
 	memcpy(&iTrigPost, cBuffer + 18, sizeof(iTrigPost)); // post-trigger
-	
+
 	memcpy(uiDCOffset, cBuffer + 22, sizeof(uiDCOffset)); // dc offsets
-	
+
 	memcpy(uiThreshold, cBuffer + 54, sizeof(uiThreshold)); // trigger thresholds
-	
+
 	iNchan = 0;
 	for (auto i = 0; i < MAX_CH; i++) if (usMask & (1<<i)) iChan[iNchan++] = i;
 	iEventsize = sizeof_ev_header + iNchan*iEventlength*sizeof(short); // each sample is size 2
@@ -542,7 +542,7 @@ void Processor::ParseConfigFile() {
 		iFailed |= (1 << file_error);
 		throw ProcessorException();
 	} else if (g_verbose) cout << "Opened " << sFilename << '\n';
-	
+
 	char temp[32] = {'\0'}, cBuffer[64] = {'\0'};
 	int ch(-1), code(0);
 	while (!fconf.eof()) {

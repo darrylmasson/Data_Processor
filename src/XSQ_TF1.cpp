@@ -70,7 +70,7 @@ XSQ_TF1::XSQ_TF1(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(c
 			iFailed |= (1 << method_error);
 			return;
 	}
-	
+
 	try {std_file.reset(new TFile((sWorkingDir + "/Data_Processor/config/standard_events.root").c_str(), "READ"));}
 	catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
 	if (!std_file->IsOpen()) {iFailed |= file_error; return;}
@@ -105,7 +105,7 @@ XSQ_TF1::XSQ_TF1(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(c
 	std_file = nullptr;
 	pWave = nullptr;
 	graph = nullptr;
-	
+
 	try {
 		dInputWave = unique_ptr<double[]>(new double[iEventlength]);
 		dX = unique_ptr<double[]>(new double[iEventlength]);
@@ -133,20 +133,20 @@ XSQ_TF1::~XSQ_TF1() {
 void XSQ_TF1::root_init(TTree* tree_in) {
 	if (!XSQ_TF1::sbInitialized) {
 		XSQ_TF1::tree = unique_ptr<TTree>(tree_in);
-		
+
 		XSQ_TF1::tree->Branch("Chisquare_n",	XSQ_TF1::sdXsq_n,			"xsqn[4]/D");
 		XSQ_TF1::tree->Branch("Peakscale_n",	XSQ_TF1::sdPeakheight_n,	"pkscalen[4]/D");
 		XSQ_TF1::tree->Branch("Base_shift_n",	XSQ_TF1::sdBaseline_n,		"baseshiftn[4]/D");
 		XSQ_TF1::tree->Branch("Offset_n",		XSQ_TF1::sdOffset_n,		"offsetn[4]/D");
-		
+
 		XSQ_TF1::tree->Branch("Chisquare_y",	XSQ_TF1::sdXsq_y,			"xsqy[4]/D");
 		XSQ_TF1::tree->Branch("Peakscale_y",	XSQ_TF1::sdPeakheight_y,	"pkscaley[4]/D");
 		XSQ_TF1::tree->Branch("Base_shift_y",	XSQ_TF1::sdBaseline_y,		"baseshifty[4]/D");
 		XSQ_TF1::tree->Branch("Offset_y",		XSQ_TF1::sdOffset_y,		"offsety[4]/D");
-		
+
 		XSQ_TF1::tree->Branch("Base",			XSQ_TF1::sdBaseline_a,		"baseline[4]/D");
 		XSQ_TF1::tree->Branch("Sigma",			XSQ_TF1::sdSigma_a,			"sigma[4]/D");
-		
+
 		XSQ_TF1::tree->Branch("Peak_err_n",		XSQ_TF1::sdPeak_err_n,		"pkerrn[4]/D");
 		XSQ_TF1::tree->Branch("Base_err_n",		XSQ_TF1::sdBase_err_n,		"baerrn[4]/D");
 		XSQ_TF1::tree->Branch("Off_err_n",		XSQ_TF1::sdOff_err_n,		"oferrn[4]/D");
@@ -168,7 +168,7 @@ void XSQ_TF1::SetDefaultParameters() { // for convenience
 	XSQ_TF1::sdPeakheight_y[id]	= (event->Baseline() - event->Peak_y())*dStdNorm[y]*fGain[y];
 	XSQ_TF1::sdBaseline_y[id]	= event->Baseline();
 	XSQ_TF1::sdOffset_y[id]		= event->Trigger() - iStdTrig;
-	
+
 	XSQ_TF1::sdBaseline_a[id]	= event->Baseline();
 	XSQ_TF1::sdSigma_a[id]		= event->BaseSigma();
 
@@ -217,29 +217,29 @@ void XSQ_TF1::Analyze() {
 	fit->SetParameter(3, n);
 	fit->FixParameter(3, n);
 	graph->Fit(fit.get(), "Q N R"); // quiet, no-plot, range
-	
+
 	XSQ_TF1::sdXsq_n[id]		= fit->GetChisquare();
 	XSQ_TF1::sdPeakheight_n[id]	= fit->GetParameter(0)/fGain[n]/iResolutionScale;
 	XSQ_TF1::sdBaseline_n[id]	= fit->GetParameter(1);
 	XSQ_TF1::sdOffset_n[id]		= fit->GetParameter(2);
-	
+
 	XSQ_TF1::sdPeak_err_n[id]	= fit->GetParError(0)/fGain[n]/iResolutionScale;
 	XSQ_TF1::sdBase_err_n[id]	= fit->GetParError(1);
 	XSQ_TF1::sdOff_err_n[id]	= fit->GetParError(2);
-	
-	
+
+
 	fit->SetParameter(0, (event->Baseline() - event->Peak_y())*dStdNorm[y]);
 	fit->SetParameter(1, event->Baseline());
 	fit->SetParameter(2, event->Trigger() - iStdTrig);
 	fit->SetParameter(3, y);
 	fit->FixParameter(3, y);
 	graph->Fit(fit.get(), "Q N R");
-	
+
 	XSQ_TF1::sdXsq_y[id]		= fit->GetChisquare();
 	XSQ_TF1::sdPeakheight_y[id]	= fit->GetParameter(0)/fGain[y]/iResolutionScale;
 	XSQ_TF1::sdBaseline_y[id]	= fit->GetParameter(1);
 	XSQ_TF1::sdOffset_y[id]		= fit->GetParameter(2);
-	
+
 	XSQ_TF1::sdPeak_err_y[id]	= fit->GetParError(0)/fGain[y]/iResolutionScale;
 	XSQ_TF1::sdBase_err_y[id]	= fit->GetParError(1);
 	XSQ_TF1::sdOff_err_y[id]	= fit->GetParError(2);

@@ -15,13 +15,13 @@ class DFT : public Method {
 		static unique_ptr<TTree> tree;
 		static int siHowMany;
 		static bool sbInitialized;
-		
+
 		double dMagnitude[ciOrder];
-		double dPhase[ciOrder];
+//		double dPhase[ciOrder];
 		static double sdOdd[8]; // discrimination parameters
 		static double sdEven[8];
 
-		
+
 	public:
 		DFT();
 		DFT(int ch, int len, shared_ptr<Digitizer> digitizer);

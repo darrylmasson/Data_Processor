@@ -1,6 +1,6 @@
 #include "DFT.h"
 
-float DFT::sfVersion = 1.52;
+float DFT::sfVersion = 1.53;
 bool DFT::sbInitialized = false;
 unique_ptr<TTree> DFT::tree = nullptr;
 int DFT::siHowMany = 0;
@@ -24,7 +24,7 @@ DFT::DFT(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, lengt
 			dCos[n].reserve(iEventlength);
 			dSin[n].reserve(iEventlength);
 		} catch (bad_alloc& ba) {iFailed |= (1 << alloc_error); return;}
-		omega = (n+1)*pi/(iEventlength*dScaleT); // GHz
+		omega = n*pi/(iEventlength*dScaleT); // GHz
 		for (auto t = 0; t < iEventlength; t++) {
 			dCos[n].push_back(cos(omega*t));
 			dSin[n].push_back(sin(omega*t)); // simpler than using one table and sin(x) = cos(x-pi/2)
@@ -63,10 +63,12 @@ void DFT::Analyze() {
 			dImag += event->Trace(t)*dSin[n][t];
 		}
 		dMagnitude[n] = dScalefactor*sqrt(dReal*dReal + dImag*dImag);
-		dPhase[n] = atan2(dImag,dReal);
+//		dPhase[n] = atan2(dImag,dReal);
 		DFT::sdEven[id] = DFT::sdOdd[id] = 0;
 		for (t = 2; t < ciOrder; t++)
-			(t%2 ? sdEven[id] : sdOdd[id]) += (dMagnitude[t]-dMagnitude[(t%2?0:1)])*(dMagnitude[t]-dMagnitude[(t%2?0:1)])/(dMagnitude[(t%2?0:1)]*dMagnitude[(t%2?0:1)]);
+			(t%2 ? DFT::sdOdd[id] : DFT::sdEven[id]) += (dMagnitude[t]-dMagnitude[(t%2?1:0)])*(dMagnitude[t]-dMagnitude[(t%2?1:0)])/(dMagnitude[(t%2?1:0)]*dMagnitude[(t%2?1:0)]);
+//			if (t%2) sdOdd[id] += (dMagnitude[t]-dMagnitude[1])*(dMagnitude[t]-dMagnitude[1])/(dMagnitude[1]*dMagnitude[1]);
+//			else sdEven[id] += (dMagnitude[t]-dMagnitude[0])*(dMagnitude[t]-dMagnitude[0])/(dMagnitude[0]*dMagnitude[(t%2?0:1)]);
 	}
 }
 
