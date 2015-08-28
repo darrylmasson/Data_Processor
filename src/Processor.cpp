@@ -605,15 +605,15 @@ void Processor::SetFileSet(string in) { // also opens raw and processed files
 	sRootFile = sWorkingDir + "/prodata/" + in;
 	if ((iSpecial == -1) && (iAverage == 0)) sRootFile += ".root";
 	else if ((iSpecial == -1) && (iAverage != 0)) sRootFile += "_a.root";
-	else if ((iSpecial != -1) && (iAverage == 0)) sRootFile += "_x.root";
-	else sRootFile += "_ax.root";
+	else if ((iSpecial != -1) && (iAverage == 0)) sRootFile += "_s.root";
+	else sRootFile += "_as.root";
 	fin.open(sRawDataFile.c_str(), ios::in | ios::binary);
 	if (!fin.is_open()) {
 		cout << "Error: " << sRawDataFile << " not found\n";
 		iFailed |= (1 << file_error);
 		throw ProcessorException();
 	}
-	f = unique_ptr<TFile>(new TFile(sRootFile.c_str(), "UPDATE"));
+	f = unique_ptr<TFile>(new TFile(sRootFile.c_str(), "RECREATE"));
 	if (!f->IsOpen()) {
 		cout << "Error: could not open " << sRootFile << '\n';
 		iFailed |= (1 << file_error);
