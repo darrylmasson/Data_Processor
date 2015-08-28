@@ -15,7 +15,7 @@ class Event {
 		const int ciSamples; // number of samples of pulse in memory (useful for Special or Average instances)
 		static int siLength; // number of samples in the waveform (generally but not strictly ciSamples)
 		static int siHowMany;
-		
+
 		unsigned short usPeakY; // primary pulse peak, y coord.
 		unsigned short usBasePkP; // positive peak in baseline samples
 		unsigned short usBasePkN; // negative peak
@@ -53,6 +53,7 @@ class Event {
 		virtual double& BaseSigma()			{return dBaseSigma;}
 		virtual double& BasePost()			{return dBasePost;}
 		virtual double& BasePostSigma()		{return dBasePostSigma;}
+		virtual int GetAverage()			{return 0;}
 };
 
 #endif // EVENT_H

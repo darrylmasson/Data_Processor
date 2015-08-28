@@ -25,6 +25,7 @@ class Event_ave : public Event {
 		virtual double B_pk_p()			{return dBasePkP;}
 		virtual double B_pk_n()			{return dBasePkN;}
 		virtual double Peak_pos()		{return dPeakPos;}
+		virtual int GetAverage()		{return iAverage;}
 };
 
 #endif // EVENT_AVE_H
