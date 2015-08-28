@@ -15,14 +15,15 @@ class XSQ_NEW : public Method {
 		int iStdLength; // 450ns
 		int iStdTrig; // 64ns
 		int iIterations; // 5, usually
-		unique_ptr<double[]> dStdWave[P]; // both
-		double dConvergence; // Newton's
-		double dGradient[ciNPar]; // Newton's
-		double dHessianInv[ciNPar][ciNPar]; // Newton's
+		unique_ptr<double[]> dStdWave[P];
+		unique_ptr<double[]> dStdSigma[P];
+		double dConvergence;
+		double dGradient[ciNPar];
+		double dHessianInv[ciNPar][ciNPar];
 		double dStdNorm[P];
 		double dStdPeak[P];
-		double dStep[ciNPar]; // Newton's
-		
+		double dStep[ciNPar];
+
 		static unique_ptr<TTree> tree;
 		static int siHowMany;
 		static bool sbInitialized;
@@ -31,11 +32,11 @@ class XSQ_NEW : public Method {
 		static double sdPeakheight[2][4]; // peak scale factor
 		static double sdBaseline[2][4]; // baseline
 		static double sdOffset[2][4]; // trigger shift
-		
+
 		static double sdPeak_err[2][4]; // errors
 		static double sdBase_err[2][4];
 		static double sdOff_err[2][4];
-		
+
 		static short ssIterations[2][4]; // for debugging, mainly
 		static double sdConvergence[2][4];
 
@@ -51,9 +52,9 @@ class XSQ_NEW : public Method {
 		static void root_deinit()	{XSQ_NEW::tree.reset();} // friending is handled after the fact, writing by the TFile or root_write
 		static int HowMany()		{return XSQ_NEW::siHowMany;}
 		double FindChisquare(int p, double dPeak, double dBase, int iOff);
-		void SetDefaultParameters();
+		void SetDefaultParameters(int p);
 		static float sfVersion;
-		
+
 };
 
 #endif // XSQ_NEW_H

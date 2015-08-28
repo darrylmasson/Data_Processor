@@ -8,7 +8,6 @@
 class DFT : public Method {
 	private:
 		enum { ciOrder = 17}; // not including zero
-		double dScalefactor;
 		vector<double> dCos[ciOrder];
 		vector<double> dSin[ciOrder];
 

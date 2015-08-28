@@ -24,7 +24,7 @@ void Event_ave::Analyze() {
 	if (iSpecial == 0) for (i = 0; i < iEventlength+iAverage; i++) dTrace[i] = (uspTrace[2*i] + uspTrace[2*i+1]) >> 1; // won't overrun
 	for (i = 0; i < iEventlength; i++) { // waveform averaging
 		dTrace[i] = 0;
-		for (j = 0; j < iAverage; j++) dTrace[i] += uspTrace[i+j];
+		for (j = 0; j < iAverage; j++) dTrace[i] += uspTrace[i+j]; // Jacques not confident of results between this and LAP
 		dTrace[i] *= dScale;
 	}
 	dBaseline = 0;

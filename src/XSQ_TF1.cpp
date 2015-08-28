@@ -1,7 +1,7 @@
 #include "XSQ_TF1.h"
 #include "TVectorT.h"
 
-float	XSQ_TF1::sfVersion = 1.56;
+float	XSQ_TF1::sfVersion = 1.57;
 bool	XSQ_TF1::sbInitialized = false;
 int		XSQ_TF1::siHowMany = 0;
 
@@ -61,7 +61,7 @@ XSQ_TF1::XSQ_TF1(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(c
 			iPeakCut		= 32;
 			iStdLength		= 225;
 			iStdTrig		= 32;
-			iResolutionScale = 1 << 4;
+			iResolutionScale = 1 << 3;
 			break;
 		case v1724 :
 		case invalid_dig :
@@ -214,9 +214,8 @@ void XSQ_TF1::Analyze() {
 	fit->SetParameter(0, (event->Baseline() - event->Peak_y())*dStdNorm[n]);
 	fit->SetParameter(1, event->Baseline());
 	fit->SetParameter(2, event->Trigger() - iStdTrig);
-	fit->SetParameter(3, n);
 	fit->FixParameter(3, n);
-	graph->Fit(fit.get(), "Q N R"); // quiet, no-plot, range
+	graph->Fit(fit.get(), "Q N"); // quiet, no-plot
 
 	XSQ_TF1::sdXsq_n[id]		= fit->GetChisquare();
 	XSQ_TF1::sdPeakheight_n[id]	= fit->GetParameter(0)/fGain[n]/iResolutionScale;
@@ -231,9 +230,8 @@ void XSQ_TF1::Analyze() {
 	fit->SetParameter(0, (event->Baseline() - event->Peak_y())*dStdNorm[y]);
 	fit->SetParameter(1, event->Baseline());
 	fit->SetParameter(2, event->Trigger() - iStdTrig);
-	fit->SetParameter(3, y);
 	fit->FixParameter(3, y);
-	graph->Fit(fit.get(), "Q N R");
+	graph->Fit(fit.get(), "Q N");
 
 	XSQ_TF1::sdXsq_y[id]		= fit->GetChisquare();
 	XSQ_TF1::sdPeakheight_y[id]	= fit->GetParameter(0)/fGain[y]/iResolutionScale;

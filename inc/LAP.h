@@ -12,7 +12,6 @@ class LAP : public Method {
 		static bool sbInitialized;
 		static double sdLaplaceLow[8];
 		static double sdLaplaceHigh[8];
-		static double sdLongInt[8]; // integral over the full event window
 		const static double sdSlow;
 		const static double sdShigh;
 		const static int ciNpts;

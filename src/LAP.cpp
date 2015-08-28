@@ -10,7 +10,6 @@ const int LAP::ciNpts = 50;
 
 double LAP::sdLaplaceLow[8]		= {0,0,0,0,0,0,0,0};
 double LAP::sdLaplaceHigh[8]	= {0,0,0,0,0,0,0,0};
-double LAP::sdLongInt[8]		= {0,0,0,0,0,0,0,0};
 
 LAP::LAP() {
 	if (g_verbose) cout << "LAP c'tor\n";
@@ -38,6 +37,7 @@ LAP::LAP(int ch, int length, shared_ptr<Digitizer> digitizer) : Method(ch, lengt
 		dExp.push_back(vTemp);
 	}
 	iAve = 4; // 9 point average
+	dAveScale = 1./(2.*iAve+1.);
 }
 
 LAP::~LAP() {
@@ -52,7 +52,6 @@ void LAP::root_init(TTree* tree_in) {
 
 		LAP::tree->Branch("LapLow",		LAP::sdLaplaceLow,	"laplo[8]/D");
 		LAP::tree->Branch("LapHigh",	LAP::sdLaplaceHigh,	"laphi[8]/D");
-		LAP::tree->Branch("LongInt",	LAP::sdLongInt,		"longint[8]/D");
 
 		LAP::sbInitialized = true;
 	}
@@ -60,23 +59,20 @@ void LAP::root_init(TTree* tree_in) {
 
 void LAP::SetEvent(shared_ptr<Event> ev) {
 	event = ev;
-	if (event->GetAverage() > 0) iAve = (event->GetAverage()-1)/2;
-	dAveScale = 1./(2.*iAve+1.); // scaling factor
+	if (event->GetAverage() > 0) iAve = 0;
 }
 
 void LAP::Analyze() { // not really optimized at all
 	auto peak_x = event->Peak_x();
 	LAP::sdLaplaceLow[id] = 0;
 	LAP::sdLaplaceHigh[id] = 0;
-	LAP::sdLongInt[id] = 0;
-	for (auto t = 0; t < iEventlength; t++) LAP::sdLongInt[id] += event->Trace(t);
-	LAP::sdLongInt[id] = 2*LAP::sdLongInt[id] - (event->Trace(0) + event->Trace(iEventlength-1)); // trapezoid rule
-	LAP::sdLongInt[id] = (event->Baseline()*iEventlength - 0.5*LAP::sdLongInt[id])*dScaleV*dScaleT;
 
-	for (auto t = peak_x; t < iEventlength-iAve; t++) { // performs the 9pt moving average
-		dTrace[t] = 0;
-		for (auto tt = -iAve; tt <= iAve; tt++) dTrace[t] += event->Trace(t+tt);
-		dTrace[t] *= dAveScale;
+	if (iAve) {
+		for (auto t = peak_x; t < iEventlength-iAve; t++) { // performs the 9pt moving average
+			dTrace[t] = 0;
+			for (auto tt = -iAve; tt <= iAve; tt++) dTrace[t] += event->Trace(t+tt);
+			dTrace[t] *= dAveScale;
+		}
 	}
 	for (auto n = 0; n < ciNpts; n++) {
 		dXform[n] = 0;
