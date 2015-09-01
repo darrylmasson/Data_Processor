@@ -173,7 +173,7 @@ void Processor::BusinessTime() {
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];
 	}
-	tree->Write();
+	if (bRecordTimestamps) tree->Write();
 	cout << "Processing completed\n";
 	ulTSLast = ulpTimestamp[0];
 	iLivetime = (ulTSLast - ulTSFirst)/125e6;

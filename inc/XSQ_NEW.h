@@ -49,7 +49,7 @@ class XSQ_NEW : public Method {
 		static void root_init(TTree* tree_in);
 		static void root_fill()		{XSQ_NEW::tree->Fill();}
 		static void root_write()	{XSQ_NEW::tree->Write();}
-		static void root_deinit()	{XSQ_NEW::tree.reset();} // friending is handled after the fact, writing by the TFile or root_write
+		static void root_deinit()	{XSQ_NEW::tree.reset();} // friending is handled after the fact, writing by root_write
 		static int HowMany()		{return XSQ_NEW::siHowMany;}
 		double FindChisquare(int p, double dPeak, double dBase, int iOff);
 		void SetDefaultParameters(int p);

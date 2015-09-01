@@ -15,16 +15,14 @@ void Event_ave::SetAverage(int average) {
 	iAverage = average;
 	iEventlength -= iAverage;
 	Event::siLength = iEventlength;
-	dScale = 1./(iAverage ? iAverage : 1);
+	dScale = 1./(iAverage ? 2.*iAverage+1. : 1);
 }
 
 void Event_ave::Analyze() {
 	int i(0), j(0);
-	if (iSpecial > 0) for (i = 0; i < iEventlength+iAverage; i++) dTrace[i] = uspTrace[i] >> iSpecial; // special resolution
-	if (iSpecial == 0) for (i = 0; i < iEventlength+iAverage; i++) dTrace[i] = (uspTrace[2*i] + uspTrace[2*i+1]) >> 1; // won't overrun
-	for (i = 0; i < iEventlength; i++) { // waveform averaging
+	for (i = iAverage; i < iEventlength-iAverage; i++) { // waveform averaging
 		dTrace[i] = 0;
-		for (j = 0; j < iAverage; j++) dTrace[i] += uspTrace[i+j]; // Jacques not confident of results between this and LAP
+		for (j = -iAverage; j <= iAverage; j++) dTrace[i] += uspTrace[i+j]; // Jacques not confident of results between this and LAP
 		dTrace[i] *= dScale;
 	}
 	dBaseline = 0;

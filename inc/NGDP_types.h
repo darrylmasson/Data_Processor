@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <vector>
 
 // note on variable names:
 // most variables have their type as a one or two character prefix
@@ -42,7 +43,7 @@ enum ret_codes_t {
 	alloc_error,
 	thread_error,
 	config_file_error,
-	
+
 	err_dummy_last
 };
 
@@ -60,8 +61,19 @@ enum methods_t {
 	XSQ_TF1_t,
 	LAP_t,
 	XSQ_NEW_t,
-	
+
 	NUM_METHODS // add others before this
 };
+
+enum discrims_t {
+	d_CCM_t = 0,
+	d_DFT_t,
+	d_NGM_t,
+	d_LAP_t,
+	d_PGA_t,
+	d_WBS_t,
+
+	NUM_DISCRIMS
+}; // discrete discrimination methods
 
 #endif // NGDP_TYPES_H

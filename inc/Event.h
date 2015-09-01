@@ -1,8 +1,8 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-#ifndef DIGITIZER_H
-#include "Digitizer.h"
+#ifndef NGDP_TYPES_H
+#include "NGDP_types.h"
 #endif
 
 class Event {
@@ -12,48 +12,43 @@ class Event {
 		int iEventlength;
 		int iBaselength;
 		int iSpecial;
-		const int ciSamples; // number of samples of pulse in memory (useful for Special or Average instances)
-		static int siLength; // number of samples in the waveform (generally but not strictly ciSamples)
-		static int siHowMany;
+		int iLength; // number of samples in the waveform
+		int iAverage; // 2*x+1 total samples averaged
+		vector<unsigned short> uspTrace;
 
-		unsigned short usPeakY; // primary pulse peak, y coord.
-		unsigned short usBasePkP; // positive peak in baseline samples
-		unsigned short usBasePkN; // negative peak
-		unsigned short usPeakPos; // positive peak
-		unsigned short* uspTrace;
-		unsigned short usTrigger; // triggering sample
-		unsigned short usPeakX; // primary pulse peak, x coord
+	public:
+		Event();
+		Event(int eventlength, int baselength, int average, unsigned short* start, unsigned short* end, int threshold, int chan);
+		~Event();
+		virtual void SetDCOffset(short sResolution, int dc_offset)	{dZero = sResolution*(1.-(double)dc_offset/65535.);}
+		virtual void Analyze();
+		virtual inline void PreAnalyze();
+		virtual int& GetAverage()			{return iAverage;}
+		const int& Length()					{return iLength;}
+		int Failed()						{return iFailed;}
+
+		vector<double> vTrace;
+		vector<double>::iterator itPeakY; // primary pulse peak
+		vector<double>::iterator itBasePkP; // positive peak in baseline samples
+		vector<double>::iterator itBasePkN; // negative peak
+		vector<double>::iterator itTrigger; // triggering sample
+		vector<double>::iterator itBegin; // front of waveform
+		vector<double>::iterator itEnd; // end of waveform
+		vector<double>::iterator itSatEnd; // end of saturation, = dPeakY if not saturated
+		vector<double>::iterator itPulseStart;
+		vector<double>::iterator itPulseEnd;
 		double dZero; // ADC bin for ground
 		double dBaseline;
 		double dBaseSigma;
 		double dBasePost;
 		double dBasePostSigma;
-		double dBaseScale; // 1/baselength
+		double dIntegral;
 
-	public:
-		Event();
-		Event(int len, shared_ptr<Digitizer> digitizer);
-		~Event();
-		virtual void SetAverage(int average)										{}
-		virtual void SetDCOffset(shared_ptr<Digitizer> digitizer, int dc_offset)	{dZero = digitizer->Resolution()*(1.-(double)dc_offset/65535.);}
-		virtual void SetThreshold(int threshold)									{iThreshold = threshold;}
-		virtual void SetTrace(unsigned short* trace)								{uspTrace = trace;}
-		virtual void Analyze();
-		int Failed() {return iFailed;}
-		static const int& Length()			{return Event::siLength;}
-		virtual unsigned short& Trigger()	{return usTrigger;}
-		virtual double Trace(int i)			{return ((i < 0) ? dBaseline : (i < ciSamples ? uspTrace[i] : dBasePost));} // hopefully the most efficient way to do the checks
-		virtual unsigned short& Peak_x()	{return usPeakX;}
-		virtual double Peak_y()				{return usPeakY;}
-		virtual double B_pk_p()				{return usBasePkP;}
-		virtual double B_pk_n()				{return usBasePkN;}
-		virtual double Peak_pos()			{return usPeakPos;}
-		virtual double& Zero()				{return dZero;}
-		virtual double& Baseline()			{return dBaseline;}
-		virtual double& BaseSigma()			{return dBaseSigma;}
-		virtual double& BasePost()			{return dBasePost;}
-		virtual double& BasePostSigma()		{return dBasePostSigma;}
-		virtual int GetAverage()			{return 0;}
+		bool bPileUp;
+		bool bFullWaveform;
+		bool bSaturated;
+
+		const int ciChan;
 };
 
 #endif // EVENT_H

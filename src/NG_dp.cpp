@@ -34,7 +34,7 @@ void PrintVersions() {
 }
 
 int main(int argc, char **argv) {
-	cout << "Neutron generator raw data processor v3_5\n";
+	cout << "Neutron generator raw data processor v4\n";
 	int i(0), iSpecial(-1), iAverage(0), iElapsed(0);
 	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
 	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v -e]";
@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
 		for (i = 0; i < err_dummy_last; i++) if (processor.Failed() & (1 << i)) cout << error_message[i] << '\n';
 		return 0;
 	}
-	
+
 	t_start = steady_clock::now();
 	processor.BusinessTime();
 	processor.FriendshipIsMagic(); // yep

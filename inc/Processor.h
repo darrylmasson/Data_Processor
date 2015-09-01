@@ -26,40 +26,41 @@ class ProcessorException : public exception { // simpler than checking Failed() 
 	}
 };
 
-struct thread_data_t {
-	shared_ptr<Event>	event;
-	shared_ptr<Method>	methods[NUM_METHODS];
-	const bool*			cbpActivated;
-};
-
-// Argument is thread_data_t* passed as void*
-void* Process(void* arg);
-
 class Processor {
 	private:
-		shared_ptr<Digitizer> digitizer;
+		struct {
+			char		cName[12];
+			double		dSamplerate;
+			short		sResolution;
+			double		dVpp;
+			double		dScaleT;
+			double		dScaleV;
+			int			iBaselength;
+			int			iSpecial;
+			dig_id_t	id;
+		} digitizer;
 		unique_ptr<TFile> f;
 		unique_ptr<TTree> tree;
 		unique_ptr<char[]> buffer;
 		ifstream fin;
-		
+
 		string sConfigFileName;
 		string sRawDataFile;
 		string sRootFile;
-		
+
 		bool			bMethodActive[NUM_METHODS]; // active for this run
 		bool			bMethodDone[NUM_METHODS]; // previously processed
 		bool			bPositionsSet;
 		bool			bRecordTimestamps;
-		
+
 		char			cBuildID[21];
 		char			cDigName[12];
 		char			cMethodNames[NUM_METHODS][12];
 		char			cSource[12];
 		char			cTreename[NUM_METHODS][4];
-		
+
 		unsigned short	usMask; // mask of enabled channels
-		
+
 		int				iAverage; // moving average
 		int				iChan[MAX_CH]; // only the first iNchan entries used
 		int				iEventlength; // samples
@@ -74,16 +75,14 @@ class Processor {
 		int				iTrigPost; // percentage of event after trigger
 		int				iXSQ_ndf;
 		int				iXSQ_fitter;
-		
+
 		unsigned int	uiDCOffset[MAX_CH]; // DC offset for each channel
 		unsigned int	uiThreshold[MAX_CH]; // trigger thresholds
-		
+
 		float			fGain[MAX_CH][2]; // for fitter
 		float			fDetectorZ[3];
 		float			fDetectorR[3];
-		
-		thread_data_t	td[MAX_CH];
-		
+
 	public:
 		Processor();
 		~Processor(); // handles cleanup
