@@ -108,6 +108,7 @@ void Processor::BusinessTime() {
 	duration<double> t_elapsed;
 	iProgCheck = max(iNumEvents/100 + 1, 10000); // too many print statements slows the process, every 1% or 10000 events
 
+	cout << "Processing level " << iLevel << '\n';
 	t_that = steady_clock::now();
 	cout << "Processing:\n";
 	cout << "Completed\tRate (ev/s)\tTime left\n";
@@ -352,7 +353,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	while (!fconf.eof()) {
 		fconf.getline(cBuffer, 64, '\n');
 		if (cBuffer[0] == '#') continue;
-		if (strcmp(cBuffer, "LEVEL") == 0) sscanf(cBuffer, "LEVEL %i", &iLevel);
+		if (strcmp(cBuffer, "LEVEL") == 0) iLevel = atoi(cBuffer + 6); //sscanf(cBuffer, "LEVEL %i", &iLevel);
 		if (strcmp(cBuffer + 10, digitizer.cName) == 0) {
 			fconf.getline(cBuffer, 64, '\n');
 			while (strstr(cBuffer, "END") == NULL) {
