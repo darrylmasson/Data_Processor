@@ -20,7 +20,7 @@ Event::Event(int eventlength, int baselength, int average, unsigned short* start
 		uspTrace.assign(start,start + eventlength);
 		vTrace.assign((int)uspTrace.size()-2*iAverage, 0);
 	} catch (bad_alloc& ba) {
-		iFailed |= (1 << alloc_error);
+		cout << error_message[alloc_error];
 		return;
 	}
 	itBegin = vTrace.begin();

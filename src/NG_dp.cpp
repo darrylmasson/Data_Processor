@@ -11,17 +11,6 @@
 
 using namespace std::chrono;
 
-char error_message[err_dummy_last][64] = {
-	"No error",
-	"Error in method constructor",
-	"Invalid digitizer",
-	"Root error",
-	"File not found",
-	"Allocation error",
-	"Thread error",
-	"Bad value in file"
-};
-
 bool g_verbose(false);
 
 void PrintVersions() {
@@ -77,7 +66,6 @@ int main(int argc, char **argv) {
 		processor.Setup(sFileset);
 	} catch (ProcessorException& e) {
 		cout << e.what();
-		for (i = 0; i < err_dummy_last; i++) if (processor.Failed() & (1 << i)) cout << error_message[i] << '\n';
 		return 0;
 	}
 

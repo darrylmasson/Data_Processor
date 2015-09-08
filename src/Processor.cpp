@@ -268,13 +268,13 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	fin.open(sRawDataFile.c_str(), ios::in | ios::binary);
 	if (!fin.is_open()) {
 		cout << "Error: " << sRawDataFile << " not found\n";
-		iFailed |= (1 << file_error);
+		cout << error_message[file_error];
 		throw ProcessorException();
 	}
 	f = unique_ptr<TFile>(new TFile(sRootFile.c_str(), "RECREATE"));
 	if (!f->IsOpen()) {
 		cout << "Error: could not open " << sRootFile << '\n';
-		iFailed |= (1 << file_error);
+		cout << error_message[file_error];
 		throw ProcessorException();
 	}
 
@@ -326,7 +326,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		digitizer.sResolution = -1;
 		digitizer.dVpp = -1;
 		digitizer.iBaselength = 1;
-		iFailed |= (1 << dig_error);
+		cout << error_message[dig_error];
 		digitizer.id = invalid_dig;
 		throw ProcessorException();
 	}
@@ -344,7 +344,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	ifstream fconf(sFilename.c_str(),ios::in);
 	if (!fconf.is_open()) {
 		cout << "Config file " << sFilename << " not found\n";
-		iFailed |= (1 << file_error);
+		cout << error_message[file_error];
 		throw ProcessorException();
 	} else if (g_verbose) cout << "Opened " << sFilename << '\n';
 
@@ -358,7 +358,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 			while (strstr(cBuffer, "END") == NULL) {
 				if (strstr(cBuffer, "CHANNEL") != NULL) { // loads processing parameters
 					ch = atoi(&cBuffer[8]);
-					if ((ch >= MAX_CH) || (ch < 0)) {iFailed |= (1 << config_file_error); throw ProcessorException();}
+					if ((ch >= MAX_CH) || (ch < 0)) {cout << error_message[config_file_error]; throw ProcessorException();}
 					fconf.getline(cBuffer, 64, '\n');
 					sscanf(cBuffer, "SLOW %i FAST %i PGA %i GAIN_N %f GAIN_Y %f", &iSlowTime[ch], &iFastTime[ch], &iPGASamples[ch], &fGain[ch][0], &fGain[ch][1]);
 				}
@@ -399,7 +399,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	try {T0.reset(new TTree("TI","Info"));}
 	catch (bad_alloc& ba) {
 		cout << "Could not create info tree\n";
-		iFailed |= (1 << alloc_error);
+		cout << error_message[alloc_error];
 		throw ProcessorException();
 	}
 
@@ -437,7 +437,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	if (g_verbose) cout << "Alloc'ing\n";
 	try {buffer = unique_ptr<char[]>(new char[iEventsize]);}
 	catch (bad_alloc& ba) {
-		iFailed |= (1 << alloc_error);
+		cout << error_message[alloc_error];
 		throw ProcessorException();
 	}
 	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
@@ -446,7 +446,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		try {
 			T0 = unique_ptr<TTree>(new TTree("T2","Discriminator"));
 		} catch (bad_alloc& ba) {
-			iFailed |= (1 << alloc_error);
+			cout << error_message[alloc_error];
 			throw ProcessorException();
 		}
 		Discriminator::CutsTree_init(T0.release());
@@ -457,7 +457,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		if (iLevel > 0) T1 = unique_ptr<TTree>(new TTree("T1","Method"));
 		TS = unique_ptr<TTree>(new TTree("TS","Timestamps"));
 	} catch (bad_alloc& ba) {
-		iFailed |= (1 << alloc_error);
+		cout << error_message[alloc_error];
 		throw ProcessorException();
 	}
 
@@ -468,12 +468,11 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		try {
 			event[ch].reset(new Event(iEventlength, digitizer.iBaselength, iAverage, uspTrace + ch*iEventlength, uiThreshold[iChan[ch]], iChan[ch]));
 		} catch (bad_alloc& ba) {
-			iFailed |= (1 << alloc_error);
+			cout << error_message[alloc_error];
 			throw ProcessorException();
 		}
 		if (event[ch]->Failed()) {
-			iFailed |= (1 << method_error);
-			iFailed |= event[ch]->Failed();
+			cout << error_message[method_error];
 			throw ProcessorException();
 		}
 		event[ch]->SetAddresses(SetAddresses(ch,0));
@@ -481,12 +480,11 @@ void Processor::Setup(string in) { // also opens raw and processed files
 			try {
 				method[ch].reset(new Method(event[ch]->Length(), iFastTime[iChan[ch]], iSlowTime[iChan[ch]], iPGASamples[iChan[ch]], fGain[iChan[ch]], digitizer.dScaleT, digitizer.dScaleV, event[ch]));
 			} catch (bad_alloc& ba) {
-				iFailed |= (1 << alloc_error);
+				cout << error_message[alloc_error];
 				throw ProcessorException();
 			}
 			if (method[ch]->Failed()) {
-				iFailed |= (1 << method_error);
-				iFailed |= method[ch]->Failed();
+				cout << error_message[method_error];
 				throw ProcessorException();
 			}
 			method[ch]->SetAddresses(SetAddresses(ch,1));
@@ -495,17 +493,14 @@ void Processor::Setup(string in) { // also opens raw and processed files
 			try {
 				discriminator[ch].reset(new Discriminator(iChan[ch]));
 			} catch (bad_alloc& ba) {
-				iFailed |= (1 << alloc_error);
+				cout << error_message[alloc_error];
 				throw ProcessorException();
 			}
 			if (discriminator[ch]->Failed()) {
-				iFailed |= (1 << method_error);
-				iFailed |= discriminator[ch]->Failed();
+				cout << error_message[method_error];
 				throw ProcessorException();
 			}
 		}
 	} // ch loop
-
-		if (iFailed) throw ProcessorException();
 
 }

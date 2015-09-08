@@ -23,16 +23,6 @@ const int sizeof_ev_header = 16;
 
 extern bool g_verbose; // for debugging purposes
 
-class Digitizer;
-class Event; // forward declarations
-class Event_ave;
-class Method;
-class CCM;
-class DFT;
-class XSQ_TF1;
-class XSQ_NEW;
-class LAP;
-
 enum ret_codes_t {
 	no_error = 0,
 	method_error,
@@ -40,10 +30,19 @@ enum ret_codes_t {
 	root_error,
 	file_error,
 	alloc_error,
-	thread_error,
 	config_file_error,
 
 	err_dummy_last
+};
+
+const string error_message[err_dummy_last] = {
+	"No error\n",
+	"Error in method constructor\n",
+	"Invalid digitizer\n",
+	"Root error\n",
+	"File not found\n",
+	"Allocation error\n",
+	"Bad value in file\n"
 };
 
 enum dig_id_t { // easy way for internal identification of digitizer

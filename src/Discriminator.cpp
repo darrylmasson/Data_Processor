@@ -25,7 +25,7 @@ unique_ptr<TTree> Discriminator::tree = nullptr;
 Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, ch(channel), ciChan(4) {
 	if (g_verbose) cout << "Discriminator " << ch << " c'tor\n";
 	if ((ch >= ciChan) || (ch < 0)) {
-		iFailed |= (1 << method_error);
+		cout << error_message[method_error];
 		return;
 	}
 	int d(0), b(0), i(0), chan(0);
@@ -52,8 +52,8 @@ Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, 
 	char cBand[16];
 
 	try{discrim_file.reset(new TFile((sWorkingDir+"/Data_Processor/config/discrimination_bands.root").c_str(), "READ"));}
-	catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
-	if (!discrim_file->IsOpen()){iFailed |= file_error; return;}
+	catch (bad_alloc& ba) {cout << error_message[alloc_error]; return;}
+	if (!discrim_file->IsOpen()){cout << error_message[file_error]; return;}
 	for (d=0; d<NUM_DISCRIMS; d++){
 		for (chan =0; chan<ciChan; chan++){
 			for (b=0; b<NUM_BANDS; b++){
@@ -61,12 +61,12 @@ Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, 
 					vDiscrimBand[d][chan][b].reserve(iDiscrimBins);
 				}
 				catch (bad_alloc& ba) {
-					iFailed |= (1<<alloc_error);
+					iFailed = (1<<alloc_error);
 					return;
 				}
 				sprintf(cBand, "%s_%d_%s", cDiscrimNames[d], chan ,cBandNames[b]);
 				gDiscrimCut = (TGraph*)discrim_file->Get(cBand);
-				if (gDiscrimCut==nullptr) {iFailed |= root_error; return;}
+				if (gDiscrimCut==nullptr) {cout << error_message[root_error]; return;}
 				dDiscrimValue = gDiscrimCut->GetY();
 				for (i=0; i<iDiscrimBins; i++)vDiscrimBand[d][chan][b].push_back(dDiscrimValue[i]);
 			}
