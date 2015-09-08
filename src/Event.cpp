@@ -9,7 +9,7 @@ Event::Event() : ciChan(-1) {
 Event::Event(int eventlength, int baselength, int average, unsigned short* start, int threshold, int chan) : ciChan(chan) {
 	if (g_verbose) cout << "Event " << chan << " c'tor\n";
 	if ((ciChan >= MAX_CH) || (ciChan < 0)) {
-		iFailed |= (1 << method_error);
+		cout << error_message[method_error] << "Channel\n";
 		return;
 	}
 	iFailed = 0;
@@ -20,7 +20,7 @@ Event::Event(int eventlength, int baselength, int average, unsigned short* start
 		uspTrace.assign(start,start + eventlength);
 		vTrace.assign((int)uspTrace.size()-2*iAverage, 0);
 	} catch (bad_alloc& ba) {
-		cout << error_message[alloc_error];
+		cout << error_message[alloc_error] << "Event\n";
 		return;
 	}
 	itBegin = vTrace.begin();

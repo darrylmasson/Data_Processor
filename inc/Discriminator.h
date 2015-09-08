@@ -35,21 +35,21 @@ class Discriminator {
 		const int	ch;
 		const int	ciChan;
 
-		double* fastint;
-		double* slowint;
-		double* sample;
-		double* peakheight2;
-		double* xsq_n;
-		double* xsq_y;
-		double* peakscale_n;
-		double* peakscale_y;
-		double* baseshift_n;
-		double* baseshift_y;
-		double* dft_even;
-		double* dft_odd;
-		double* lap_high;
-		double* lap_low;
-		double* integral;
+		const double* fastint;
+		const double* slowint;
+		const double* sample;
+		const double* peakheight2;
+		const double* xsq_n;
+		const double* xsq_y;
+		const double* peakscale_n;
+		const double* peakscale_y;
+		const double* baseshift_n;
+		const double* baseshift_y;
+		const double* dft_even;
+		const double* dft_odd;
+		const double* lap_high;
+		const double* lap_low;
+		const double* integral;
 
 		static double dDiscrim[NUM_DISCRIMS][4];
 
@@ -59,6 +59,7 @@ public:
 		void SetDiscriminationValue();
 		void Discriminate();
 		int Failed() {return iFailed;}
+		void SetAddresses(vector<void*> add);
 		static void FriendshipIsMagic();
 		static void CutsTree_init(TTree* tree_cuts);
 		static void Cuts_fill();

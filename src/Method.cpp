@@ -29,7 +29,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		try {
 			dCos[n].reserve(iEventlength);
 			dSin[n].reserve(iEventlength);
-		} catch (bad_alloc& ba) {cout << error_message[alloc_error]; return;}
+		} catch (bad_alloc& ba) {cout << error_message[alloc_error] << "DFT lookup\n"; return;}
 		omega = 2*n*pi/(iEventlength*dScaleT); // GHz
 		for (auto t = 0; t < iEventlength; t++) {
 			dCos[n].push_back(cos(omega*t));
@@ -42,14 +42,14 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		dS.reserve(ciLAPNpts);
 		dXform.reserve(ciLAPNpts);
 	} catch (bad_alloc& ba) {
-		cout << error_message[alloc_error];
+		cout << error_message[alloc_error] << "LAP lookup\n";
 		return;
 	}
 	for (auto n = 0; n < ciLAPNpts; n++) {
 		try {
 			dExp[n].reserve(iEventlength);
 		} catch (bad_alloc& ba) {
-			cout << error_message[alloc_error];
+			cout << error_message[alloc_error] << "LAP lookup\n";
 			return;
 		}
 		dS[n] = dSlow*exp(dScale*n);
@@ -68,7 +68,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		iStdTrig		= 128;
 	} else {
 		cout << error_message[dig_error];
-		cout << error_message[method_error];
+		cout << error_message[method_error] << "Std Events\n";
 		return;
 	}
 	if (dScaleV == 1./1024) { // volts/bin
@@ -79,18 +79,18 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		iResolutionScale = 1 << 3;
 	} else {
 		cout << error_message[dig_error];
-		cout << error_message[method_error];
+		cout << error_message[method_error] << "Std Events\n";
 		return;
 	}
 
 	try {std_file.reset(new TFile((sWorkingDir + "/Data_Processor/config/standard_events.root").c_str(), "READ"));}
-	catch (bad_alloc& ba) {cout << error_message[alloc_error]; return;}
-	if (!std_file->IsOpen()) {cout << error_message[file_error]; return;}
+	catch (bad_alloc& ba) {cout << error_message[alloc_error] << "Std Events\n"; return;}
+	if (!std_file->IsOpen()) {cout << error_message[file_error] << "Std Events\n"; return;}
 	for (p = 0; p < P; p++) {
 		try {dStdWave[p].reserve(iStdLength);}
-		catch (bad_alloc& ba) {cout << error_message[alloc_error]; return;}
+		catch (bad_alloc& ba) {cout << error_message[alloc_error] << "Std Events\n"; return;}
 		pWave = (TVectorT<double>*)std_file->Get((p ? "gamma_wave_inv" : "neutron_wave_inv"));
-		if (pWave == nullptr) {cout << error_message[root_error]; return;}
+		if (pWave == nullptr) {cout << error_message[root_error] << "Std Events\n"; return;}
 		dStdPeak[p] = 1000;
 		switch(iStdLength) {
 			case 225 : // 500 MSa/s
@@ -122,7 +122,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		dX.reserve(iEventlength);
 		fit = unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
 	} catch (bad_alloc& ba) {
-		cout << error_message[alloc_error];
+		cout << error_message[alloc_error] << "Fitter\n";
 		return;
 	}
 	fit->SetParNames("Peakscale","Baseline","Offset","particle");
@@ -133,6 +133,7 @@ Method::~Method() {
 	if (g_verbose) cout << "Method d'tor\n";
 	fit.reset();
 	graph.reset();
+	event.reset();
 }
 
 double Method::TF1_fit_func(double* x, double* par) {

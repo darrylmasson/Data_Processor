@@ -49,9 +49,7 @@ class Processor {
 		bool			bPositionsSet;
 
 		char			cBuildID[21];
-		char			cMethodNames[NUM_METHODS][12];
 		char			cSource[12];
-		char			cTreename[NUM_METHODS][4];
 
 		unsigned short	usMask; // mask of enabled channels
 
