@@ -26,16 +26,14 @@ bool g_verbose(false);
 
 void PrintVersions() {
 	cout << "Versions installed:\n";
-	cout << "CCM: " << CCM::sfVersion << '\n';
-	cout << "DFT: " << DFT::sfVersion << '\n';
-	cout << "TF1: " << XSQ_TF1::sfVersion << '\n';
-	cout << "LAP: " << LAP::sfVersion << '\n';
-	cout << "NEW: " << XSQ_NEW::sfVersion << '\n';
+	cout << "Event: " << Event::sfVersion << '\n';
+	cout << "Method: " << Method::sfVersion << '\n';
+	cout << "Discriminator: " << Discriminator::sfVersion << '\n';
 }
 
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v4\n";
-	int i(0), iSpecial(-1), iAverage(0), iElapsed(0);
+	int i(0), iSpecial(-1), iElapsed(0), iAverage(0);
 	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
 	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v -e]";
 	steady_clock::time_point t_start, t_end;
@@ -47,7 +45,6 @@ int main(int argc, char **argv) {
 	}
 	while ((i = getopt(argc, argv, "a:c:ef:s:p:qtvx:")) != -1) { // command line options
 		switch(i) {
-			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;
 			case 'e': g_verbose = true;			break;
 			case 'f': sFileset = optarg;		break;
@@ -62,12 +59,6 @@ int main(int argc, char **argv) {
 		cout << "No file specified\n";
 		return 0;
 	}
-	if (iAverage < 0) {
-		cout << "Invalid moving average: negative\n";
-		return 0;
-	} else if (iAverage > 0) {
-		cout << iAverage << "-point moving average\n";
-	}
 	switch(iSpecial) {
 		case -1: break; //cout << "No special options\n"; break; // default
 		case 0: cout << "Special samplerate\n"; break; // 500 MSa/s samplerate
@@ -81,13 +72,9 @@ int main(int argc, char **argv) {
 	try { // general setup and preparatory steps
 		processor.SetSpecials(iSpecial, iAverage);
 		processor.SetConfigFile(sConfigFile);
-		processor.SetFileSet(sFileset);
 		processor.SetSource(sSource);
-		processor.ParseFileHeader();
-		processor.ParseConfigFile();
 		processor.SetDetectorPositions(sDetectorPos);
-		processor.ConfigTrees();
-		processor.ClassAlloc();
+		processor.Setup(sFileset);
 	} catch (ProcessorException& e) {
 		cout << e.what();
 		for (i = 0; i < err_dummy_last; i++) if (processor.Failed() & (1 << i)) cout << error_message[i] << '\n';
@@ -96,9 +83,7 @@ int main(int argc, char **argv) {
 
 	t_start = steady_clock::now();
 	processor.BusinessTime();
-	processor.FriendshipIsMagic(); // yep
 	t_end = steady_clock::now();
-	for (i = 0; i < err_dummy_last; i++) if (processor.Failed() & (1 << i)) cout << error_message[i] << '\n';
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
 	iElapsed = t_elapsed.count();
 	cout << "Total time elapsed: " << iElapsed/3600 << 'h' << (iElapsed%3600)/60 << 'm' << iElapsed%60 << "s\n";

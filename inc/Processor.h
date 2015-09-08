@@ -3,21 +3,13 @@
 
 #include <fstream>
 #include <unistd.h>
-#ifndef CCM_H
-#include "CCM.h"
+#ifndef METHOD_H
+#include "Method.h"
 #endif
-#ifndef DFT_H
-#include "DFT.h"
+#ifndef DISCRIMINATOR_H
+#include "Discriminator.h"
 #endif
-#ifndef XSQ_TF1_H
-#include "XSQ_TF1.h"
-#endif
-#ifndef LAP_H
-#include "LAP.h"
-#endif
-#ifndef XSQ_NEW_H
-#include "XSQ_NEW.h"
-#endif
+#include "TFile.h"
 
 class ProcessorException : public exception { // simpler than checking Failed() after every step in setup
 	public:
@@ -40,7 +32,9 @@ class Processor {
 			dig_id_t	id;
 		} digitizer;
 		unique_ptr<TFile> f;
-		unique_ptr<TTree> tree;
+		unique_ptr<TTree> T0;
+		unique_ptr<TTree> T1;
+		unique_ptr<TTree> TS; // discriminator handles its own tree
 		unique_ptr<char[]> buffer;
 		ifstream fin;
 
@@ -48,13 +42,13 @@ class Processor {
 		string sRawDataFile;
 		string sRootFile;
 
-		bool			bMethodActive[NUM_METHODS]; // active for this run
-		bool			bMethodDone[NUM_METHODS]; // previously processed
+		shared_ptr<Event> event[MAX_CH];
+		shared_ptr<Method> method[MAX_CH];
+		shared_ptr<Discriminator> discriminator[MAX_CH];
+
 		bool			bPositionsSet;
-		bool			bRecordTimestamps;
 
 		char			cBuildID[21];
-		char			cDigName[12];
 		char			cMethodNames[NUM_METHODS][12];
 		char			cSource[12];
 		char			cTreename[NUM_METHODS][4];
@@ -67,6 +61,7 @@ class Processor {
 		int				iEventsize; // bytes, incl event header
 		int				iFailed;
 		int				iFastTime[MAX_CH];
+		int				iLevel; // level of processing to be done
 		int				iNchan; // number of enabled channels
 		int				iNumEvents;
 		int				iPGASamples[MAX_CH];
@@ -74,7 +69,6 @@ class Processor {
 		int				iSpecial; // special processing options
 		int				iTrigPost; // percentage of event after trigger
 		int				iXSQ_ndf;
-		int				iXSQ_fitter;
 
 		unsigned int	uiDCOffset[MAX_CH]; // DC offset for each channel
 		unsigned int	uiThreshold[MAX_CH]; // trigger thresholds
@@ -83,21 +77,68 @@ class Processor {
 		float			fDetectorZ[3];
 		float			fDetectorR[3];
 
+		// These in T0
+		bool bFullWave[8]; // waveform decays before end of event
+		bool bSaturated[8]; // voltage saturation on digitizer
+		bool bPileUp[8];
+
+		short sDecay[8]; // decay time
+		short sRise[8]; // risetime
+		short sPeakX[8]; // x location of peak
+		short sTrigger[8];
+
+		double dBase[8]; // these values in samples
+		double dSigma[8];
+		double dBaseP[8];
+		double dBasePS[8];
+		double dPeak0[8];
+		double dFullInt[8]; // except this
+		double dBasePeakP[8];
+		double dBasePeakN[8];
+
+		// These in T1
+		bool bTruncated[8]; // slow end >= eventlength
+
+		double dBaseline[8];
+		double dBaseSigma[8];
+		double dBasePost[8];
+		double dBasePostSigma[8]; // baseline stuff in volts
+		double dFastInt[8]; // integral values
+		double dSlowInt[8];
+
+		double dPeak1[8]; // peakheights
+		double dPeak2[8];
+
+		double sdSample[8]; // sample used for PGA
+
+		double dOdd[8]; // discrimination parameters
+		double dEven[8];
+
+		double dLaplaceLow[8];
+		double dLaplaceHigh[8];
+
+		double dXsq[2][4]; // chisquared
+		double dPeak_scale[2][4]; // peak scale factor
+		double dBase_shift[2][4]; // baseline
+		double dOffset[2][4]; // trigger shift
+
+		double dPeak_err[2][4]; // errors
+		double dBase_err[2][4];
+		double dOff_err[2][4];
+
+
 	public:
 		Processor();
-		~Processor(); // handles cleanup
+		~Processor();
 		void BusinessTime(); // it's business, it's business time!
-		void ClassAlloc(); // all allocs
-		void ConfigTrees(); // includes version checking
 		int Failed()								{return iFailed;}
 		void FriendshipIsMagic(); // handles friending between trees
-		void ParseFileHeader();
-		void ParseConfigFile();
+		vector<void*> SetAddresses(int ch, int level);
 		void SetConfigFile(string in)				{sConfigFileName = in;}
 		void SetDetectorPositions(string in);
-		void SetFileSet(string in);
 		void SetSource(string in)					{strcpy(cSource,in.c_str());}
-		void SetSpecials(int special, int average);
+		void SetSpecials(int special, int average)	{iSpecial = special; iAverage = average;}
+		void Setup(string in); // opens files, parses header and config file, does trees and alloc'ing
 };
 
 #endif // PROCESSOR_H

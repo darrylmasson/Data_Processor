@@ -8,14 +8,9 @@ OUTDIR = $(shell pwd)/../
 INSTALL = -o $(OUTDIR)NG_dp
 OPT = -O2
 TEST = -o test_exe
-SRCS = Digitizer.cpp \
-	Event.cpp \
-	Event_ave.cpp \
-	CCM.cpp \
-	DFT.cpp \
-	XSQ_TF1.cpp \
-	XSQ_NEW.cpp \
-	LAP.cpp \
+SRCS = Event.cpp \
+	Method.cpp \
+	Discriminator.cpp \
 	Processor.cpp \
 	NG_dp.cpp
 OBJS = $(SRCS:.cpp=.o)
