@@ -108,7 +108,6 @@ void Processor::BusinessTime() {
 	duration<double> t_elapsed;
 	iProgCheck = max(iNumEvents/100 + 1, 10000); // too many print statements slows the process, every 1% or 10000 events
 
-	cout << "Processing level " << iLevel << '\n';
 	t_that = steady_clock::now();
 	cout << "Processing:\n";
 	cout << "Completed\tRate (ev/s)\tTime left\n";
@@ -462,6 +461,8 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		throw ProcessorException();
 	}
 
+	cout << "Processing level " << iLevel << '\n';
+
 	for (auto ch = 0; ch < iNchan; ch++) { // initializing all classes needed
 		if (g_verbose) cout << "CH" << ch << '\n';
 		try {
@@ -472,6 +473,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		}
 		if (event[ch]->Failed()) {
 			iFailed |= (1 << method_error);
+			iFailed |= event[ch]->Failed();
 			throw ProcessorException();
 		}
 		event[ch]->SetAddresses(SetAddresses(ch,0));
@@ -484,6 +486,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 			}
 			if (method[ch]->Failed()) {
 				iFailed |= (1 << method_error);
+				iFailed |= method[ch]->Failed();
 				throw ProcessorException();
 			}
 			method[ch]->SetAddresses(SetAddresses(ch,1));
@@ -497,6 +500,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 			}
 			if (discriminator[ch]->Failed()) {
 				iFailed |= (1 << method_error);
+				iFailed |= discriminator[ch]->Failed();
 				throw ProcessorException();
 			}
 		}
