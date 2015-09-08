@@ -194,7 +194,7 @@ void Method::SetDefaultValues() {
 void Method::Analyze() {
 	auto i(0), iPGA_average(5);
 	auto dTemp(0.), dReal(0.), dImag(0.);
-	auto n(0), t(0), iFast(0), iSlow(0);
+	auto m(0), t(0), iFast(0), iSlow(0);
 
 	SetDefaultValues();
 
@@ -229,14 +229,14 @@ void Method::Analyze() {
 	} else *dSample = -1;
 
 	//DFT
-	for (n = 0; n < ciDFTOrder; n++) {
+	for (m = 0; m < ciDFTOrder; m++) {
 		dReal = 0;
 		dImag = 0;
 		for (auto it = event->itBegin; it < event->itEnd; it++) { // fourier series
-			dReal += (*it)*dCos[n][t];
-			dImag += (*it)*dSin[n][t];
+			dReal += (*it)*dCos[m][t];
+			dImag += (*it)*dSin[m][t];
 		}
-		dMagnitude[n] = sqrt(dReal*dReal + dImag*dImag);
+		dMagnitude[m] = sqrt(dReal*dReal + dImag*dImag);
 	}
 	*dEven = *dOdd = 0;
 	for (t = 2; t < ciDFTOrder; t++) (t%2 ? *dOdd : *dEven) += (dMagnitude[t]-dMagnitude[(t%2?1:0)])/dMagnitude[(t%2?1:0)];
@@ -253,13 +253,13 @@ void Method::Analyze() {
 			*itA /= (2.*iLAPAverage + 1.);
 		}
 	}
-	for (n = 0; n < ciLAPNpts; n++) {
-		dXform[n] = 0;
+	for (m = 0; m < ciLAPNpts; m++) {
+		dXform[m] = 0;
 		t = 0;
-		for (auto it = dTrace.begin(); it < dTrace.end(); it++, t++) dXform[n] += (*it)*dExp[n][t]; // trailing edge of the pulse
+		for (auto it = dTrace.begin(); it < dTrace.end(); it++, t++) dXform[m] += (*it)*dExp[m][t]; // trailing edge of the pulse
 	}
-	for (n = 0; n < ciLAPNpts-1; n++) {
-		(n < (ciLAPNpts >> 1) ? *dLaplaceLow : *dLaplaceHigh) += (dS[n+1]-dS[n])*(dXform[n+1]+dXform[n]);
+	for (m = 0; m < ciLAPNpts-1; m++) {
+		(m < (ciLAPNpts >> 1) ? *dLaplaceLow : *dLaplaceHigh) += (dS[m+1]-dS[m])*(dXform[m+1]+dXform[m]);
 	}
 	*dLaplaceHigh *= 0.5*dScaleV;
 	*dLaplaceLow *= 0.5*dScaleV;
