@@ -7,6 +7,7 @@ const double pi = acos(-1.0);
 float Method::sfVersion = 1.0;
 
 Method::Method(int length, int fast, int slow, int samples, float gain[2], double scaleT, double scaleV, shared_ptr<Event> ev) : dSlow(0.01), dShigh(1.0) {
+	if (g_verbose) cout << "Method c'tor\n";
 	iFailed = 0;
 	iEventlength = length;
 	iFastTime = fast;
@@ -129,6 +130,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 }
 
 Method::~Method() {
+	if (g_verbose) cout << "Method d'tor\n";
 	fit.reset();
 	graph.reset();
 }

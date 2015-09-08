@@ -23,6 +23,7 @@ double Discriminator::dDiscrim[NUM_DISCRIMS][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0}
 unique_ptr<TTree> Discriminator::tree = nullptr;
 
 Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, ch(channel), ciChan(4) {
+	if (g_verbose) cout << "Discriminator " << ch << " c'tor\n";
 	if ((ch >= ciChan) || (ch < 0)) {
 		iFailed |= (1 << method_error);
 		return;
@@ -50,7 +51,7 @@ Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, 
 
 	char cBand[16];
 
-	try{discrim_file.reset(new TFile((sWorkingDir+"/Data_processor/config/discrimination_bands.root").c_str(), "READ"));}
+	try{discrim_file.reset(new TFile((sWorkingDir+"/Data_Processor/config/discrimination_bands.root").c_str(), "READ"));}
 	catch (bad_alloc& ba) {iFailed |= alloc_error; return;}
 	if (!discrim_file->IsOpen()){iFailed |= file_error; return;}
 	for (d=0; d<NUM_DISCRIMS; d++){
@@ -80,6 +81,7 @@ Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, 
 
 
 Discriminator::~Discriminator(){
+	if (g_verbose) cout << "Discriminator " << ch << " c'tor\n";
 	for (int d=0; d<NUM_DISCRIMS; d++){
 		for (int chan=0; chan<ciChan; chan++){
 			for (int b=0; b<NUM_BANDS; b++){
