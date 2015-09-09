@@ -86,6 +86,7 @@ class Processor {
 		short sPeakX[8]; // x location of peak
 		short sPeakXs[8]; // pile-up peak
 		short sTrigger[8];
+		short sPeaks[8];
 
 		double dBase[8]; // these values in samples
 		double dSigma[8];

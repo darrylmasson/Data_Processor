@@ -76,6 +76,7 @@ class Event {
 		short* sPeakX;
 		short* sPeakXs;
 		short* sTrigger;
+		short* sPeaks;
 
 		const int ciChan;
 

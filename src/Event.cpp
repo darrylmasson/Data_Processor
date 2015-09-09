@@ -42,6 +42,7 @@ void Event::Analyze() {
 	*sPeakX			= 0;
 	*sPeakXs		= 0;
 	*sTrigger		= 0;
+	*sPeaks			= 0;
 
 	*bSaturated		= false;
 	*bPileUp		= false;
@@ -52,7 +53,6 @@ void Event::Analyze() {
 	PeakS = itBegin;
 
 	auto dTemp(0.);
-	int iFoundPeaks(0);
 
 	for (it = itBegin, itt = itEnd-1; it-itBegin < iBaselength; it++, itt--) {
 		*dBaseline += *it; // baseline at start of event
@@ -74,7 +74,7 @@ void Event::Analyze() {
 	*dBaseSigma = sqrt(*dBaseSigma/iBaselength);
 	*dBasePostSigma = sqrt(*dBasePostSigma/iBaselength);
 
-	iFoundPeaks = Peakfinder(iAverage==0);
+	*sPeaks = Peakfinder(iAverage==0);
 	if (*Peak.itPeak == 0) { // saturated event
 		*bSaturated = true;
 		for (it = Peak.itPeak; it < itEnd; it++) if (*it != 0) break;
@@ -84,10 +84,10 @@ void Event::Analyze() {
 	}
 	if (iAverage) {
 		Average();
-		iFoundPeaks = Peakfinder(true);
+		*sPeaks = Peakfinder(true);
 	}
-	if (iFoundPeaks == 0) return;
-	*bPileUp = (iFoundPeaks > 1);
+	if (*sPeaks == 0) return;
+	*bPileUp = (*sPeaks > 1);
 
 	for (it = Peak.itPeak; it > itBegin; it--) if ((*it < iThreshold) && (*(it-1) >= iThreshold)) break;
 	*sTrigger = (it - itBegin)*dScaleT;
@@ -210,6 +210,7 @@ void Event::SetAddresses(vector<void*> add) {
 	sPeakX			= (short*)add[i++];
 	sPeakXs			= (short*)add[i++];
 	sTrigger		= (short*)add[i++];
+	sPeaks			= (short*)add[i++];
 
 	dBaseline		= (double*)add[i++];
 	dBaseSigma		= (double*)add[i++];

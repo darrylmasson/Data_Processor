@@ -49,6 +49,7 @@ Processor::Processor() {
 	memset(sPeakX,			0, sizeof(sPeakX));
 	memset(sPeakXs,			0, sizeof(sPeakXs));
 	memset(sTrigger,		0, sizeof(sTrigger));
+	memset(sPeaks,			0, sizeof(sPeaks));
 	memset(dBase,			0, sizeof(dBase));
 	memset(dSigma,			0, sizeof(dSigma));
 	memset(dBaseP,			0, sizeof(dBaseP));
@@ -186,6 +187,7 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&sPeakX[ch];
 		add[i++] = (void*)&sPeakXs[ch];
 		add[i++] = (void*)&sTrigger[ch];
+		add[i++] = (void*)&sPeaks[ch];
 
 		add[i++] = (void*)&dBase[ch];
 		add[i++] = (void*)&dSigma[ch];
@@ -489,6 +491,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("Peakx",			sPeakX,		"peakx[8]/S");
 	T0->Branch("Peakxs",		sPeakXs,	"peakxs[8]/S");
 	T0->Branch("Trigger",		sTrigger,	"trig[8]/S");
+	T0->Branch("Peaks",			sPeaks,		"peaks[8]/S");
 
 	T0->Branch("Base",			dBase,		"base[8]/D");
 	T0->Branch("Sigma",			dSigma,		"sigma[8]/D");
