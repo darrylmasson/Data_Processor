@@ -14,19 +14,18 @@ class Event {
 		int iSpecial;
 		int iLength; // number of samples in the waveform
 		int iAverage; // 2*x+1 total samples averaged
-		vector<unsigned short> uspTrace;
-		double dScaleInt; // V*ns/(bin*clock cycle)
+		unsigned short* const usTrace;
 		double dScaleV;
 		double dScaleT;
 		struct Peak_t {
-			vector<double>::iterator itPeak;
-			vector<double>::iterator itStart;
-			vector<double>::iterator itEnd;
+			double* itPeak;
+			double* itStart;
+			double* itEnd;
 		};
 
 	public:
 		Event();
-		Event(int eventlength, int baselength, int average, unsigned short* start, int threshold, int chan);
+		Event(int eventlength, int baselength, int average, int threshold, int chan, unsigned short* usStart, double* dStart);
 		~Event();
 		void Analyze();
 		inline void PreAnalyze();
@@ -34,15 +33,14 @@ class Event {
 		const int& Length()					{return iLength;}
 		int Failed()						{return iFailed;}
 		void SetAddresses(vector<void*> add);
-		void SetScales(double dInt, double dV, double dT)		{dScaleInt = dInt; dScaleV = dV; dScaleT = dT;}
+		void SetScales(double dV, double dT)		{dScaleV = dV; dScaleT = dT;}
 
-		vector<double> vTrace;
 		Peak_t Peak; // primary pulse peak
-		vector<double>::iterator itBasePkP; // positive peak in baseline samples
-		vector<double>::iterator itBasePkN; // negative peak
-		vector<double>::iterator itBegin; // front of waveform
-		vector<double>::iterator itEnd; // end of waveform
-		vector<double>::iterator itSatEnd; // end of saturation, = dPeakY if not saturated
+		double* itBasePkP; // positive peak in baseline samples
+		double* itBasePkN; // negative peak
+		double* const itBegin; // front of waveform
+		double* const itEnd; // end of waveform
+		double* itSatEnd; // end of saturation, = dPeakY if not saturated
 
 		double* dBaseline;
 		double* dBaseSigma;

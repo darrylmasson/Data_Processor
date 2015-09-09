@@ -206,7 +206,7 @@ void Method::Analyze() {
 	iSlow = (iSlowTime < event->itEnd - 1 - event->Peak.itStart ? iSlowTime : event->itEnd - 1 - event->Peak.itStart); // local integration limits for fast and slow
 
 	if (((event->Peak.itPeak + 2) < event->itEnd) && (event->Peak.itPeak - 1 > event->itBegin) && !*(event->bSaturated)) { // peak averaging
-		for (auto it = event->Peak.itPeak-1; it < event->Peak.itPeak; it++) dTemp += *it;
+		for (auto it = event->Peak.itPeak-1; it <= event->Peak.itPeak+1; it++) dTemp += *it;
 		*dPeak1 = (*(event->dBaseline) - (0.333*dTemp))*dScaleV; // averaged with adjacent samples
 		dTemp += *(event->Peak.itPeak-2) + *(event->Peak.itPeak + 2);
 		*dPeak2 = (*(event->dBaseline) - (0.2*dTemp))*dScaleV; // averaged with two adjacent samples

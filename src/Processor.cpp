@@ -81,6 +81,7 @@ Processor::Processor() {
 Processor::~Processor() {
 	if (g_verbose) cout << "Processor d'tor\n";
 	for (auto ch = 0; ch < MAX_CH; ch++) {
+		dTrace[ch] = nullptr;
 		event[ch] = nullptr;
 		method[ch] = nullptr;
 		discriminator[ch] = nullptr;
@@ -298,7 +299,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 
 	strncpy(digitizer.cName, cBuffer, sizeof(digitizer.cName)); // digitizer name
 	memcpy(&usMask, cBuffer + 12, sizeof(usMask)); // channel mask
-	memcpy(&iEventlength, cBuffer + 14, sizeof(iEventlength)); // eventlength
+	memcpy(&iEventlength, cBuffer + 14, sizeof(iEventlength)); // Eventlength
 	memcpy(&iTrigPost, cBuffer + 18, sizeof(iTrigPost)); // post-trigger
 	memcpy(uiDCOffset, cBuffer + 22, sizeof(uiDCOffset)); // dc offsets
 	memcpy(uiThreshold, cBuffer + 54, sizeof(uiThreshold)); // trigger thresholds
@@ -477,7 +478,8 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	for (auto ch = 0; ch < iNchan; ch++) { // initializing all classes needed
 		if (g_verbose) cout << "CH" << ch << '\n';
 		try {
-			event[ch].reset(new Event(iEventlength, digitizer.iBaselength, iAverage, uspTrace + ch*iEventlength, uiThreshold[iChan[ch]], iChan[ch]));
+			dTrace[ch].reset(new double[iEventlength-2*iAverage]);
+			event[ch].reset(new Event(iEventlength, digitizer.iBaselength, iAverage, uiThreshold[iChan[ch]], iChan[ch], uspTrace + ch*iEventlength, dTrace.get()));
 		} catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "Event\n";
 			throw ProcessorException();
@@ -486,6 +488,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 			cout << error_message[method_error] << "Event\n";
 			throw ProcessorException();
 		}
+		event[ch]->SetScales(digitizer.dScaleV, digitizer.dScaleT);
 		event[ch]->SetAddresses(SetAddresses(ch,0));
 		if (iLevel > 0) {
 			try {

@@ -42,6 +42,7 @@ class Processor {
 		string sRawDataFile;
 		string sRootFile;
 
+		unique_ptr<double[]> dTrace[MAX_CH];
 		shared_ptr<Event> event[MAX_CH];
 		shared_ptr<Method> method[MAX_CH];
 		shared_ptr<Discriminator> discriminator[MAX_CH];

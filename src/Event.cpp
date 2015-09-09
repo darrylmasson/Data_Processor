@@ -6,7 +6,7 @@ Event::Event() : ciChan(-1) {
 	if (g_verbose) cout << "Event c'tor\n";
 }
 
-Event::Event(int eventlength, int baselength, int average, unsigned short* start, int threshold, int chan) : ciChan(chan) {
+Event::Event(int eventlength, int baselength, int average, int threshold, int chan, unsigned short* usStart, double* dStart) : usTrace(usStart), itBegin(dStart), itEnd(dStart+eventlength-2*average), ciChan(chan) {
 	if (g_verbose) cout << "Event " << chan << " c'tor\n";
 	if ((ciChan >= MAX_CH) || (ciChan < 0)) {
 		cout << error_message[method_error] << "Channel\n";
@@ -16,15 +16,6 @@ Event::Event(int eventlength, int baselength, int average, unsigned short* start
 	iEventlength = eventlength;
 	iBaselength = baselength;
 	iAverage = average;
-	try{
-		uspTrace.assign(start,start + eventlength);
-		vTrace.assign((int)uspTrace.size()-2*iAverage, 0);
-	} catch (bad_alloc& ba) {
-		cout << error_message[alloc_error] << "Event\n";
-		return;
-	}
-	itBegin = vTrace.begin();
-	itEnd = vTrace.end();
 	iThreshold = threshold;
 }
 
@@ -164,12 +155,12 @@ void Event::Analyze() {
 
 	for (it = Peak.itStart; it <= Peak.itEnd; it++) *dIntegral += *it; // integrator
 	*dIntegral = (*dIntegral)*2 - (*Peak.itStart + *Peak.itEnd);
-	*dIntegral = ((*dBaseline)*(Peak.itEnd-Peak.itStart) - 0.5*(*dIntegral))*dScaleInt;
+	*dIntegral = ((*dBaseline)*(Peak.itEnd-Peak.itStart) - 0.5*(*dIntegral))*dScaleT*dScaleV;
 }
 
 inline void Event::PreAnalyze() {
 	auto itD = itBegin;
-	for (auto itU = uspTrace.begin(); itU < uspTrace.end(); itU++, itD++) *itD = *itU;
+	for (auto itU = usTrace; itU < usTrace+iEventlength; itU++, itD++) *itD = *itU;
 	// insert averaging and other shenanigans here
 }
 
