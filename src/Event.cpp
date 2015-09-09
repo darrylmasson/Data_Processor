@@ -26,7 +26,7 @@ Event::~Event() {
 
 void Event::Analyze() {
 	auto it = itBegin, itt = itBegin;
-	for (auto itU = usTrace; itU < usTrace+iEventlength; itU++, it++) *it = *itU; // copies from unsigned short buffer into double buffer
+	for (auto itU = usTrace; itU < usTrace+iEventlength && it < itEnd; itU++, it++) *it = *itU; // copies from unsigned short buffer into double buffer
 	*dBaseline		= 0.;
 	*dBaseSigma		= 0.;
 	*dBasePost		= 0.;
@@ -74,7 +74,7 @@ void Event::Analyze() {
 	*dBaseSigma = sqrt(*dBaseSigma/iBaselength);
 	*dBasePostSigma = sqrt(*dBasePostSigma/iBaselength);
 
-	*sPeaks = Peakfinder(iAverage==0);
+	*sPeaks = Peakfinder();
 	if (*Peak.itPeak == 0) { // saturated event
 		*bSaturated = true;
 		for (it = Peak.itPeak; it < itEnd; it++) if (*it != 0) break;
@@ -84,7 +84,7 @@ void Event::Analyze() {
 	}
 	if (iAverage) {
 		Average();
-		*sPeaks = Peakfinder(true);
+		*sPeaks = Peakfinder();
 	}
 	if (*sPeaks == 0) return;
 	*bPileUp = (*sPeaks > 1);
@@ -117,9 +117,9 @@ inline void Event::Average() {
 	}
 }
 
-int Event::Peakfinder(bool keep) { // returns number of peaks found
+int Event::Peakfinder() { // returns number of peaks found
 	auto iPeakCut(8); // Peaks less than this height don't get tagged
-	vector<Peak_t> vPeakCandidates, vFoundPeaks, vPrimaryPeaks, vOtherPeaks, vAllPeaks;
+	vector<Peak_t> vPeakCandidates, vFoundPeaks, vPrimaryPeaks;
 	Peak_t peak(itBegin);
 	auto it = itBegin, itt = itBegin;
 
@@ -184,16 +184,15 @@ int Event::Peakfinder(bool keep) { // returns number of peaks found
 			Peak = vFoundPeaks.front();
 		} else if (vPrimaryPeaks.size() == 1) { // one primary
 			Peak = vPrimaryPeaks.front();
-			vAllPeaks.push_back(vPrimaryPeaks.front());
 		} else { // multiple primaries, pick tallest
 			Peak = vPrimaryPeaks.front();
 			for (auto iter = vPrimaryPeaks.begin(); iter < vPrimaryPeaks.end(); iter++) {
 				if (*iter > Peak) Peak = *iter;
 			}
 		}
-		PeakS = vFoundPeaks.front();
+		PeakS = itBegin;
 		for (auto iter = vFoundPeaks.begin(); iter < vFoundPeaks.end(); iter++) {
-			if ((*iter > PeakS) && (*iter != Peak)) PeakS = *iter;
+			if ((*iter > PeakS) && !(*iter == Peak)) PeakS = *iter;
 		}
 	}
 	return vFoundPeaks.size();

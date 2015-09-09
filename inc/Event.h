@@ -8,7 +8,7 @@
 class Event {
 	private:
 		inline void Average();
-		int Peakfinder(bool keep);
+		int Peakfinder();
 		int iFailed;
 		int iThreshold; // trigger threshold
 		int iEventlength;
