@@ -139,8 +139,8 @@ void Processor::BusinessTime() {
 			else cout << iTimeleft << "s\n";
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];
-		break;
 	}
+	T0->AddFriend("TS");
 	if (iLevel > 0) {
 		T1->AddFriend("TS");
 		T1->AddFriend("T0");
@@ -474,6 +474,62 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Trees\n";
 		throw ProcessorException();
+	}
+	
+	T0->Branch("FullWaveform",	bFullWave, "fullwave[8]/O");
+	T0->Branch("Saturated",		bSaturated, "sat[8]/O");
+	T0->Branch("Pileup",		bPileUp,	"pileup[8]/O");
+
+	T0->Branch("Decaytime",		sDecay,		"decay[8]/S");
+	T0->Branch("Risetime",		sRise,		"rise[8]/S");
+	T0->Branch("Peakx",			sPeakX,		"peakx[8]/S");
+	T0->Branch("Trigger",		sTrigger,	"trig[8]/S");
+
+	T0->Branch("Base",			dBase,		"base[8]/D");
+	T0->Branch("Sigma",			dSigma,		"sigma[8]/D");
+	T0->Branch("BaseP",			dBaseP,		"basep[8]/D");
+	T0->Branch("BasePS",		dBasePS,	"baseps[8]/D");
+	T0->Branch("BasePkP",		dBasePeakP,	"basepkp[8]/D");
+	T0->Branch("BasePkN",		dBasePeakN,	"basepkn[8]/D");
+	T0->Branch("Peakheight0",	dPeak0,		"peak0[8]/D");
+	T0->Branch("Integral",		dFullInt,	"integral[8]/D");
+	
+	if (iLevel > 0) {
+		T1->Branch("Truncated",		bTruncated, 	"trunc[8]/O");
+
+		T1->Branch("Baseline",		dBaseline,		"baseline[8]/D");
+		T1->Branch("BaseSigma",		dBaseSigma,		"basesigma[8]/D");
+		T1->Branch("BasePost",		dBasePost,		"basepost[8]/D");
+		T1->Branch("BasePostSigma",	dBasePostSigma, "basepostsigma[8]/D");
+		T1->Branch("FastInt",		dFastInt,		"fastint[8]/D");
+		T1->Branch("SlowInt",		dSlowInt,		"slowint[8]/D");
+
+		T1->Branch("Peakheight1",	dPeak1,			"peak1[8]/D");
+		T1->Branch("Peakheight2",	dPeak2,			"peak2[8]/D");
+
+		T1->Branch("Sample",		sdSample,		"sample[8]/D");
+
+		T1->Branch("Odd",			dOdd,			"odd[8]/D");
+		T1->Branch("Even",			dEven,			"even[8]/D");
+
+		T1->Branch("LapLow",		dLaplaceLow,	"laplow[8]/D");
+		T1->Branch("LapHi",			dLaplaceHigh,	"laphi[8]/D");
+
+		T1->Branch("Xsq_n",			dXsq[0],		"xsqn[4]/D");
+		T1->Branch("Xsq_y",			dXsq[1],		"xsqy[4]/D");
+		T1->Branch("Peakscale_n",	dPeak_scale[0],	"pkn[4]/D");
+		T1->Branch("Peakscale_y",	dPeak_scale[1],	"pky[4]/D");
+		T1->Branch("Base_shift_n",	dBase_shift[0],	"bshn[4]/D");
+		T1->Branch("Base_shift_y",	dBase_shift[1],	"bshy[4]/D");
+		T1->Branch("Offset_n",		dOffset[0],		"offn[4]/D");
+		T1->Branch("Offset_y",		dOffset[1],		"offy[4]/D");
+
+		T1->Branch("Peak_err_n",	dPeak_err[0],	"pkerrn[4]/D");
+		T1->Branch("Peak_err_y",	dPeak_err[1],	"pkerry[4]/D");
+		T1->Branch("Base_err_n",	dBase_err[0],	"baerrn[4]/D");
+		T1->Branch("Base_err_y",	dBase_err[1],	"baerry[4]/D");
+		T1->Branch("Off_err_n",		dOff_err[0],	"oferrn[4]/D");
+		T1->Branch("Off_err_y",		dOff_err[1],	"oferry[4]/D");
 	}
 
 	cout << "Processing level " << iLevel << '\n';
