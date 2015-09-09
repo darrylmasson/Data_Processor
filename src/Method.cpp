@@ -29,7 +29,11 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		try {
 			dCos[n].reserve(iEventlength);
 			dSin[n].reserve(iEventlength);
-		} catch (bad_alloc& ba) {cout << error_message[alloc_error] << "DFT lookup\n"; return;}
+		} catch (bad_alloc& ba) {
+			cout << error_message[alloc_error] << "DFT lookup\n";
+			iFailed = 1;
+			return;
+		}
 		omega = 2*n*pi/(iEventlength*dScaleT); // GHz
 		for (auto t = 0; t < iEventlength; t++) {
 			dCos[n].push_back(cos(omega*t));
@@ -43,6 +47,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		dXform.reserve(ciLAPNpts);
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "LAP lookup\n";
+		iFailed = 1;
 		return;
 	}
 	for (auto n = 0; n < ciLAPNpts; n++) {
@@ -50,6 +55,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 			dExp[n].reserve(iEventlength);
 		} catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "LAP lookup\n";
+			iFailed = 1;
 			return;
 		}
 		dS[n] = dSlow*exp(dScale*n);
@@ -69,6 +75,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	} else {
 		cout << error_message[dig_error];
 		cout << error_message[method_error] << "Std Events\n";
+		iFailed = 1;
 		return;
 	}
 	if (dScaleV == 1./1024) { // volts/bin
@@ -80,17 +87,34 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	} else {
 		cout << error_message[dig_error];
 		cout << error_message[method_error] << "Std Events\n";
+		iFailed = 1;
 		return;
 	}
 
 	try {std_file.reset(new TFile((sWorkingDir + "/Data_Processor/config/standard_events.root").c_str(), "READ"));}
-	catch (bad_alloc& ba) {cout << error_message[alloc_error] << "Std Events\n"; return;}
-	if (!std_file->IsOpen()) {cout << error_message[file_error] << "Std Events\n"; return;}
+	catch (bad_alloc& ba) {
+		cout << error_message[alloc_error] << "Std Events\n";
+		iFailed = 1;
+		return;
+	}
+	if (!std_file->IsOpen()) {
+		cout << error_message[file_error] << "Std Events\n";
+		iFailed = 1;
+		return;
+	}
 	for (p = 0; p < P; p++) {
 		try {dStdWave[p].reserve(iStdLength);}
-		catch (bad_alloc& ba) {cout << error_message[alloc_error] << "Std Events\n"; return;}
+		catch (bad_alloc& ba) {
+			cout << error_message[alloc_error] << "Std Events\n";
+			iFailed = 1;
+			return;
+		}
 		pWave = (TVectorT<double>*)std_file->Get((p ? "gamma_wave_inv" : "neutron_wave_inv"));
-		if (pWave == nullptr) {cout << error_message[root_error] << "Std Events\n"; return;}
+		if (pWave == nullptr) {
+			cout << error_message[root_error] << "Std Events\n";
+			iFailed = 1;
+			return;
+		}
 		dStdPeak[p] = 1000;
 		switch(iStdLength) {
 			case 225 : // 500 MSa/s
@@ -123,6 +147,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		fit = unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Fitter\n";
+		iFailed = 1;
 		return;
 	}
 	fit->SetParNames("Peakscale","Baseline","Offset","particle");
@@ -272,7 +297,7 @@ void Method::Analyze() {
 	if (integral == 0) { // doesn't process if no trigger to save time
 		return;
 	}
-	try {graph.reset(new TGraph(iEventlength, dX.data(), event->vTrace.data()));}
+	try {graph.reset(new TGraph(iEventlength, dX.data(), event->itBegin));}
 	catch (bad_alloc& ba) {
 		return;
 	}
@@ -311,43 +336,43 @@ void Method::Analyze() {
 
 void Method::SetAddresses(vector<void*> add) {
 	int i(0);
-	bTruncated = (bool*)add[i++];
+	bTruncated =		(bool*)add[i++];
 
-	dBaseline = (double*)add[i++];
-	dBaseSigma = (double*)add[i++];
-	dBasePost = (double*)add[i++];
-	dBasePostSigma = (double*)add[i++];
-	dBasePeakN = (double*)add[i++];
-	dBasePeakP = (double*)add[i++];
-	dSlowInt = (double*)add[i++];
-	dFastInt = (double*)add[i++];
-	dPeak1 = (double*)add[i++];
-	dPeak2 = (double*)add[i++];
+	dBaseline =			(double*)add[i++];
+	dBaseSigma =		(double*)add[i++];
+	dBasePost =			(double*)add[i++];
+	dBasePostSigma =	(double*)add[i++];
+	dBasePeakN =		(double*)add[i++];
+	dBasePeakP =		(double*)add[i++];
+	dSlowInt =			(double*)add[i++];
+	dFastInt =			(double*)add[i++];
+	dPeak1 =			(double*)add[i++];
+	dPeak2 =			(double*)add[i++];
 
 	//PGA
-	dSample = (double*)add[i++];
+	dSample =			(double*)add[i++];
 
 	//DFT
-	dOdd = (double*)add[i++];
-	dEven = (double*)add[i++];
+	dOdd =				(double*)add[i++];
+	dEven =				(double*)add[i++];
 
 	//LAP
-	dLaplaceHigh = (double*)add[i++];
-	dLaplaceLow = (double*)add[i++];
+	dLaplaceHigh =		(double*)add[i++];
+	dLaplaceLow =		(double*)add[i++];
 
 	//NGM
-	dXsq_n = (double*)add[i++];
-	dXsq_y = (double*)add[i++];
-	dPeakheight_n = (double*)add[i++];
-	dPeakheight_y = (double*)add[i++];
-	dBaseline_n = (double*)add[i++];
-	dBaseline_y = (double*)add[i++];
-	dOffset_n = (double*)add[i++];
-	dOffset_y = (double*)add[i++];
-	dPeak_err_n = (double*)add[i++];
-	dPeak_err_y = (double*)add[i++];
-	dBase_err_n = (double*)add[i++];
-	dBase_err_y = (double*)add[i++];
-	dOff_err_n = (double*)add[i++];
-	dOff_err_y = (double*)add[i++];
+	dXsq_n =			(double*)add[i++];
+	dXsq_y =			(double*)add[i++];
+	dPeakheight_n =		(double*)add[i++];
+	dPeakheight_y =		(double*)add[i++];
+	dBaseline_n =		(double*)add[i++];
+	dBaseline_y =		(double*)add[i++];
+	dOffset_n =			(double*)add[i++];
+	dOffset_y =			(double*)add[i++];
+	dPeak_err_n =		(double*)add[i++];
+	dPeak_err_y =		(double*)add[i++];
+	dBase_err_n =		(double*)add[i++];
+	dBase_err_y =		(double*)add[i++];
+	dOff_err_n =		(double*)add[i++];
+	dOff_err_y =		(double*)add[i++];
 }

@@ -2,7 +2,7 @@
 
 float Event::sfVersion = 1.0;
 
-Event::Event() : ciChan(-1) {
+Event::Event() : usTrace(nullptr), itBegin(nullptr), itEnd(nullptr), ciChan(-1) {
 	if (g_verbose) cout << "Event c'tor\n";
 }
 
@@ -10,6 +10,7 @@ Event::Event(int eventlength, int baselength, int average, int threshold, int ch
 	if (g_verbose) cout << "Event " << chan << " c'tor\n";
 	if ((ciChan >= MAX_CH) || (ciChan < 0)) {
 		cout << error_message[method_error] << "Channel\n";
+		iFailed = 1;
 		return;
 	}
 	iFailed = 0;
@@ -24,6 +25,7 @@ Event::~Event() {
 }
 
 void Event::Analyze() {
+
 	PreAnalyze();
 	*dBaseline = 0.;
 	*dBaseSigma = 0.;
@@ -48,7 +50,7 @@ void Event::Analyze() {
 	auto it = itBegin, itt = itBegin;
 	auto dTemp(0.);
 	auto iPeakCut(8); // Peaks less than this height don't get tagged
-	vector<Peak_t> vPeakCandidates(10), vFoundPeaks(10), vPrimaryPeaks(10);
+	vector<Peak_t> vPeakCandidates, vFoundPeaks, vPrimaryPeaks;
 
 	for (it = itBegin, itt = itEnd-1; it-itBegin < iBaselength; it++, itt--) {
 		*dBaseline += *it; // baseline at start of event
@@ -74,12 +76,19 @@ void Event::Analyze() {
 		Peak.itPeak = it;
 		for (itt = it; itt < it + iBaselength; itt++) { // finds minimum value in window
 			if (itt == itEnd) break;
-			if (*Peak.itPeak > *itt) Peak.itPeak = itt;
+			if (*Peak.itPeak > *itt) {
+				Peak.itPeak = itt;
+			}
 		}
-		if (Peak.itPeak - it < iBaselength/4) continue; // in the first quarter of the window, falling edge or nothing.
+		if (Peak.itPeak - it < iBaselength/4) {
+			continue; // in the first quarter of the window, falling edge or nothing.
+		}
 		else if (Peak.itPeak - it < 3*iBaselength/4) { // not in the end of the window
-			if (*(Peak.itPeak) < iThreshold) vPeakCandidates.push_back(Peak); // cuts noise
-			else continue;
+			if (*(Peak.itPeak) < iThreshold) {
+				vPeakCandidates.push_back(Peak); // cuts noise
+			} else {
+				continue;
+			}
 		} else { // in last quarter of window
 			continue;
 		}
@@ -93,7 +102,7 @@ void Event::Analyze() {
 			itMin = (*iter).itPeak;
 			for (it = (*iter).itPeak; it > itPrev; it--) { // looks for start of peak or minimum value
 				if (*itMin < *it) itMin = it;
-				if (*it > *dBaseline-3*(*dBaseSigma)) break;
+				if (*it > (*dBaseline)-3*(*dBaseSigma)) break;
 			}
 			if (it == itPrev) { // didn't reach baseline
 				if (*itMin - *((*iter).itPeak) > iPeakCut) {
@@ -101,12 +110,11 @@ void Event::Analyze() {
 					vFoundPeaks.push_back(*iter);
 				}
 			} else { // did reach baseline
-				if (*dBaseline - *((*iter).itPeak) > iPeakCut) {
+				if ((*dBaseline) - *((*iter).itPeak) > iPeakCut) {
 					(*iter).itStart = it;
 					vFoundPeaks.push_back(*iter);
 				}
 			} // choosing it or itMin
-			itPrev = (*iter).itPeak;
 		} // iter loop
 	}
 

@@ -25,6 +25,7 @@ Processor::Processor() {
 	iEventsize = 0;
 	iFailed = 0;
 	memset(iFastTime,		0, sizeof(iFastTime));
+	iLevel = 0;
 	iNchan = 0;
 	iNumEvents = 0;
 	memset(iPGASamples,		0, sizeof(iPGASamples));
@@ -138,6 +139,7 @@ void Processor::BusinessTime() {
 			else cout << iTimeleft << "s\n";
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];
+		break;
 	}
 	if (iLevel > 0) {
 		T1->AddFriend("TS");
@@ -303,7 +305,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	memcpy(&iTrigPost, cBuffer + 18, sizeof(iTrigPost)); // post-trigger
 	memcpy(uiDCOffset, cBuffer + 22, sizeof(uiDCOffset)); // dc offsets
 	memcpy(uiThreshold, cBuffer + 54, sizeof(uiThreshold)); // trigger thresholds
-
+	cout << digitizer.cName << " " << usMask << " " << iEventlength << " " << iTrigPost << " " << '\n';
 	if (strcmp(digitizer.cName, "DT5730") == 0) {
 		digitizer.dSamplerate = 5E8;
 		digitizer.sResolution = (1 << 14);
@@ -364,7 +366,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	while (!fconf.eof()) {
 		fconf.getline(cBuffer, 64, '\n');
 		if (cBuffer[0] == '#') continue;
-		if (strcmp(cBuffer, "LEVEL") == 0) iLevel = atoi(cBuffer + 6); //sscanf(cBuffer, "LEVEL %i", &iLevel);
+		if (strstr(cBuffer, "LEVEL") != 0) iLevel = atoi(cBuffer + 6);
 		if (strcmp(cBuffer + 10, digitizer.cName) == 0) {
 			fconf.getline(cBuffer, 64, '\n');
 			while (strstr(cBuffer, "END") == NULL) {
@@ -452,6 +454,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		cout << error_message[alloc_error] << "Buffer\n";
 		throw ProcessorException();
 	}
+	memset(buffer.get(), 0, iEventsize);
 	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
 
 	if (iLevel > 1) {
@@ -479,7 +482,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		if (g_verbose) cout << "CH" << ch << '\n';
 		try {
 			dTrace[ch].reset(new double[iEventlength-2*iAverage]);
-			event[ch].reset(new Event(iEventlength, digitizer.iBaselength, iAverage, uiThreshold[iChan[ch]], iChan[ch], uspTrace + ch*iEventlength, dTrace.get()));
+			event[ch].reset(new Event(iEventlength, digitizer.iBaselength, iAverage, uiThreshold[iChan[ch]], iChan[ch], uspTrace + ch*iEventlength, dTrace[ch].get()));
 		} catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "Event\n";
 			throw ProcessorException();
