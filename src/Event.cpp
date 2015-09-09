@@ -10,17 +10,20 @@ Event::Event(int eventlength, int baselength, int average, unsigned short* start
 	if (g_verbose) cout << "Event " << chan << " c'tor\n";
 	if ((ciChan >= MAX_CH) || (ciChan < 0)) {
 		cout << error_message[method_error] << "Channel\n";
+		iFailed = 1;
 		return;
 	}
 	iFailed = 0;
 	iEventlength = eventlength;
 	iBaselength = baselength;
 	iAverage = average;
-	try{
-		uspTrace.assign(start,start + eventlength);
-		vTrace.assign((int)uspTrace.size()-2*iAverage, 0);
+	uspTrace = start;
+	try {
+		usvTrace.assign(start,start + eventlength);
+		vTrace.assign((int)usvTrace.size()-2*iAverage, 0);
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Event\n";
+		iFailed = 1;
 		return;
 	}
 	itBegin = vTrace.begin();
@@ -33,6 +36,7 @@ Event::~Event() {
 }
 
 void Event::Analyze() {
+
 	PreAnalyze();
 	*dBaseline = 0.;
 	*dBaseSigma = 0.;
@@ -57,7 +61,7 @@ void Event::Analyze() {
 	auto it = itBegin, itt = itBegin;
 	auto dTemp(0.);
 	auto iPeakCut(8); // Peaks less than this height don't get tagged
-	vector<Peak_t> vPeakCandidates(10), vFoundPeaks(10), vPrimaryPeaks(10);
+	vector<Peak_t> vPeakCandidates, vFoundPeaks, vPrimaryPeaks;
 
 	for (it = itBegin, itt = itEnd-1; it-itBegin < iBaselength; it++, itt--) {
 		*dBaseline += *it; // baseline at start of event
@@ -69,6 +73,8 @@ void Event::Analyze() {
 	*dBasePost /= iBaselength;
 	*dBasePeakN = (*dBaseline - *itBasePkN)*dScaleV;
 	*dBasePeakP = (*itBasePkP - *dBaseline)*dScaleV;
+	
+	cout << *dBaseline << " ";
 
 	for (it = itBegin, itt = itEnd-1; it-itBegin < iBaselength; it++, itt--) { // RMS devations of baselines
 		dTemp = *it - *dBaseline;
@@ -83,42 +89,56 @@ void Event::Analyze() {
 		Peak.itPeak = it;
 		for (itt = it; itt < it + iBaselength; itt++) { // finds minimum value in window
 			if (itt == itEnd) break;
-			if (*Peak.itPeak > *itt) Peak.itPeak = itt;
+//			cout << *itt << " " << *Peak.itPeak << " ";
+			if (*Peak.itPeak > *itt) {
+				Peak.itPeak = itt;// cout << Peak.itPeak - itBegin << " ";
+			}
 		}
-		if (Peak.itPeak - it < iBaselength/4) continue; // in the first quarter of the window, falling edge or nothing.
+		if (Peak.itPeak - it < iBaselength/4) {
+//			cout << "92 ";
+			continue; // in the first quarter of the window, falling edge or nothing.
+		}
 		else if (Peak.itPeak - it < 3*iBaselength/4) { // not in the end of the window
-			if (*(Peak.itPeak) < iThreshold) vPeakCandidates.push_back(Peak); // cuts noise
-			else continue;
+			if (*(Peak.itPeak) < iThreshold) { cout << "96 ";
+				vPeakCandidates.push_back(Peak); // cuts noise
+			} else {
+				cout << "99 ";			
+				continue;
+			}
 		} else { // in last quarter of window
+			cout << "103 ";
 			continue;
-		}
+		} cout << '\n';
 	}
-
+//	cout << vPeakCandidates.size() << " " << vFoundPeaks.size() << " " << vPrimaryPeaks.size() << " ";
 	if (vPeakCandidates.size() == 0) { // no Peaks found, use default values
 		return;
 	} else { // peaks found, select candidates of sufficient height
 		auto itPrev = itBegin, itMin = itBegin;
 		for (auto iter = vPeakCandidates.begin(); iter < vPeakCandidates.end(); iter++) { // evaluates heights of peak candidates
-			itMin = (*iter).itPeak;
+			itMin = (*iter).itPeak; cout << "105 "; cout << itBegin - (*iter).itPeak << " ";
 			for (it = (*iter).itPeak; it > itPrev; it--) { // looks for start of peak or minimum value
 				if (*itMin < *it) itMin = it;
-				if (*it > *dBaseline-3*(*dBaseSigma)) break;
-			}
+				if (*it > (*dBaseline)-3*(*dBaseSigma)) break;
+				cout << it-(*iter).itPeak << " ";
+			} cout << "109 "; cout << *itMin << " " << *dBaseline << *((*iter).itPeak) << " ";
 			if (it == itPrev) { // didn't reach baseline
+				cout << "111 ";
 				if (*itMin - *((*iter).itPeak) > iPeakCut) {
 					(*iter).itStart = itMin;
 					vFoundPeaks.push_back(*iter);
-				}
+				} cout << "115 ";
 			} else { // did reach baseline
-				if (*dBaseline - *((*iter).itPeak) > iPeakCut) {
+				cout << "117 ";
+				if ((*dBaseline) - *((*iter).itPeak) > iPeakCut) { cout << "118 ";
 					(*iter).itStart = it;
 					vFoundPeaks.push_back(*iter);
-				}
+				} cout << "121 ";
 			} // choosing it or itMin
-			itPrev = (*iter).itPeak;
+			itPrev = (*iter).itPeak; cout << "123 ";
 		} // iter loop
 	}
-
+//	cout << "Location ";
 	if (vFoundPeaks.size() == 0) { // no peaks
 		return;
 	} else if (vFoundPeaks.size() == 1) { // only one peak, probably the majority of cases
@@ -141,7 +161,7 @@ void Event::Analyze() {
 			}
 		}
 	}
-
+//	cout << "Basics ";
 	for (it = Peak.itPeak; it > itBegin; it--) if ((*it < iThreshold) && (*(it-1) >= iThreshold)) break;
 	*sTrigger = (it - itBegin)*dScaleT;
 	for (it = Peak.itPeak; it < itEnd; it++) if (*it > *dBaseline-3*(*dBaseSigma)) break;
@@ -161,7 +181,7 @@ void Event::Analyze() {
 	}
 
 	*dPeak0 = (*dBaseline - *Peak.itPeak)*dScaleV;
-
+//	cout << "Integral\n";
 	for (it = Peak.itStart; it <= Peak.itEnd; it++) *dIntegral += *it; // integrator
 	*dIntegral = (*dIntegral)*2 - (*Peak.itStart + *Peak.itEnd);
 	*dIntegral = ((*dBaseline)*(Peak.itEnd-Peak.itStart) - 0.5*(*dIntegral))*dScaleInt;
@@ -169,7 +189,12 @@ void Event::Analyze() {
 
 inline void Event::PreAnalyze() {
 	auto itD = itBegin;
-	for (auto itU = uspTrace.begin(); itU < uspTrace.end(); itU++, itD++) *itD = *itU;
+	usvTrace.assign(uspTrace,uspTrace+iEventlength);
+	for (auto itU = usvTrace.begin(); itU < usvTrace.end() && itD < itEnd; itU++, itD++) {
+		*itD = *itU;
+	//	cout << *itD << " " << *itU << " ";
+	}
+	//cout << '\n';
 	// insert averaging and other shenanigans here
 }
 

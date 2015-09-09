@@ -25,6 +25,7 @@ Processor::Processor() {
 	iEventsize = 0;
 	iFailed = 0;
 	memset(iFastTime,		0, sizeof(iFastTime));
+	iLevel = 0;
 	iNchan = 0;
 	iNumEvents = 0;
 	memset(iPGASamples,		0, sizeof(iPGASamples));
@@ -95,6 +96,7 @@ void Processor::BusinessTime() {
 
 	unsigned long* ulpTimestamp = (unsigned long*)(buffer.get() + sizeof(long));
 	unsigned long ulTSFirst(0), ulTSLast(0), ulTSPrev(0);
+	unsigned short* x = (unsigned short*)(buffer.get() + sizeof_ev_header);
 
 	TS->Branch("Timestamp", &ulpTimestamp[0], "time_stamp/l");
 	TS->Branch("Timestamp_prev", &ulTSPrev, "time_stamp_prev/l");
@@ -109,7 +111,7 @@ void Processor::BusinessTime() {
 	fin.seekg(sizeof_f_header, fin.beg);
 	f->cd();
 	for (ev = 0; ev < iNumEvents; ev++) {
-		fin.read(buffer.get(), iEventsize);
+		fin.read(buffer.get(), iEventsize); //for (int i = 0; i < iEventlength; i++) cout << x[i] << " "; cout << endl;
 		for (ch = 0; ch < iNchan; ch++) {
 			event[ch]->Analyze();
 			if (iLevel > 0) {
@@ -137,6 +139,7 @@ void Processor::BusinessTime() {
 			else cout << iTimeleft << "s\n";
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];
+		break;
 	}
 	if (iLevel > 0) {
 		T1->AddFriend("TS");
@@ -302,7 +305,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	memcpy(&iTrigPost, cBuffer + 18, sizeof(iTrigPost)); // post-trigger
 	memcpy(uiDCOffset, cBuffer + 22, sizeof(uiDCOffset)); // dc offsets
 	memcpy(uiThreshold, cBuffer + 54, sizeof(uiThreshold)); // trigger thresholds
-
+	cout << digitizer.cName << " " << usMask << " " << iEventlength << " " << iTrigPost << " " << '\n';
 	if (strcmp(digitizer.cName, "DT5730") == 0) {
 		digitizer.dSamplerate = 5E8;
 		digitizer.sResolution = (1 << 14);
@@ -363,7 +366,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	while (!fconf.eof()) {
 		fconf.getline(cBuffer, 64, '\n');
 		if (cBuffer[0] == '#') continue;
-		if (strcmp(cBuffer, "LEVEL") == 0) iLevel = atoi(cBuffer + 6); //sscanf(cBuffer, "LEVEL %i", &iLevel);
+		if (strstr(cBuffer, "LEVEL") != 0) iLevel = atoi(cBuffer + 6);
 		if (strcmp(cBuffer + 10, digitizer.cName) == 0) {
 			fconf.getline(cBuffer, 64, '\n');
 			while (strstr(cBuffer, "END") == NULL) {
@@ -451,6 +454,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		cout << error_message[alloc_error] << "Buffer\n";
 		throw ProcessorException();
 	}
+	memset(buffer.get(), 0, iEventsize);
 	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
 
 	if (iLevel > 1) {

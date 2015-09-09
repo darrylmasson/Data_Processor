@@ -14,7 +14,8 @@ class Event {
 		int iSpecial;
 		int iLength; // number of samples in the waveform
 		int iAverage; // 2*x+1 total samples averaged
-		vector<unsigned short> uspTrace;
+		vector<unsigned short> usvTrace;
+		unsigned short* uspTrace;
 		double dScaleInt; // V*ns/(bin*clock cycle)
 		double dScaleV;
 		double dScaleT;

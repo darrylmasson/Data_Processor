@@ -26,6 +26,7 @@ Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, 
 	if (g_verbose) cout << "Discriminator " << ch << " c'tor\n";
 	if ((ch >= ciChan) || (ch < 0)) {
 		cout << error_message[method_error] << "Channel\n";
+		iFailed = 1;
 		return;
 	}
 	int d(0), b(0), i(0), chan(0);
@@ -52,8 +53,16 @@ Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, 
 	char cBand[16];
 
 	try{discrim_file.reset(new TFile((sWorkingDir+"/Data_Processor/config/discrimination_bands.root").c_str(), "READ"));}
-	catch (bad_alloc& ba) {cout << error_message[alloc_error] << "Bands\n"; return;}
-	if (!discrim_file->IsOpen()){cout << error_message[file_error] << "Bands\n"; return;}
+	catch (bad_alloc& ba) {
+		cout << error_message[alloc_error] << "Bands\n";
+		iFailed = 1;
+		return;
+	}
+	if (!discrim_file->IsOpen()){
+		cout << error_message[file_error] << "Bands\n"; 
+		iFailed = 1;
+		return;
+	}
 	for (d=0; d<NUM_DISCRIMS; d++){
 		for (chan =0; chan<ciChan; chan++){
 			for (b=0; b<NUM_BANDS; b++){
@@ -61,12 +70,17 @@ Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, 
 					vDiscrimBand[d][chan][b].reserve(iDiscrimBins);
 				}
 				catch (bad_alloc& ba) {
-					iFailed = (1<<alloc_error);
+					cout << error_message[alloc_error] << "Bands\n";
+					iFailed = 1;
 					return;
 				}
 				sprintf(cBand, "%s_%d_%s", cDiscrimNames[d], chan ,cBandNames[b]);
 				gDiscrimCut = (TGraph*)discrim_file->Get(cBand);
-				if (gDiscrimCut==nullptr) {cout << error_message[root_error] << "Bands\n"; return;}
+				if (gDiscrimCut==nullptr) {
+					cout << error_message[root_error] << "Bands\n";
+					iFailed = 1;
+					return;
+				}
 				dDiscrimValue = gDiscrimCut->GetY();
 				for (i=0; i<iDiscrimBins; i++)vDiscrimBand[d][chan][b].push_back(dDiscrimValue[i]);
 			}
