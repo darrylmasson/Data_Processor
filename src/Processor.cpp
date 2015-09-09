@@ -140,6 +140,7 @@ void Processor::BusinessTime() {
 		}
 		if (ev == 0) ulTSFirst = ulpTimestamp[0];
 	}
+	cout << "Processing completed\n";
 	T0->AddFriend("TS");
 	if (iLevel > 0) {
 		T1->AddFriend("TS");
@@ -153,9 +154,8 @@ void Processor::BusinessTime() {
 		}
 		T1->Write();
 	}
-	T0->Write();
-	TS->Write();
-	cout << "Processing completed\n";
+	TS->Write("",TObject::kOverwrite);
+	T0->Write("",TObject::kOverwrite);
 	ulTSLast = ulpTimestamp[0];
 	iLivetime = (ulTSLast - ulTSFirst)/125e6;
 	cout << "Acquisition livetime: " << iLivetime << "s\nBeginning cleanup: ";
@@ -305,7 +305,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	memcpy(&iTrigPost, cBuffer + 18, sizeof(iTrigPost)); // post-trigger
 	memcpy(uiDCOffset, cBuffer + 22, sizeof(uiDCOffset)); // dc offsets
 	memcpy(uiThreshold, cBuffer + 54, sizeof(uiThreshold)); // trigger thresholds
-	cout << digitizer.cName << " " << usMask << " " << iEventlength << " " << iTrigPost << " " << '\n';
+//	cout << digitizer.cName << " " << usMask << " " << iEventlength << " " << iTrigPost << " " << '\n';
 	if (strcmp(digitizer.cName, "DT5730") == 0) {
 		digitizer.dSamplerate = 5E8;
 		digitizer.sResolution = (1 << 14);
