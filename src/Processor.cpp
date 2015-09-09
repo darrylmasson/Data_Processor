@@ -487,6 +487,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("Decaytime",		sDecay,		"decay[8]/S");
 	T0->Branch("Risetime",		sRise,		"rise[8]/S");
 	T0->Branch("Peakx",			sPeakX,		"peakx[8]/S");
+	T0->Branch("Peakxs",		sPeakXs,	"peakxs[8]/S");
 	T0->Branch("Trigger",		sTrigger,	"trig[8]/S");
 
 	T0->Branch("Base",			dBase,		"base[8]/D");
@@ -496,6 +497,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("BasePkP",		dBasePeakP,	"basepkp[8]/D");
 	T0->Branch("BasePkN",		dBasePeakN,	"basepkn[8]/D");
 	T0->Branch("Peakheight0",	dPeak0,		"peak0[8]/D");
+	T0->Branch("Peakheight0s",	dPeak0s,	"peak0s[8]/D");
 	T0->Branch("Integral",		dFullInt,	"integral[8]/D");
 
 	if (iLevel > 0) {
