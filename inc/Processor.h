@@ -84,6 +84,7 @@ class Processor {
 		short sDecay[8]; // decay time
 		short sRise[8]; // risetime
 		short sPeakX[8]; // x location of peak
+		short sPeakXs[8]; // pile-up peak
 		short sTrigger[8];
 
 		double dBase[8]; // these values in samples
@@ -91,6 +92,7 @@ class Processor {
 		double dBaseP[8];
 		double dBasePS[8];
 		double dPeak0[8];
+		double dPeak0s[8];
 		double dFullInt[8]; // except this
 		double dBasePeakP[8];
 		double dBasePeakN[8];

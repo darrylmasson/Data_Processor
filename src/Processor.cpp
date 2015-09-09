@@ -47,12 +47,14 @@ Processor::Processor() {
 	memset(sDecay,			0, sizeof(sDecay));
 	memset(sRise,			0, sizeof(sRise));
 	memset(sPeakX,			0, sizeof(sPeakX));
+	memset(sPeakXs,			0, sizeof(sPeakXs));
 	memset(sTrigger,		0, sizeof(sTrigger));
 	memset(dBase,			0, sizeof(dBase));
 	memset(dSigma,			0, sizeof(dSigma));
 	memset(dBaseP,			0, sizeof(dBaseP));
 	memset(dBasePS,			0, sizeof(dBasePS));
 	memset(dPeak0,			0, sizeof(dPeak0));
+	memset(dPeak0s,			0, sizeof(dPeak0s));
 	memset(dFullInt,		0, sizeof(dFullInt));
 	memset(dBasePeakP,		0, sizeof(dBasePeakP));
 	memset(dBasePeakN,		0, sizeof(dBasePeakN));
@@ -182,6 +184,7 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&sDecay[ch];
 		add[i++] = (void*)&sRise[ch];
 		add[i++] = (void*)&sPeakX[ch];
+		add[i++] = (void*)&sPeakXs[ch];
 		add[i++] = (void*)&sTrigger[ch];
 
 		add[i++] = (void*)&dBase[ch];
@@ -189,6 +192,7 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&dBaseP[ch];
 		add[i++] = (void*)&dBasePS[ch];
 		add[i++] = (void*)&dPeak0[ch];
+		add[i++] = (void*)&dPeak0s[ch];
 		add[i++] = (void*)&dFullInt[ch];
 		add[i++] = (void*)&dBasePeakP[ch];
 		add[i++] = (void*)&dBasePeakN[ch];
