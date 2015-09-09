@@ -1,12 +1,12 @@
 #include "Event.h"
 
-float Event::sfVersion = 1.0;
+float Event::sfVersion = 1.1;
 
 Event::Event() : usTrace(nullptr), itBegin(nullptr), itEnd(nullptr), ciChan(-1) {
 	if (g_verbose) cout << "Event c'tor\n";
 }
 
-Event::Event(int eventlength, int baselength, int average, int threshold, int chan, unsigned short* usStart, double* dStart) : usTrace(usStart), itBegin(dStart), itEnd(dStart+eventlength-2*average), ciChan(chan) {
+Event::Event(int eventlength, int baselength, int average, int threshold, int chan, unsigned short* usStart, double* dStart) : usTrace(usStart), itBegin(dStart), itEnd(dStart+eventlength-average), ciChan(chan) {
 	if (g_verbose) cout << "Event " << chan << " c'tor\n";
 	if ((ciChan >= MAX_CH) || (ciChan < 0)) {
 		cout << error_message[method_error] << "Channel\n";
@@ -25,7 +25,6 @@ Event::~Event() {
 }
 
 void Event::Analyze() {
-
 	PreAnalyze();
 	*dBaseline = 0.;
 	*dBaseSigma = 0.;
@@ -49,8 +48,7 @@ void Event::Analyze() {
 	Peak.itEnd = itEnd;
 	auto it = itBegin, itt = itBegin;
 	auto dTemp(0.);
-	auto iPeakCut(8); // Peaks less than this height don't get tagged
-	vector<Peak_t> vPeakCandidates, vFoundPeaks, vPrimaryPeaks;
+	int iFoundPeaks(0);
 
 	for (it = itBegin, itt = itEnd-1; it-itBegin < iBaselength; it++, itt--) {
 		*dBaseline += *it; // baseline at start of event
@@ -71,6 +69,57 @@ void Event::Analyze() {
 	}
 	*dBaseSigma = sqrt(*dBaseSigma/iBaselength);
 	*dBasePostSigma = sqrt(*dBasePostSigma/iBaselength);
+
+	iFoundPeaks = Peakfinder();
+	if (*Peak.itPeak == 0) { // saturated event
+		*bSaturated = true;
+		for (it = Peak.itPeak; it < itEnd; it++) if (*it != 0) break;
+		itSatEnd = it-1;
+	} else {
+		itSatEnd = Peak.itPeak;
+	}
+	if (iAverage) {
+		Average();
+		iFoundPeaks = Peakfinder();
+	}
+	if (iFoundPeaks == 0) return;
+	*bPileUp = (iFoundPeaks > 1);
+
+	for (it = Peak.itPeak; it > itBegin; it--) if ((*it < iThreshold) && (*(it-1) >= iThreshold)) break;
+	*sTrigger = (it - itBegin)*dScaleT;
+	for (it = Peak.itPeak; it < itEnd; it++) if (*it > *dBaseline-3*(*dBaseSigma)) break;
+	*bFullWaveform = (it != itEnd);
+	Peak.itEnd = (it == itEnd ? itEnd-1 : it);
+
+	*sPeakX = (Peak.itPeak - itBegin)*dScaleT;
+	*sRise = (Peak.itPeak - Peak.itStart)*dScaleT;
+	*sDecay = (Peak.itEnd - Peak.itPeak)*dScaleT;
+
+	*dPeak0 = (*dBaseline - *Peak.itPeak)*dScaleV;
+
+	for (it = Peak.itStart; it <= Peak.itEnd; it++) *dIntegral += *it; // integrator
+	*dIntegral = (*dIntegral)*2 - (*Peak.itStart + *Peak.itEnd);
+	*dIntegral = ((*dBaseline)*(Peak.itEnd-Peak.itStart) - 0.5*(*dIntegral))*dScaleT*dScaleV;
+}
+
+inline void Event::PreAnalyze() {
+	auto itD = itBegin;
+	for (auto itU = usTrace; itU < usTrace+iEventlength; itU++, itD++) *itD = *itU;
+}
+
+inline void Event::Average() {
+	auto itU = usTrace + (itSatEnd-itBegin);
+	for (auto it = itSatEnd; it < itEnd; it++, itU++) {
+		*it = 0.;
+		for (auto itt = itU-iAverage; itt <= itU+iAverage; itt++) *it += *itt;
+		*it /= (2.*iAverage+1.);
+	}
+}
+
+int Event::Peakfinder() { // returns number of peaks found
+	auto iPeakCut(8); // Peaks less than this height don't get tagged
+	vector<Peak_t> vPeakCandidates, vFoundPeaks, vPrimaryPeaks;
+	auto it = itBegin, itt = itBegin;
 
 	for (it = itBegin; it < itEnd; it += iBaselength/2) { // peak-finding logic
 		Peak.itPeak = it;
@@ -95,7 +144,7 @@ void Event::Analyze() {
 	}
 
 	if (vPeakCandidates.size() == 0) { // no Peaks found, use default values
-		return;
+		return 0;
 	} else { // peaks found, select candidates of sufficient height
 		auto itPrev = itBegin, itMin = itBegin;
 		for (auto iter = vPeakCandidates.begin(); iter < vPeakCandidates.end(); iter++) { // evaluates heights of peak candidates
@@ -119,11 +168,9 @@ void Event::Analyze() {
 	}
 
 	if (vFoundPeaks.size() == 0) { // no peaks
-		return;
 	} else if (vFoundPeaks.size() == 1) { // only one peak, probably the majority of cases
 		Peak = vFoundPeaks.front();
 	} else { // two or more Peaks, primary is the tallest peak in the trigger region or the first
-		*bPileUp = true;
 		for (auto iter = vFoundPeaks.begin(); iter < vFoundPeaks.end(); iter++) { // gathers Peaks in the trigger region (first third of waveform)
 			if ((*iter).itPeak-itBegin < iEventlength/3) {
 				vPrimaryPeaks.push_back(*iter);
@@ -140,36 +187,7 @@ void Event::Analyze() {
 			}
 		}
 	}
-
-	for (it = Peak.itPeak; it > itBegin; it--) if ((*it < iThreshold) && (*(it-1) >= iThreshold)) break;
-	*sTrigger = (it - itBegin)*dScaleT;
-	for (it = Peak.itPeak; it < itEnd; it++) if (*it > *dBaseline-3*(*dBaseSigma)) break;
-	*bFullWaveform = (it != itEnd);
-	Peak.itEnd = (it == itEnd ? itEnd-1 : it);
-
-	*sPeakX = (Peak.itPeak - itBegin)*dScaleT;
-	*sRise = (Peak.itPeak - Peak.itStart)*dScaleT;
-	*sDecay = (Peak.itEnd - Peak.itPeak)*dScaleT;
-
-	if (*Peak.itPeak == 0) { // saturated event
-		*bSaturated = true;
-		for (it = Peak.itPeak; it < Peak.itEnd; it++) if (*it != 0) break;
-		itSatEnd = it-1;
-	} else {
-		itSatEnd = Peak.itPeak;
-	}
-
-	*dPeak0 = (*dBaseline - *Peak.itPeak)*dScaleV;
-
-	for (it = Peak.itStart; it <= Peak.itEnd; it++) *dIntegral += *it; // integrator
-	*dIntegral = (*dIntegral)*2 - (*Peak.itStart + *Peak.itEnd);
-	*dIntegral = ((*dBaseline)*(Peak.itEnd-Peak.itStart) - 0.5*(*dIntegral))*dScaleT*dScaleV;
-}
-
-inline void Event::PreAnalyze() {
-	auto itD = itBegin;
-	for (auto itU = usTrace; itU < usTrace+iEventlength; itU++, itD++) *itD = *itU;
-	// insert averaging and other shenanigans here
+	return vFoundPeaks.size();
 }
 
 void Event::SetAddresses(vector<void*> add) {

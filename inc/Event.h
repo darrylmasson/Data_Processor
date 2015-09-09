@@ -6,7 +6,9 @@
 #endif
 
 class Event {
-	protected: // these are inheritable
+	protected:
+		inline void Average();
+		int Peakfinder();
 		int iFailed;
 		int iThreshold; // trigger threshold
 		int iEventlength;

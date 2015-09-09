@@ -475,7 +475,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		cout << error_message[alloc_error] << "Trees\n";
 		throw ProcessorException();
 	}
-	
+
 	T0->Branch("FullWaveform",	bFullWave, "fullwave[8]/O");
 	T0->Branch("Saturated",		bSaturated, "sat[8]/O");
 	T0->Branch("Pileup",		bPileUp,	"pileup[8]/O");
@@ -493,7 +493,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("BasePkN",		dBasePeakN,	"basepkn[8]/D");
 	T0->Branch("Peakheight0",	dPeak0,		"peak0[8]/D");
 	T0->Branch("Integral",		dFullInt,	"integral[8]/D");
-	
+
 	if (iLevel > 0) {
 		T1->Branch("Truncated",		bTruncated, 	"trunc[8]/O");
 
@@ -537,7 +537,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	for (auto ch = 0; ch < iNchan; ch++) { // initializing all classes needed
 		if (g_verbose) cout << "CH" << ch << '\n';
 		try {
-			dTrace[ch].reset(new double[iEventlength-2*iAverage]);
+			dTrace[ch].reset(new double[iEventlength-iAverage]);
 			event[ch].reset(new Event(iEventlength, digitizer.iBaselength, iAverage, uiThreshold[iChan[ch]], iChan[ch], uspTrace + ch*iEventlength, dTrace[ch].get()));
 		} catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "Event\n";
