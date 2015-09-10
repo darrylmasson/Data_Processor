@@ -43,7 +43,6 @@ Processor::Processor() {
 	// arrays for trees
 	memset(bFullWave,		0, sizeof(bFullWave));
 	memset(bSaturated,		0, sizeof(bSaturated));
-	memset(bPileUp,			0, sizeof(bPileUp));
 	memset(sDecay,			0, sizeof(sDecay));
 	memset(sRise,			0, sizeof(sRise));
 	memset(sPeakX,			0, sizeof(sPeakX));
@@ -180,7 +179,6 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 	if (level == 0) {
 		add[i++] = (void*)&bFullWave[ch];
 		add[i++] = (void*)&bSaturated[ch];
-		add[i++] = (void*)&bPileUp[ch];
 
 		add[i++] = (void*)&sDecay[ch];
 		add[i++] = (void*)&sRise[ch];
@@ -484,7 +482,6 @@ void Processor::Setup(string in) { // also opens raw and processed files
 
 	T0->Branch("FullWaveform",	bFullWave, "fullwave[8]/O");
 	T0->Branch("Saturated",		bSaturated, "sat[8]/O");
-	T0->Branch("Pileup",		bPileUp,	"pileup[8]/O");
 
 	T0->Branch("Decaytime",		sDecay,		"decay[8]/S");
 	T0->Branch("Risetime",		sRise,		"rise[8]/S");

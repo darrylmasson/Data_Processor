@@ -79,14 +79,13 @@ class Processor {
 		// These in T0
 		bool bFullWave[8]; // waveform decays before end of event
 		bool bSaturated[8]; // voltage saturation on digitizer
-		bool bPileUp[8];
 
 		short sDecay[8]; // decay time
 		short sRise[8]; // risetime
 		short sPeakX[8]; // x location of peak
 		short sPeakXs[8]; // pile-up peak
 		short sTrigger[8];
-		short sPeaks[8];
+		short sPeaks[8]; // number of peaks found
 
 		double dBase[8]; // these values in samples
 		double dSigma[8];

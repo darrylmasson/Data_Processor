@@ -67,7 +67,6 @@ class Event {
 		double* dBasePeakP;
 		double* dBasePeakN;
 
-		bool* bPileUp;
 		bool* bFullWaveform;
 		bool* bSaturated;
 

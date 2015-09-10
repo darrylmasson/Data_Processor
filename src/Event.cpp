@@ -1,6 +1,6 @@
 #include "Event.h"
 
-float Event::sfVersion = 1.1;
+float Event::sfVersion = 1.15;
 
 Event::Event() : usTrace(nullptr), itBegin(nullptr), itEnd(nullptr), ciChan(-1) {
 	if (g_verbose) cout << "Event c'tor\n";
@@ -45,7 +45,6 @@ void Event::Analyze() {
 	*sPeaks			= 0;
 
 	*bSaturated		= false;
-	*bPileUp		= false;
 	*bFullWaveform	= true;
 
 	itBasePkP = itBasePkN = itSatEnd = Peak.itPeak = Peak.itStart = itBegin;
@@ -87,7 +86,6 @@ void Event::Analyze() {
 		*sPeaks = Peakfinder();
 	}
 	if (*sPeaks == 0) return;
-	*bPileUp = (*sPeaks > 1);
 
 	for (it = Peak.itPeak; it > itBegin; it--) if ((*it < iThreshold) && (*(it-1) >= iThreshold)) break;
 	*sTrigger = (it - itBegin)*dScaleT;
@@ -118,7 +116,8 @@ inline void Event::Average() {
 }
 
 int Event::Peakfinder() { // returns number of peaks found
-	auto iPeakCut(8); // Peaks less than this height don't get tagged
+	auto iPeakCutBL(8), iPeakCutMin(16); // Peaks less than this height don't get tagged, TODO add for DT5730
+	auto iPrimaryTrigger(110); // primary peak in front of this point, TODO fix for other digitizers
 	vector<Peak_t> vPeakCandidates, vFoundPeaks, vPrimaryPeaks;
 	Peak_t peak(itBegin);
 	auto it = itBegin, itt = itBegin;
@@ -156,12 +155,12 @@ int Event::Peakfinder() { // returns number of peaks found
 				if (*it > (*dBaseline)-3*(*dBaseSigma)) break;
 			}
 			if (it == itPrev) { // didn't reach baseline
-				if (*itMin - *((*iter).itPeak) > iPeakCut) {
+				if (*itMin - *((*iter).itPeak) > iPeakCutMin) {
 					(*iter).itStart = itMin;
 					vFoundPeaks.push_back(*iter);
 				}
 			} else { // did reach baseline
-				if ((*dBaseline) - *((*iter).itPeak) > iPeakCut) {
+				if ((*dBaseline) - *((*iter).itPeak) > iPeakCutBL) {
 					(*iter).itStart = it;
 					vFoundPeaks.push_back(*iter);
 				}
@@ -176,7 +175,7 @@ int Event::Peakfinder() { // returns number of peaks found
 		return 1;
 	} else { // two or more Peaks, primary is the tallest peak in the trigger region or the first
 		for (auto iter = vFoundPeaks.begin(); iter < vFoundPeaks.end(); iter++) { // gathers Peaks in the trigger region (first third of waveform)
-			if ((*iter).itPeak-itBegin < iEventlength/3) {
+			if ((*iter).itPeak-itBegin < iPrimaryTrigger) {
 				vPrimaryPeaks.push_back(*iter);
 			}
 		}
@@ -202,7 +201,6 @@ void Event::SetAddresses(vector<void*> add) {
 	int i(0);
 	bFullWaveform	= (bool*)add[i++];
 	bSaturated		= (bool*)add[i++];
-	bPileUp			= (bool*)add[i++];
 
 	sDecay			= (short*)add[i++];
 	sRise			= (short*)add[i++];
