@@ -174,7 +174,7 @@ int Event::Peakfinder() { // returns number of peaks found
 		Peak = vFoundPeaks.front();
 		return 1;
 	} else { // two or more Peaks, primary is the tallest peak in the trigger region or the first
-		for (auto iter = vFoundPeaks.begin(); iter < vFoundPeaks.end(); iter++) { // gathers Peaks in the trigger region (first third of waveform)
+		for (auto iter = vFoundPeaks.begin(); iter < vFoundPeaks.end(); iter++) { // gathers Peaks in the trigger region (first 110ns of waveform)
 			if ((*iter).itPeak-itBegin < iPrimaryTrigger) {
 				vPrimaryPeaks.push_back(*iter);
 			}

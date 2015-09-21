@@ -30,7 +30,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 			dCos[n].reserve(iEventlength);
 			dSin[n].reserve(iEventlength);
 		} catch (bad_alloc& ba) {
-			cout << error_message[alloc_error] << "DFT lookup\n";
+			cout << error_message[alloc_error] << "DFT lookup " << n << "\n";
 			iFailed = 1;
 			return;
 		}
@@ -54,7 +54,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		try {
 			dExp[n].reserve(iEventlength);
 		} catch (bad_alloc& ba) {
-			cout << error_message[alloc_error] << "LAP lookup\n";
+			cout << error_message[alloc_error] << "LAP lookup " << n << "\n";
 			iFailed = 1;
 			return;
 		}
@@ -174,13 +174,13 @@ void Method::SetDefaultValues() {
 	*bTruncated = ((event->Peak.itStart + iSlowTime) >= event->itEnd);
 
 	//CCM
-	*dBaseline		= *(event->dBaseline) * dScaleV;
+	*dBaseline		= (*(event->dBaseline)-dZero) * dScaleV;
 	*dBaseSigma		= *(event->dBaseSigma) * dScaleV;
-	*dBasePost		= *(event->dBasePost) * dScaleV;
+	*dBasePost		= (*(event->dBasePost)-dZero) * dScaleV;
 	*dBasePostSigma	= *(event->dBasePostSigma) * dScaleV;
-	*dBasePeakP		= (*(event->itBasePkP) - *(event->dBaseline))* dScaleV;
-	*dBasePeakN		= (*(event->dBaseline) - *(event->itBasePkN))* dScaleV;
-	*dPeak1			= (*(event->dBaseline) - *(event->Peak.itPeak))* dScaleV;
+	*dBasePeakP		= *(event->itBasePkP) * dScaleV;
+	*dBasePeakN		= *(event->dBaseline) * dScaleV;
+	*dPeak1			= *(event->dPeak0) * dScaleV;
 	*dPeak2			= *dPeak1;
 	*dSlowInt		= 0;
 	*dFastInt		= 0;
@@ -198,12 +198,12 @@ void Method::SetDefaultValues() {
 
 	//TF1
 	*dXsq_n			= -1;
-	*dPeakheight_n	= (*(event->dBaseline) - *(event->dPeak0))*dStdNorm[n]*fGain[n];
+	*dPeakheight_n	= (*(event->dBaseline) - *(event->Peak.itPeak))*dStdNorm[n]*fGain[n];
 	*dBaseline_n	= *(event->dBaseline);
 	*dOffset_n		= *(event->sTrigger) - iStdTrig;
 
 	*dXsq_y			= -1;
-	*dPeakheight_y	= (*(event->dBaseline) - *(event->dPeak0))*dStdNorm[y]*fGain[y];
+	*dPeakheight_y	= (*(event->dBaseline) - *(event->Peak.itPeak))*dStdNorm[y]*fGain[y];
 	*dBaseline_y	= *(event->dBaseline);
 	*dOffset_y		= *(event->sTrigger) - iStdTrig;
 
@@ -260,7 +260,8 @@ void Method::Analyze() {
 	for (m = 0; m < ciDFTOrder; m++) {
 		dReal = 0;
 		dImag = 0;
-		for (auto it = event->itBegin; it < event->itEnd; it++) { // fourier series
+		t = 0;
+		for (auto it = event->itBegin; it < event->itEnd; it++, t++) { // fourier series
 			dReal += (*it)*dCos[m][t];
 			dImag += (*it)*dSin[m][t];
 		}
@@ -275,16 +276,20 @@ void Method::Analyze() {
 
 	if (iLAPAverage) {
 		auto itA = dTrace.begin();
-		for (auto itD = event->itSatEnd; itD < event->itEnd-iLAPAverage; itD++, itA++) { // performs the 9pt moving average
+		for (auto itD = event->itSatEnd; itD < event->itEnd-iLAPAverage; itD++, itA++) { // performs the 9pt moving average over the trailing edge
 			*itA = 0;
 			for (auto tt = -iLAPAverage; tt <= iLAPAverage; tt++) *itA += *(itD+tt);
 			*itA /= (2.*iLAPAverage + 1.);
 		}
+	} else {
+		auto itA = dTrace.begin();
+		for (auto itD = event->itSatEnd; itD < event->itEnd; itD++, itA++) *itA = *itD;
+		for (; itA < dTrace.end(); itA++) *itA = *(event->dBasePost);
 	}
 	for (m = 0; m < ciLAPNpts; m++) {
 		dXform[m] = 0;
 		t = 0;
-		for (auto it = dTrace.begin(); it < dTrace.end(); it++, t++) dXform[m] += (*it)*dExp[m][t]; // trailing edge of the pulse
+		for (auto it = dTrace.begin(); it < dTrace.end(); it++, t++) dXform[m] += (*it)*dExp[m][t];
 	}
 	for (m = 0; m < ciLAPNpts-1; m++) {
 		(m < (ciLAPNpts >> 1) ? *dLaplaceLow : *dLaplaceHigh) += (dS[m+1]-dS[m])*(dXform[m+1]+dXform[m]);
@@ -301,9 +306,9 @@ void Method::Analyze() {
 	catch (bad_alloc& ba) {
 		return;
 	}
-	fit->SetParameter(0, (*event->dBaseline-*event->Peak.itPeak)*dStdNorm[n]);
-	fit->SetParameter(1, *event->dBaseline);
-	fit->SetParameter(2, *event->sTrigger - iStdTrig);
+	fit->SetParameter(0, *dPeakheight_n);
+	fit->SetParameter(1, *dBaseline_n);
+	fit->SetParameter(2, *dOffset_n);
 	fit->FixParameter(3, n);
 	graph->Fit(fit.get(), "Q N"); // quiet, no-plot
 
@@ -317,9 +322,9 @@ void Method::Analyze() {
 	*dOff_err_n		= fit->GetParError(2);
 
 
-	fit->SetParameter(0, (*event->dBaseline - *event->Peak.itPeak)*dStdNorm[y]);
-	fit->SetParameter(1, *event->dBaseline);
-	fit->SetParameter(2, *event->sTrigger - iStdTrig);
+	fit->SetParameter(0, *dPeakheight_y);
+	fit->SetParameter(1, *dBaseline_y);
+	fit->SetParameter(2, *dOffset_y);
 	fit->FixParameter(3, y);
 	graph->Fit(fit.get(), "Q N");
 

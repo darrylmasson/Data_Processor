@@ -309,7 +309,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	memcpy(&iTrigPost, cBuffer + 18, sizeof(iTrigPost)); // post-trigger
 	memcpy(uiDCOffset, cBuffer + 22, sizeof(uiDCOffset)); // dc offsets
 	memcpy(uiThreshold, cBuffer + 54, sizeof(uiThreshold)); // trigger thresholds
-//	cout << digitizer.cName << " " << usMask << " " << iEventlength << " " << iTrigPost << " " << '\n';
+
 	if (strcmp(digitizer.cName, "DT5730") == 0) {
 		digitizer.dSamplerate = 5E8;
 		digitizer.sResolution = (1 << 14);
@@ -567,6 +567,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 				throw ProcessorException();
 			}
 			method[ch]->SetAddresses(SetAddresses(ch,1));
+			method[ch]->SetDCOffset(digitizer.sResolution, uiDCOffset[iChan[ch]]);
 		}
 		if (iLevel > 1) {
 			try {
