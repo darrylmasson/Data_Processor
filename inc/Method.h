@@ -24,8 +24,8 @@ protected:
 	int iPGASamples; // PGA method
 	int iPGAAverage;
 
-	vector<double> dCos[ciDFTOrder];
-	vector<double> dSin[ciDFTOrder];
+	unique_ptr<double[]> dCos[ciDFTOrder];
+	unique_ptr<double[]> dSin[ciDFTOrder];
 
 	vector<double> dExp[ciLAPNpts];
 	vector<double> dTrace; // averaged

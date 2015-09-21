@@ -27,8 +27,8 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	double omega;
 	for (auto n = 0; n < ciDFTOrder; n++) {
 		try {
-			dCos[n].assign(iEventlength,0);
-			dSin[n].assign(iEventlength,0);
+			dCos[n].reset(new double[iEventlength]);
+			dSin[n].reset(new double[iEventlength]);
 		} catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "DFT lookup " << n << "\n";
 			iFailed = 1;
@@ -159,6 +159,10 @@ Method::~Method() {
 	fit.reset();
 	graph.reset();
 	event.reset();
+	for (auto i = 0; i < ciDFTOrder; i++) {
+		dCos[i].reset();
+		dSin[i].reset();
+	}
 }
 
 double Method::TF1_fit_func(double* x, double* par) {

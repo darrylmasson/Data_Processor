@@ -82,13 +82,17 @@ Processor::Processor() {
 }
 
 Processor::~Processor() {
-	if (g_verbose) cout << "Processor d'tor\n";
 	for (auto ch = 0; ch < MAX_CH; ch++) {
 		dTrace[ch] = nullptr;
 		event[ch] = nullptr;
 		method[ch] = nullptr;
 		discriminator[ch] = nullptr;
 	}
+	if (g_verbose) cout << "Processor d'tor\n";
+	TS = nullptr;
+	T0 = nullptr;
+	T1 = nullptr;
+	if (f) f->Close();
 	f = nullptr;
 	buffer = nullptr;
 	if (fin.is_open()) fin.close();
@@ -105,7 +109,7 @@ void Processor::BusinessTime() {
 
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
-	iProgCheck = max(iNumEvents/100 + 1, 10000); // too many print statements slows the process, every 1% or 10000 events
+	iProgCheck = max(iNumEvents/(iLevel ? 100 : 10) + 1, 10000); // too many print statements slows the process
 
 	t_that = steady_clock::now();
 	cout << "Processing:\n";
