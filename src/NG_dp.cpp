@@ -67,6 +67,7 @@ int main(int argc, char **argv) {
 		processor.Setup(sFileset);
 	} catch (ProcessorException& e) {
 		cout << e.what();
+		cout << "Setup failed, exiting\n";
 		return 0;
 	}
 

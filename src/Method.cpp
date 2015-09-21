@@ -27,8 +27,8 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	double omega;
 	for (auto n = 0; n < ciDFTOrder; n++) {
 		try {
-			dCos[n].reserve(iEventlength);
-			dSin[n].reserve(iEventlength);
+			dCos[n].assign(iEventlength,0);
+			dSin[n].assign(iEventlength,0);
 		} catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "DFT lookup " << n << "\n";
 			iFailed = 1;
@@ -36,15 +36,15 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		}
 		omega = 2*n*pi/(iEventlength*dScaleT); // GHz
 		for (auto t = 0; t < iEventlength; t++) {
-			dCos[n].push_back(cos(omega*t));
-			dSin[n].push_back(sin(omega*t)); // simpler than using one table and sin(x) = cos(x-pi/2)
+			dCos[n][t] = cos(omega*t);
+			dSin[n][t] = sin(omega*t); // simpler than using one table and sin(x) = cos(x-pi/2)
 	}	}
 
 	double dScale(log(dShigh/dSlow)/ciLAPNpts);
 	try {
-		dTrace.reserve(iEventlength);
-		dS.reserve(ciLAPNpts);
-		dXform.reserve(ciLAPNpts);
+		dTrace.assign(iEventlength,0);
+		dS.assign(ciLAPNpts,0);
+		dXform.assign(ciLAPNpts,0);
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "LAP lookup\n";
 		iFailed = 1;
@@ -52,14 +52,14 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	}
 	for (auto n = 0; n < ciLAPNpts; n++) {
 		try {
-			dExp[n].reserve(iEventlength);
+			dExp[n].assign(iEventlength,0);
 		} catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "LAP lookup " << n << "\n";
 			iFailed = 1;
 			return;
 		}
 		dS[n] = dSlow*exp(dScale*n);
-		for (auto i = 0; i < iEventlength; i++) dExp[n].push_back(exp(-dS[n]*i*dScaleT));
+		for (auto i = 0; i < iEventlength; i++) dExp[n][i] = exp(-dS[n]*i*dScaleT);
 	}
 
 	int i(0), p(0);
@@ -93,7 +93,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 
 	try {std_file.reset(new TFile((sWorkingDir + "/Data_Processor/config/standard_events.root").c_str(), "READ"));}
 	catch (bad_alloc& ba) {
-		cout << error_message[alloc_error] << "Std Events\n";
+		cout << error_message[alloc_error] << "Std Events file\n";
 		iFailed = 1;
 		return;
 	}
@@ -143,7 +143,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	graph = nullptr;
 
 	try {
-		dX.reserve(iEventlength);
+		dX.assign(iEventlength,0);
 		fit = unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Fitter\n";
@@ -151,7 +151,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		return;
 	}
 	fit->SetParNames("Peakscale","Baseline","Offset","particle");
-	for (i = 0; i < iEventlength; i++) dX.push_back(i);
+	for (auto it = dX.begin(); it < dX.end(); it++) *it = it-dX.begin();
 }
 
 Method::~Method() {
@@ -220,7 +220,7 @@ void Method::SetDefaultValues() {
 }
 
 void Method::Analyze() {
-	auto i(0), iPGA_average(5);
+	auto i(0);
 	auto dTemp(0.), dReal(0.), dImag(0.);
 	auto m(0), t(0), iFast(0), iSlow(0);
 
@@ -250,10 +250,10 @@ void Method::Analyze() {
 	*dFastInt = ((*event->dBaseline * (iFast)) - 0.5 * (*dFastInt)) * dScaleV * dScaleT;
 
 	//PGA
-	if ((event->Peak.itPeak + iPGASamples + iPGA_average) < event->itEnd) {
+	if ((event->Peak.itPeak + iPGASamples + iPGAAverage) < event->itEnd) {
 		*dSample = 0;
-		for (i = -iPGA_average; i <= iPGA_average; i++) *dSample += *(event->Peak.itPeak + iPGASamples + i); // average to reduce statistical fluctuations
-		*dSample /= (2.*iPGA_average + 1);
+		for (i = -iPGAAverage; i <= iPGAAverage; i++) *dSample += *(event->Peak.itPeak + iPGASamples + i); // average to reduce statistical fluctuations
+		*dSample /= (2.*iPGAAverage + 1);
 	} else *dSample = -1;
 
 	//DFT
@@ -281,6 +281,7 @@ void Method::Analyze() {
 			for (auto tt = -iLAPAverage; tt <= iLAPAverage; tt++) *itA += *(itD+tt);
 			*itA /= (2.*iLAPAverage + 1.);
 		}
+		for (; itA < dTrace.end(); itA++) *itA = *(event->dBasePost);
 	} else {
 		auto itA = dTrace.begin();
 		for (auto itD = event->itSatEnd; itD < event->itEnd; itD++, itA++) *itA = *itD;
