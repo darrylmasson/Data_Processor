@@ -27,10 +27,10 @@ protected:
 	unique_ptr<double[]> dCos[ciDFTOrder];
 	unique_ptr<double[]> dSin[ciDFTOrder];
 
-	vector<double> dExp[ciLAPNpts];
-	vector<double> dTrace; // averaged
-	vector<double> dS;
-	vector<double> dXform;
+	unique_ptr<double[]> dExp[ciLAPNpts];
+	unique_ptr<double[]> dTrace; // averaged
+	double dS[ciLAPNpts];
+	double dXform[ciLAPNpts];
 	int iLAPAverage;
 
 	float fGain[P];
@@ -38,8 +38,8 @@ protected:
 	int iResolutionScale;
 	int iStdLength; // 450ns
 	int iStdTrig; // 64ns
-	vector<double> dStdWave[P];
-	vector<double> dX;
+	unique_ptr<double[]> dStdWave[P];
+	unique_ptr<double[]> dX;
 	double dStdNorm[P];
 	double dStdPeak[P];
 	unique_ptr<TF1> fit;

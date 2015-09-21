@@ -34,7 +34,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 			iFailed = 1;
 			return;
 		}
-		omega = 2*n*pi/(iEventlength*dScaleT); // GHz
+		omega = 2.*n*pi/(iEventlength*dScaleT); // GHz
 		for (auto t = 0; t < iEventlength; t++) {
 			dCos[n][t] = cos(omega*t);
 			dSin[n][t] = sin(omega*t); // simpler than using one table and sin(x) = cos(x-pi/2)
@@ -42,9 +42,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 
 	double dScale(log(dShigh/dSlow)/ciLAPNpts);
 	try {
-		dTrace.assign(iEventlength,0);
-		dS.assign(ciLAPNpts,0);
-		dXform.assign(ciLAPNpts,0);
+		dTrace.reset(new double[iEventlength]);
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "LAP lookup\n";
 		iFailed = 1;
@@ -52,7 +50,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	}
 	for (auto n = 0; n < ciLAPNpts; n++) {
 		try {
-			dExp[n].assign(iEventlength,0);
+			dExp[n].reset(new double[iEventlength]);
 		} catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "LAP lookup " << n << "\n";
 			iFailed = 1;
@@ -103,7 +101,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		return;
 	}
 	for (p = 0; p < P; p++) {
-		try {dStdWave[p].reserve(iStdLength);}
+		try {dStdWave[p].reset(new double[iStdLength]);}
 		catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "Std Events\n";
 			iFailed = 1;
@@ -119,17 +117,17 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		switch(iStdLength) {
 			case 225 : // 500 MSa/s
 				for (i = 0; i < iStdLength; i++) { // averages
-					dStdWave[p].push_back(((*pWave)[2*i] + (*pWave)[2*i+1])/2.);
+					dStdWave[p][i] = ((*pWave)[2*i] + (*pWave)[2*i+1])/2.;
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 899 : // 2 GSa/s
 				for (i = 0; i < iStdLength; i++) { // interpolates
-					dStdWave[p].push_back((i%2) ? ((*pWave)[(i+1)/2] + (*pWave)[(i-1)/2])/2. : (*pWave)[i/2]); // i%2==1 so i/2 = (i-1)/2
+					dStdWave[p][i] = (i%2) ? ((*pWave)[(i+1)/2] + (*pWave)[(i-1)/2])/2. : (*pWave)[i/2]; // i%2==1 so i/2 = (i-1)/2
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 450 : // 1 GSa/s
 				for (i = 0; i < iStdLength; i++) {
-					dStdWave[p].push_back((*pWave)[i]);
+					dStdWave[p][i] = (*pWave)[i];
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			default : cout << error_message[method_error];
@@ -143,7 +141,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	graph = nullptr;
 
 	try {
-		dX.assign(iEventlength,0);
+		dX.reset(new double[iEventlength]);
 		fit = unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Fitter\n";
@@ -151,7 +149,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		return;
 	}
 	fit->SetParNames("Peakscale","Baseline","Offset","particle");
-	for (auto it = dX.begin(); it < dX.end(); it++) *it = it-dX.begin();
+	for (auto i = 0; i < iEventlength; i++) dX[i] = i;
 }
 
 Method::~Method() {
@@ -163,6 +161,10 @@ Method::~Method() {
 		dCos[i].reset();
 		dSin[i].reset();
 	}
+	for (auto i = 0; i < ciLAPNpts; i++) dExp[i].reset();
+	dTrace.reset();
+	for (auto p = 0; p < P; p++) dStdWave[p].reset();
+	dX.reset();
 }
 
 double Method::TF1_fit_func(double* x, double* par) {
@@ -218,8 +220,6 @@ void Method::SetDefaultValues() {
 	*dOff_err_n		= -1;
 	*dOff_err_y		= -1;
 
-	for (auto it = dTrace.begin(); it < dTrace.end(); it++) *it = 0;
-
 	return;
 }
 
@@ -231,8 +231,8 @@ void Method::Analyze() {
 	SetDefaultValues();
 
 	//CCM
-	iFast = (iFastTime < event->itEnd - 1 - event->Peak.itStart ? iFastTime : event->itEnd - 1 - event->Peak.itStart);
-	iSlow = (iSlowTime < event->itEnd - 1 - event->Peak.itStart ? iSlowTime : event->itEnd - 1 - event->Peak.itStart); // local integration limits for fast and slow
+	iFast = (event->Peak.itPeak + iFastTime - 1 < event->itEnd ? iFastTime : event->itEnd - event->Peak.itStart - 1);
+	iSlow = (event->Peak.itPeak + iSlowTime - 1 < event->itEnd ? iSlowTime : event->itEnd - event->Peak.itStart - 1); // local integration limits for fast and slow
 
 	if (((event->Peak.itPeak + 2) < event->itEnd) && (event->Peak.itPeak - 1 > event->itBegin) && !*(event->bSaturated)) { // peak averaging
 		for (auto it = event->Peak.itPeak-1; it <= event->Peak.itPeak+1; it++) dTemp += *it;
@@ -279,22 +279,22 @@ void Method::Analyze() {
 	*dLaplaceHigh = 0;
 
 	if (iLAPAverage) {
-		auto itA = dTrace.begin();
-		for (auto itD = event->itSatEnd; itD < event->itEnd-iLAPAverage; itD++, itA++) { // performs the 9pt moving average over the trailing edge
-			*itA = 0;
-			for (auto tt = -iLAPAverage; tt <= iLAPAverage; tt++) *itA += *(itD+tt);
-			*itA /= (2.*iLAPAverage + 1.);
+		t = 0;
+		for (auto itD = event->itSatEnd; itD < event->itEnd-iLAPAverage; itD++, t++) { // performs the 9pt moving average over the trailing edge
+			dTrace[t] = 0;
+			for (auto tt = -iLAPAverage; tt <= iLAPAverage; tt++) dTrace[t] += *(itD+tt);
+			dTrace[t] /= (2.*iLAPAverage + 1.);
 		}
-		for (; itA < dTrace.end(); itA++) *itA = *(event->dBasePost);
+		for (; t < iEventlength; t++) dTrace[t] = *(event->dBasePost);
 	} else {
-		auto itA = dTrace.begin();
-		for (auto itD = event->itSatEnd; itD < event->itEnd; itD++, itA++) *itA = *itD;
-		for (; itA < dTrace.end(); itA++) *itA = *(event->dBasePost);
+		t = 0;
+		for (auto itD = event->itSatEnd; itD < event->itEnd; itD++, t++) dTrace[t] = *itD;
+		for (; t < iEventlength; t++) dTrace[t] = *(event->dBasePost);
 	}
 	for (m = 0; m < ciLAPNpts; m++) {
 		dXform[m] = 0;
 		t = 0;
-		for (auto it = dTrace.begin(); it < dTrace.end(); it++, t++) dXform[m] += (*it)*dExp[m][t];
+		for (auto it = dTrace.get(); it < dTrace.get()+iEventlength; it++, t++) dXform[m] += (*it)*dExp[m][t];
 	}
 	for (m = 0; m < ciLAPNpts-1; m++) {
 		(m < (ciLAPNpts >> 1) ? *dLaplaceLow : *dLaplaceHigh) += (dS[m+1]-dS[m])*(dXform[m+1]+dXform[m]);
@@ -307,7 +307,7 @@ void Method::Analyze() {
 	if (integral == 0) { // doesn't process if no trigger to save time
 		return;
 	}
-	try {graph.reset(new TGraph(iEventlength, dX.data(), event->itBegin));}
+	try {graph.reset(new TGraph(event->itEnd-event->itBegin, dX.get(), event->itBegin));}
 	catch (bad_alloc& ba) {
 		return;
 	}
