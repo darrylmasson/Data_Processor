@@ -352,8 +352,6 @@ void Method::SetAddresses(vector<void*> add) {
 	dBaseSigma =		(double*)add[i++];
 	dBasePost =			(double*)add[i++];
 	dBasePostSigma =	(double*)add[i++];
-	dBasePeakN =		(double*)add[i++];
-	dBasePeakP =		(double*)add[i++];
 	dSlowInt =			(double*)add[i++];
 	dFastInt =			(double*)add[i++];
 	dPeak1 =			(double*)add[i++];

@@ -110,7 +110,7 @@ class Processor {
 		double dPeak1[8]; // peakheights
 		double dPeak2[8];
 
-		double sdSample[8]; // sample used for PGA
+		double dSample[8]; // sample used for PGA
 
 		double dOdd[8]; // discrimination parameters
 		double dEven[8];
@@ -133,7 +133,6 @@ class Processor {
 		~Processor();
 		void BusinessTime(); // it's business, it's business time!
 		int Failed()								{return iFailed;}
-		void FriendshipIsMagic(); // handles friending between trees
 		vector<void*> SetAddresses(int ch, int level);
 		void SetConfigFile(string in)				{sConfigFileName = in;}
 		void SetDetectorPositions(string in);

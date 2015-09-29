@@ -67,7 +67,7 @@ Processor::Processor() {
 	memset(dSlowInt,		0, sizeof(dSlowInt));
 	memset(dPeak1,			0, sizeof(dPeak1));
 	memset(dPeak2,			0, sizeof(dPeak2));
-	memset(sdSample,		0, sizeof(sdSample));
+	memset(dSample,			0, sizeof(dSample));
 	memset(dOdd,			0, sizeof(dOdd));
 	memset(dEven,			0, sizeof(dEven));
 	memset(dLaplaceLow,		0, sizeof(dLaplaceLow));
@@ -213,7 +213,7 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&dPeak1[ch];
 		add[i++] = (void*)&dPeak2[ch];
 
-		add[i++] = (void*)&sdSample[ch];
+		add[i++] = (void*)&dSample[ch];
 
 		add[i++] = (void*)&dOdd[ch];
 		add[i++] = (void*)&dEven[ch];
@@ -517,7 +517,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		T1->Branch("Peakheight1",	dPeak1,			"peak1[8]/D");
 		T1->Branch("Peakheight2",	dPeak2,			"peak2[8]/D");
 
-		T1->Branch("Sample",		sdSample,		"sample[8]/D");
+		T1->Branch("Sample",		dSample,		"sample[8]/D");
 
 		T1->Branch("Odd",			dOdd,			"odd[8]/D");
 		T1->Branch("Even",			dEven,			"even[8]/D");
