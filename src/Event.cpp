@@ -24,10 +24,10 @@ Event::~Event() {
 	if (g_verbose) cout << "Event " << ciChan << " d'tor\n";
 }
 
-void Event::Analyze() {
+void Event::Analyze() {// cout << "27\n";
 	auto it = itBegin, itt = itBegin;
 	for (auto itU = usTrace; itU < usTrace+iEventlength && it < itEnd; itU++, it++) *it = *itU; // copies from unsigned short buffer into double buffer
-	*dBaseline		= 0.;
+	*dBaseline		= 0.;// cout << "30\n";
 	*dBaseSigma		= 0.;
 	*dBasePost		= 0.;
 	*dBasePostSigma	= 0.;
@@ -43,6 +43,7 @@ void Event::Analyze() {
 	*sPeakXs		= 0;
 	*sTrigger		= 0;
 	*sPeaks			= 0;
+	*sHWHM			= 0;
 
 	*bSaturated		= false;
 	*bFullWaveform	= true;
@@ -52,7 +53,7 @@ void Event::Analyze() {
 	PeakS = itBegin;
 
 	auto dTemp(0.);
-
+//	cout << "55\n";
 	for (it = itBegin, itt = itEnd-1; it-itBegin < iBaselength; it++, itt--) {
 		*dBaseline += *it; // baseline at start of event
 		if (*itBasePkP < *it) itBasePkP = it;
@@ -72,7 +73,7 @@ void Event::Analyze() {
 	}
 	*dBaseSigma = sqrt(*dBaseSigma/iBaselength);
 	*dBasePostSigma = sqrt(*dBasePostSigma/iBaselength);
-
+//	cout << "75\n";
 	*sPeaks = Peakfinder();
 	if (*Peak.itPeak == 0) { // saturated event
 		*bSaturated = true;
@@ -80,13 +81,13 @@ void Event::Analyze() {
 		itSatEnd = it-1;
 	} else {
 		itSatEnd = Peak.itPeak;
-	}
+	}// cout << "83\n";
 	if (iAverage) {
 		Average();
 		*sPeaks = Peakfinder();
-	}
+	}// cout << "87\n";
 	if (*sPeaks == 0) return;
-
+//	cout << "89\n";
 	for (it = Peak.itPeak; it > itBegin; it--) if ((*it < iThreshold) && (*(it-1) >= iThreshold)) break;
 	*sTrigger = (it - itBegin)*dScaleT;
 	for (it = Peak.itPeak; it < itEnd; it++) if (*it > *dBaseline-3*(*dBaseSigma)) break;
@@ -97,13 +98,14 @@ void Event::Analyze() {
 	*sPeakXs = (PeakS.itPeak - itBegin)*dScaleT;
 	*sRise = (Peak.itPeak - Peak.itStart)*dScaleT;
 	*sDecay = (Peak.itEnd - Peak.itPeak)*dScaleT;
+	*sHWHM = Peak.HWHM()*dScaleT;
 
 	*dPeak0 = (*Peak.itStart - *Peak.itPeak)*dScaleV;
 	*dPeak0s = (*PeakS.itStart - *PeakS.itPeak)*dScaleV;
 
 	for (it = Peak.itStart; it <= Peak.itEnd; it++) *dIntegral += *it; // integrator
 	*dIntegral = (*dIntegral)*2 - (*Peak.itStart + *Peak.itEnd);
-	*dIntegral = ((*dBaseline)*(Peak.itEnd-Peak.itStart) - 0.5*(*dIntegral))*dScaleT*dScaleV;
+	*dIntegral = ((*dBaseline)*(Peak.itEnd-Peak.itStart) - 0.5*(*dIntegral))*dScaleT*dScaleV;// cout << "106\n";
 }
 
 inline void Event::Average() {
@@ -118,7 +120,9 @@ inline void Event::Average() {
 int Event::Peakfinder() { // returns number of peaks found
 	auto iPeakCutBL(8), iPeakCutMin(16); // Peaks less than this height don't get tagged, TODO add for DT5730
 	auto iPrimaryTrigger(110); // primary peak in front of this point, TODO fix for other digitizers
-	vector<Peak_t> vPeakCandidates, vFoundPeaks, vPrimaryPeaks;
+	vPeakCandidates.Clear();
+	vFoundPeaks.Clear();
+	vPrimaryPeaks.Clear();
 	Peak_t peak(itBegin);
 	auto it = itBegin, itt = itBegin;
 
@@ -135,7 +139,7 @@ int Event::Peakfinder() { // returns number of peaks found
 		}
 		else if (peak.itPeak - it < 3*iBaselength/4) { // not in the end of the window
 			if (*(peak.itPeak) < iThreshold) {
-				vPeakCandidates.push_back(peak); // cuts noise
+				vPeakCandidates.Add(peak); // cuts noise
 			} else {
 				continue;
 			}
@@ -144,57 +148,57 @@ int Event::Peakfinder() { // returns number of peaks found
 		}
 	}
 
-	if (vPeakCandidates.size() == 0) { // no Peaks found, use default values
+	if (vPeakCandidates.count == 0) { // no Peaks found, use default values
 		return 0;
 	} else { // peaks found, select candidates of sufficient height
 		auto itPrev = itBegin, itMin = itBegin;
-		for (auto iter = vPeakCandidates.begin(); iter < vPeakCandidates.end(); iter++) { // evaluates heights of peak candidates
+		for (auto iter = vPeakCandidates.begin; iter < vPeakCandidates.end; iter++) { // evaluates heights of peak candidates
 			itMin = (*iter).itPeak;
 			for (it = (*iter).itPeak; it > itPrev; it--) { // looks for start of peak or minimum value
 				if (*itMin < *it) itMin = it;
 				if (*it > (*dBaseline)-3*(*dBaseSigma)) break;
 			}
 			if (it == itPrev) { // didn't reach baseline
-				if (*itMin - *((*iter).itPeak) > iPeakCutMin) {
+				if ((*itMin - *((*iter).itPeak) > iPeakCutMin)){
 					(*iter).itStart = itMin;
-					vFoundPeaks.push_back(*iter);
+					vFoundPeaks.Add(*iter);
 				}
 			} else { // did reach baseline
-				if ((*dBaseline) - *((*iter).itPeak) > iPeakCutBL) {
+				if (((*dBaseline) - *((*iter).itPeak) > iPeakCutBL)) {
 					(*iter).itStart = it;
-					vFoundPeaks.push_back(*iter);
+					vFoundPeaks.Add(*iter);
 				}
 			} // choosing it or itMin
 		} // iter loop
 	}
-
-	if (vFoundPeaks.size() == 0) { // no peaks
+//	cout << "170\n";
+	if (vFoundPeaks.count == 0) { // no peaks
 		return 0;
-	} else if (vFoundPeaks.size() == 1) { // only one peak, probably the majority of cases
-		Peak = vFoundPeaks.front();
+	} else if (vFoundPeaks.count == 1) { // only one peak, probably the majority of cases
+		Peak = vFoundPeaks[0];
 		return 1;
 	} else { // two or more Peaks, primary is the tallest peak in the trigger region or the first
-		for (auto iter = vFoundPeaks.begin(); iter < vFoundPeaks.end(); iter++) { // gathers Peaks in the trigger region (first 110ns of waveform)
+		for (auto iter = vFoundPeaks.begin; iter < vFoundPeaks.end; iter++) { // gathers Peaks in the trigger region (first 110ns of waveform)
 			if ((*iter).itPeak-itBegin < iPrimaryTrigger) {
-				vPrimaryPeaks.push_back(*iter);
+				vPrimaryPeaks.Add(*iter);
 			}
 		}
-		if (vPrimaryPeaks.size() == 0) { // no primaries, take first Peak
-			Peak = vFoundPeaks.front();
-		} else if (vPrimaryPeaks.size() == 1) { // one primary
-			Peak = vPrimaryPeaks.front();
+		if (vPrimaryPeaks.count == 0) { // no primaries, take first Peak
+			Peak = vFoundPeaks[0];
+		} else if (vPrimaryPeaks.count == 1) { // one primary
+			Peak = vPrimaryPeaks[0];
 		} else { // multiple primaries, pick tallest
-			Peak = vPrimaryPeaks.front();
-			for (auto iter = vPrimaryPeaks.begin(); iter < vPrimaryPeaks.end(); iter++) {
+			Peak = vPrimaryPeaks[0];
+			for (auto iter = vPrimaryPeaks.begin; iter < vPrimaryPeaks.end; iter++) {
 				if (*iter > Peak) Peak = *iter;
 			}
 		}
 		PeakS = itBegin;
-		for (auto iter = vFoundPeaks.begin(); iter < vFoundPeaks.end(); iter++) {
+		for (auto iter = vFoundPeaks.begin; iter < vFoundPeaks.end; iter++) {
 			if ((*iter > PeakS) && !(*iter == Peak)) PeakS = *iter;
 		}
-	}
-	return vFoundPeaks.size();
+	}// cout << "196\n";
+	return vFoundPeaks.count;
 }
 
 void Event::SetAddresses(vector<void*> add) {
@@ -208,6 +212,7 @@ void Event::SetAddresses(vector<void*> add) {
 	sPeakXs			= (short*)add[i++];
 	sTrigger		= (short*)add[i++];
 	sPeaks			= (short*)add[i++];
+	sHWHM			= (short*)add[i++];
 
 	dBaseline		= (double*)add[i++];
 	dBaseSigma		= (double*)add[i++];
