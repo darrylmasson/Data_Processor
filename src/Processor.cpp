@@ -8,8 +8,9 @@ using namespace std::chrono;
 
 Processor::Processor() {
 	if (g_verbose) cout << "Processor c'tor\n";
-	iSpecial = -1;
+//	memset(this, 0, sizeof(*this));
 	iAverage = 0;
+	iSpecial = -1;
 
 	sConfigFileName = "\0";
 	sRawDataFile = "\0";
@@ -39,6 +40,9 @@ Processor::Processor() {
 	memset(fGain,			0, sizeof(fGain));
 	memset(fDetectorZ,		0, sizeof(fDetectorZ));
 	memset(fDetectorR,		0, sizeof(fDetectorR));
+	
+//	ulpTimestamp = nullptr;
+//	ulTSPrev = 0;
 
 	// arrays for trees
 	memset(bFullWave,		0, sizeof(bFullWave));
@@ -49,6 +53,7 @@ Processor::Processor() {
 	memset(sPeakXs,			0, sizeof(sPeakXs));
 	memset(sTrigger,		0, sizeof(sTrigger));
 	memset(sPeaks,			0, sizeof(sPeaks));
+	memset(sHWHM,			0, sizeof(sHWHM));
 	memset(dBase,			0, sizeof(dBase));
 	memset(dSigma,			0, sizeof(dSigma));
 	memset(dBaseP,			0, sizeof(dBaseP));
@@ -78,7 +83,7 @@ Processor::Processor() {
 	memset(dOffset,			0, sizeof(dOffset));
 	memset(dPeak_err,		0, sizeof(dPeak_err));
 	memset(dBase_err,		0, sizeof(dBase_err));
-	memset(dOff_err,		0, sizeof(dOff_err));
+	memset(dOff_err,		0, sizeof(dOff_err)); 
 }
 
 Processor::~Processor() {
@@ -101,11 +106,11 @@ Processor::~Processor() {
 void Processor::BusinessTime() {
 	int ch(0), ev(0), iProgCheck(0), iRate(0), iTimeleft(0), iLivetime(0);
 
-	unsigned long* ulpTimestamp = (unsigned long*)(buffer.get() + sizeof(long));
-	unsigned long ulTSFirst(0), ulTSLast(0), ulTSPrev(0);
+//	unsigned long* ulpTimestamp = (unsigned long*)buffer.get();
+//	unsigned long ulTSFirst(0), ulTSLast(0);
 
-	TS->Branch("Timestamp", &ulpTimestamp[0], "time_stamp/l");
-	TS->Branch("Timestamp_prev", &ulTSPrev, "time_stamp_prev/l");
+//	TS->Branch("Timestamp", ulpTimestamp, "time_stamp/l");
+//	TS->Branch("Timestamp_prev", &ulTSPrev, "time_stamp_prev/l");
 
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
@@ -118,6 +123,7 @@ void Processor::BusinessTime() {
 	f->cd();
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.get(), iEventsize);
+//		//cout << ulpTimestamp[0] << '\n';
 		for (ch = 0; ch < iNchan; ch++) {
 			event[ch]->Analyze();
 			if (iLevel > 0) {
@@ -125,14 +131,15 @@ void Processor::BusinessTime() {
 				if (iLevel > 1) discriminator[ch]->Discriminate();
 			}
 		}
-		TS->Fill();
+//		ulTSThis = *ulpTimestamp;
 		T0->Fill();
+//		TS->Fill();
 		if (iLevel > 0) {
 			T1->Fill();
 			if (iLevel > 1) Discriminator::Cuts_fill();
 		}
-		ulTSPrev = ulpTimestamp[0];
-		if (ev % iProgCheck == iProgCheck-1) { // progress updates
+//		ulTSPrev = *ulpTimestamp;
+		if (ev % iProgCheck == iProgCheck/2) { // progress updates
 			cout << ev*100l/iNumEvents << "%\t\t";
 			t_this = steady_clock::now();
 			t_elapsed = duration_cast<duration<double>>(t_this-t_that);
@@ -144,12 +151,12 @@ void Processor::BusinessTime() {
 			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
 			else cout << iTimeleft << "s\n";
 		}
-		if (ev == 0) ulTSFirst = ulpTimestamp[0];
+//		if (ev == 0) ulTSFirst = ulpTimestamp[0];
 	}
 	cout << "Processing completed\n";
-	T0->AddFriend("TS");
+//	T0->AddFriend("TS");
 	if (iLevel > 0) {
-		T1->AddFriend("TS");
+//		T1->AddFriend("TS");
 		T1->AddFriend("T0");
 		T0->AddFriend("T1");
 		if (iLevel > 1) {
@@ -160,10 +167,10 @@ void Processor::BusinessTime() {
 		}
 		T1->Write();
 	}
-	TS->Write("",TObject::kOverwrite);
 	T0->Write("",TObject::kOverwrite);
-	ulTSLast = ulpTimestamp[0];
-	iLivetime = (ulTSLast - ulTSFirst)/125e6;
+//	TS->Write("",TObject::kOverwrite); //cout << "165\n";
+//	ulTSLast = ulpTimestamp[0]; //cout << "167\n";
+//	iLivetime = (ulTSLast - ulTSFirst)/125e6;
 	cout << "Acquisition livetime: " << iLivetime << "s\nBeginning cleanup: ";
 	fin.close();
 	buffer.reset();
@@ -190,6 +197,7 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&sPeakXs[ch];
 		add[i++] = (void*)&sTrigger[ch];
 		add[i++] = (void*)&sPeaks[ch];
+		add[i++] = (void*)&sHWHM[ch];
 
 		add[i++] = (void*)&dBase[ch];
 		add[i++] = (void*)&dSigma[ch];
@@ -464,6 +472,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	}
 	memset(buffer.get(), 0, iEventsize);
 	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
+//	ulpTimestamp = (unsigned long*)(buffer.get() + sizeof(long));
 
 	if (iLevel > 1) {
 		try {
@@ -476,13 +485,16 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	}
 
 	try {
+//		TS = unique_ptr<TTree>(new TTree("TS","Timestamps"));
 		T0 = unique_ptr<TTree>(new TTree("T0","Event"));
 		if (iLevel > 0) T1 = unique_ptr<TTree>(new TTree("T1","Method"));
-		TS = unique_ptr<TTree>(new TTree("TS","Timestamps"));
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Trees\n";
 		throw ProcessorException();
 	}
+	
+//	TS->Branch("Timestamp", ulpTimestamp, "timestamp/l");
+//	TS->Branch("Timestamp_prev", &ulTSPrev, "timestampprev/l");
 
 	T0->Branch("FullWaveform",	bFullWave, "fullwave[8]/O");
 	T0->Branch("Saturated",		bSaturated, "sat[8]/O");
@@ -493,6 +505,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("Peakxs",		sPeakXs,	"peakxs[8]/S");
 	T0->Branch("Trigger",		sTrigger,	"trig[8]/S");
 	T0->Branch("Peaks",			sPeaks,		"peaks[8]/S");
+	T0->Branch("HWHM",			sHWHM,		"hwhm[8]/S");
 
 	T0->Branch("Base",			dBase,		"base[8]/D");
 	T0->Branch("Sigma",			dSigma,		"sigma[8]/D");

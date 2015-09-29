@@ -75,6 +75,9 @@ class Processor {
 		float			fGain[MAX_CH][2]; // for fitter
 		float			fDetectorZ[3];
 		float			fDetectorR[3];
+		
+//		unsigned long*	ulpTimestamp;
+//		unsigned long	ulTSPrev;
 
 		// These in T0
 		bool bFullWave[8]; // waveform decays before end of event
@@ -86,6 +89,7 @@ class Processor {
 		short sPeakXs[8]; // pile-up peak
 		short sTrigger[8];
 		short sPeaks[8]; // number of peaks found
+		short sHWHM[8]; // Return of the FWHM, to be followed shortly by Revenge of the FWHM
 
 		double dBase[8]; // these values in samples
 		double dSigma[8];
