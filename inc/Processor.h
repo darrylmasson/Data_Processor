@@ -121,13 +121,19 @@ class Processor {
 		double dLaplaceHigh[8];
 
 		double dXsq[2][4]; // chisquared
+		double dXsq_f[2][4]; // with fixed baseline
 		double dPeak_scale[2][4]; // peak scale factor
+		double dPeak_scale_f[2][4];
 		double dBase_shift[2][4]; // baseline
 		double dOffset[2][4]; // trigger shift
+		double dOffset_f[2][4];
 
 		double dPeak_err[2][4]; // errors
+		double dPeak_err_f[2][4];
 		double dBase_err[2][4];
+		double dBase_err_f[2][4];
 		double dOff_err[2][4];
+		double dOff_err_f[2][4];
 
 
 	public:

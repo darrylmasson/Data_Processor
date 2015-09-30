@@ -77,8 +77,13 @@ void Event::Analyze() {
 	*dBaseSigma = sqrt(*dBaseSigma/iBaselength);
 	*dBasePostSigma = sqrt(*dBasePostSigma/iBaselength);
 	Peakfinder();
-	if (vPeaks.size() == 0) return;
-	 else if (*(vPeaks.front().itPeak) == 0) { // saturated event
+	if (vPeaks.size() == 0) {
+		sPeakX->push_back(0);
+		sRise->push_back(0);
+		sHWHM->push_back(0);
+		dPeak0->push_back(0);
+		return;
+	} else if (*(vPeaks.front().itPeak) == 0) { // saturated event
 		*bSaturated = true;
 		for (it = vPeaks.front().itPeak; it < itEnd; it++) if (*it != 0) break;
 		itSatEnd = it-1;
@@ -89,7 +94,13 @@ void Event::Analyze() {
 		Average();
 		Peakfinder();
 	}
-
+	if (vPeaks.size() == 0) {
+		sPeakX->push_back(0);
+		sRise->push_back(0);
+		sHWHM->push_back(0);
+		dPeak0->push_back(0);
+		return;
+	}
 	for (it = vPeaks.front().itPeak; it > itBegin; it--) if ((*it < iThreshold) && (*(it-1) >= iThreshold)) break;
 	*sTrigger = (it - itBegin)*dScaleT;
 	for (it = vPeaks.front().itPeak; it < itEnd; it++) if (*it > *dBaseline-3*(*dBaseSigma)) break;
@@ -103,7 +114,6 @@ void Event::Analyze() {
 	}
 
 	*sDecay = (vPeaks.front().itEnd - vPeaks.front().itPeak)*dScaleT;
-
 	for (it = vPeaks.front().itStart; it <= vPeaks.front().itEnd; it++) *dIntegral += *it; // integrator
 	*dIntegral = (*dIntegral)*2 - (*vPeaks.front().itStart + *vPeaks.front().itEnd);
 	*dIntegral = ((*dBaseline)*(vPeaks.front().itEnd-vPeaks.front().itStart) - 0.5*(*dIntegral))*dScaleT*dScaleV;// cout << "106\n";
