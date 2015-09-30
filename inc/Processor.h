@@ -75,28 +75,26 @@ class Processor {
 		float			fGain[MAX_CH][2]; // for fitter
 		float			fDetectorZ[3];
 		float			fDetectorR[3];
-		
-//		unsigned long*	ulpTimestamp;
-//		unsigned long	ulTSPrev;
 
 		// These in T0
 		bool bFullWave[8]; // waveform decays before end of event
 		bool bSaturated[8]; // voltage saturation on digitizer
 
 		short sDecay[8]; // decay time
-		short sRise[8]; // risetime
-		short sPeakX[8]; // x location of peak
-		short sPeakXs[8]; // pile-up peak
+		vector<vector<short>> sRise; // risetime
+		vector<vector<short>>* pRise;
+		vector<vector<short>> sPeakX; // x location of peak
+		vector<vector<short>>* pPeakX;
 		short sTrigger[8];
-		short sPeaks[8]; // number of peaks found
-		short sHWHM[8]; // Return of the FWHM, to be followed shortly by Revenge of the FWHM
+		vector<vector<short>> sHWHM;
+		vector<vector<short>>* pHWHM;
 
 		double dBase[8]; // these values in samples
 		double dSigma[8];
 		double dBaseP[8];
 		double dBasePS[8];
-		double dPeak0[8];
-		double dPeak0s[8];
+		vector<vector<double>> dPeak0;
+		vector<vector<double>>* pPeak0;
 		double dFullInt[8]; // except this
 		double dBasePeakP[8];
 		double dBasePeakN[8];

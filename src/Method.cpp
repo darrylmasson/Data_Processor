@@ -177,14 +177,14 @@ double Method::TF1_fit_func(double* x, double* par) {
 
 void Method::SetDefaultValues() {
 //	cout << "Average values\n";
-	*bTruncated = ((event->Peak.itStart + iSlowTime) >= event->itEnd);
+	*bTruncated = ((event->vPeaks.front().itPeak + iSlowTime) >= event->itEnd);
 //	cout << "CCM\n";
 	//CCM
 	*dBaseline		= (*(event->dBaseline)-dZero) * dScaleV;
 	*dBaseSigma		= *(event->dBaseSigma) * dScaleV;
 	*dBasePost		= (*(event->dBasePost)-dZero) * dScaleV;
 	*dBasePostSigma	= *(event->dBasePostSigma) * dScaleV;
-	*dPeak1			= *(event->dPeak0) * dScaleV;
+	*dPeak1			= event->dPeak0->front() * dScaleV;
 	*dPeak2			= *dPeak1;
 	*dSlowInt		= 0;
 	*dFastInt		= 0;
@@ -202,12 +202,12 @@ void Method::SetDefaultValues() {
 //	cout << "TF1\n";
 	//TF1
 	*dXsq_n			= -1;// cout << "206\n";
-	*dPeakheight_n	= (*(event->dBaseline) - *(event->Peak.itPeak))*dStdNorm[n]*fGain[n];// cout << "207\n";
+	*dPeakheight_n	= (*(event->dBaseline) - *(event->vPeaks.front().itPeak))*dStdNorm[n]*fGain[n];// cout << "207\n";
 	*dBaseline_n	= *(event->dBaseline); //cout << "208\n";
 	*dOffset_n		= *(event->sTrigger) - iStdTrig;// cout << "209\n";
 
 	*dXsq_y			= -1; //cout << "211\n";
-	*dPeakheight_y	= (*(event->dBaseline) - *(event->Peak.itPeak))*dStdNorm[y]*fGain[y]; //cout << "212\n";
+	*dPeakheight_y	= (*(event->dBaseline) - *(event->vPeaks.front().itPeak))*dStdNorm[y]*fGain[y]; //cout << "212\n";
 	*dBaseline_y	= *(event->dBaseline);// cout << "213\n";
 	*dOffset_y		= *(event->sTrigger) - iStdTrig;// cout << "214\n";
 
@@ -229,32 +229,32 @@ void Method::Analyze() {
 	SetDefaultValues();
 //	cout << "Integral limits\n";
 	//CCM
-	iFast = (event->Peak.itPeak + iFastTime - 1 < event->itEnd ? iFastTime : event->itEnd - event->Peak.itStart - 1);
-	iSlow = (event->Peak.itPeak + iSlowTime - 1 < event->itEnd ? iSlowTime : event->itEnd - event->Peak.itStart - 1); // local integration limits for fast and slow
+	iFast = (event->vPeaks.front().itPeak + iFastTime - 1 < event->itEnd ? iFastTime : event->itEnd - event->vPeaks.front().itStart - 1);
+	iSlow = (event->vPeaks.front().itPeak + iSlowTime - 1 < event->itEnd ? iSlowTime : event->itEnd - event->vPeaks.front().itStart - 1); // local integration limits
 //	cout << "Peak ave\n";
-	if (((event->Peak.itPeak + 2) < event->itEnd) && (event->Peak.itPeak - 1 > event->itBegin) && !*(event->bSaturated)) { // peak averaging
-		for (auto it = event->Peak.itPeak-1; it <= event->Peak.itPeak+1; it++) dTemp += *it;
+	if (((event->vPeaks.front().itPeak + 2) < event->itEnd) && (event->vPeaks.front().itPeak - 1 > event->itBegin) && !*(event->bSaturated)) { // peak averaging
+		for (auto it = event->vPeaks.front().itPeak-1; it <= event->vPeaks.front().itPeak+1; it++) dTemp += *it;
 		*dPeak1 = (*(event->dBaseline) - (0.333*dTemp))*dScaleV; // averaged with adjacent samples
-		dTemp += *(event->Peak.itPeak-2) + *(event->Peak.itPeak + 2);
+		dTemp += *(event->vPeaks.front().itPeak-2) + *(event->vPeaks.front().itPeak + 2);
 		*dPeak2 = (*(event->dBaseline) - (0.2*dTemp))*dScaleV; // averaged with two adjacent samples
 	}
 //	cout << "Integrator\n";
-	for (auto it = event->Peak.itStart; it <= event->Peak.itStart + iFast; it++) *dFastInt += *it; // integrator
+	for (auto it = event->vPeaks.front().itStart; it <= event->vPeaks.front().itStart + iFast; it++) *dFastInt += *it; // integrator
 	*dSlowInt = *dFastInt;
-	for (auto it = event->Peak.itStart + iFast; it <= event->Peak.itStart + iSlow; it++) *dSlowInt += *it;
+	for (auto it = event->vPeaks.front().itStart + iFast; it <= event->vPeaks.front().itStart + iSlow; it++) *dSlowInt += *it;
 
 	*dFastInt *= 2.; // trapezoid rule: integral = f(0) + 2*f(1) + ... + 2*f(n-1) + f(n)
 	*dSlowInt *= 2.; // faster to do sum f(i), double, and subtract endpoints
-	*dFastInt -= (*event->Peak.itStart + *(event->Peak.itStart + iFast));
-	*dSlowInt -= (*event->Peak.itStart + *(event->Peak.itStart + iSlow));
+	*dFastInt -= (*event->vPeaks.front().itStart + *(event->vPeaks.front().itStart + iFast));
+	*dSlowInt -= (*event->vPeaks.front().itStart + *(event->vPeaks.front().itStart + iSlow));
 
 	*dSlowInt = ((*event->dBaseline * (iSlow)) - 0.5 * (*dSlowInt)) * dScaleV * dScaleT; // baseline subtraction
 	*dFastInt = ((*event->dBaseline * (iFast)) - 0.5 * (*dFastInt)) * dScaleV * dScaleT;
 //	cout << "PGA\n";
 	//PGA
-	if ((event->Peak.itPeak + iPGASamples + iPGAAverage) < event->itEnd) {
+	if ((event->vPeaks.front().itPeak + iPGASamples + iPGAAverage) < event->itEnd) {
 		*dSample = 0;
-		for (i = -iPGAAverage; i <= iPGAAverage; i++) *dSample += *(event->Peak.itPeak + iPGASamples + i); // average to reduce statistical fluctuations
+		for (i = -iPGAAverage; i <= iPGAAverage; i++) *dSample += *(event->vPeaks.front().itPeak + iPGASamples + i); // average to reduce statistical fluctuations
 		*dSample /= (2.*iPGAAverage + 1);
 	} else *dSample = -1;
 //	cout << "DFT\n";

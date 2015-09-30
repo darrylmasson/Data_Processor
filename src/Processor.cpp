@@ -40,26 +40,32 @@ Processor::Processor() {
 	memset(fGain,			0, sizeof(fGain));
 	memset(fDetectorZ,		0, sizeof(fDetectorZ));
 	memset(fDetectorR,		0, sizeof(fDetectorR));
-	
-//	ulpTimestamp = nullptr;
-//	ulTSPrev = 0;
 
 	// arrays for trees
 	memset(bFullWave,		0, sizeof(bFullWave));
 	memset(bSaturated,		0, sizeof(bSaturated));
 	memset(sDecay,			0, sizeof(sDecay));
-	memset(sRise,			0, sizeof(sRise));
-	memset(sPeakX,			0, sizeof(sPeakX));
-	memset(sPeakXs,			0, sizeof(sPeakXs));
+	sRise.assign(MAX_CH,	vector<short>());
+	for (auto it = sRise.begin(); it < sRise.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	pRise = &sRise;
+//	memset(sRise,			0, sizeof(sRise));
+	sPeakX.assign(MAX_CH,	vector<short>());
+	for (auto it = sPeakX.begin(); it < sPeakX.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	pPeakX = &sPeakX;
+//	memset(sPeakX,			0, sizeof(sPeakX)); //
 	memset(sTrigger,		0, sizeof(sTrigger));
-	memset(sPeaks,			0, sizeof(sPeaks));
-	memset(sHWHM,			0, sizeof(sHWHM));
+	sHWHM.assign(MAX_CH,	vector<short>());
+	for (auto it = sHWHM.begin(); it < sHWHM.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	pHWHM = &sHWHM;
+//	memset(sHWHM,			0, sizeof(sHWHM)); //
 	memset(dBase,			0, sizeof(dBase));
 	memset(dSigma,			0, sizeof(dSigma));
 	memset(dBaseP,			0, sizeof(dBaseP));
 	memset(dBasePS,			0, sizeof(dBasePS));
-	memset(dPeak0,			0, sizeof(dPeak0));
-	memset(dPeak0s,			0, sizeof(dPeak0s));
+	dPeak0.assign(MAX_CH,	vector<double>());
+	for (auto it = dPeak0.begin(); it < dPeak0.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	pPeak0 = &dPeak0;
+//	memset(dPeak0,			0, sizeof(dPeak0)); //
 	memset(dFullInt,		0, sizeof(dFullInt));
 	memset(dBasePeakP,		0, sizeof(dBasePeakP));
 	memset(dBasePeakN,		0, sizeof(dBasePeakN));
@@ -83,7 +89,7 @@ Processor::Processor() {
 	memset(dOffset,			0, sizeof(dOffset));
 	memset(dPeak_err,		0, sizeof(dPeak_err));
 	memset(dBase_err,		0, sizeof(dBase_err));
-	memset(dOff_err,		0, sizeof(dOff_err)); 
+	memset(dOff_err,		0, sizeof(dOff_err));
 }
 
 Processor::~Processor() {
@@ -101,16 +107,18 @@ Processor::~Processor() {
 	f = nullptr;
 	buffer = nullptr;
 	if (fin.is_open()) fin.close();
+	pRise = pPeakX = pHWHM = nullptr;
+	pPeak0 = nullptr;
 }
 
 void Processor::BusinessTime() {
 	int ch(0), ev(0), iProgCheck(0), iRate(0), iTimeleft(0), iLivetime(0);
 
-//	unsigned long* ulpTimestamp = (unsigned long*)buffer.get();
-//	unsigned long ulTSFirst(0), ulTSLast(0);
+	unsigned long* ulpTimestamp = (unsigned long*)buffer.get();
+	unsigned long ulTSFirst(0), ulTSLast(0), ulTSPrev(0);
 
-//	TS->Branch("Timestamp", ulpTimestamp, "time_stamp/l");
-//	TS->Branch("Timestamp_prev", &ulTSPrev, "time_stamp_prev/l");
+	TS->Branch("Timestamp", ulpTimestamp, "time_stamp/l");
+	TS->Branch("Timestamp_prev", &ulTSPrev, "time_stamp_prev/l");
 
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
@@ -123,7 +131,6 @@ void Processor::BusinessTime() {
 	f->cd();
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.get(), iEventsize);
-//		//cout << ulpTimestamp[0] << '\n';
 		for (ch = 0; ch < iNchan; ch++) {
 			event[ch]->Analyze();
 			if (iLevel > 0) {
@@ -131,14 +138,13 @@ void Processor::BusinessTime() {
 				if (iLevel > 1) discriminator[ch]->Discriminate();
 			}
 		}
-//		ulTSThis = *ulpTimestamp;
 		T0->Fill();
-//		TS->Fill();
+		TS->Fill();
 		if (iLevel > 0) {
 			T1->Fill();
 			if (iLevel > 1) Discriminator::Cuts_fill();
 		}
-//		ulTSPrev = *ulpTimestamp;
+		ulTSPrev = *ulpTimestamp;
 		if (ev % iProgCheck == iProgCheck/2) { // progress updates
 			cout << ev*100l/iNumEvents << "%\t\t";
 			t_this = steady_clock::now();
@@ -151,12 +157,12 @@ void Processor::BusinessTime() {
 			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
 			else cout << iTimeleft << "s\n";
 		}
-//		if (ev == 0) ulTSFirst = ulpTimestamp[0];
+		if (ev == 0) ulTSFirst = ulpTimestamp[0];
 	}
 	cout << "Processing completed\n";
-//	T0->AddFriend("TS");
+	T0->AddFriend("TS");
 	if (iLevel > 0) {
-//		T1->AddFriend("TS");
+		T1->AddFriend("TS");
 		T1->AddFriend("T0");
 		T0->AddFriend("T1");
 		if (iLevel > 1) {
@@ -168,9 +174,9 @@ void Processor::BusinessTime() {
 		T1->Write();
 	}
 	T0->Write("",TObject::kOverwrite);
-//	TS->Write("",TObject::kOverwrite); //cout << "165\n";
-//	ulTSLast = ulpTimestamp[0]; //cout << "167\n";
-//	iLivetime = (ulTSLast - ulTSFirst)/125e6;
+	TS->Write("",TObject::kOverwrite);
+	ulTSLast = ulpTimestamp[0];
+	iLivetime = (ulTSLast - ulTSFirst)/125e6;
 	cout << "Acquisition livetime: " << iLivetime << "s\nBeginning cleanup: ";
 	fin.close();
 	buffer.reset();
@@ -194,9 +200,7 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&sDecay[ch];
 		add[i++] = (void*)&sRise[ch];
 		add[i++] = (void*)&sPeakX[ch];
-		add[i++] = (void*)&sPeakXs[ch];
 		add[i++] = (void*)&sTrigger[ch];
-		add[i++] = (void*)&sPeaks[ch];
 		add[i++] = (void*)&sHWHM[ch];
 
 		add[i++] = (void*)&dBase[ch];
@@ -204,7 +208,6 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&dBaseP[ch];
 		add[i++] = (void*)&dBasePS[ch];
 		add[i++] = (void*)&dPeak0[ch];
-		add[i++] = (void*)&dPeak0s[ch];
 		add[i++] = (void*)&dFullInt[ch];
 		add[i++] = (void*)&dBasePeakP[ch];
 		add[i++] = (void*)&dBasePeakN[ch];
@@ -247,7 +250,7 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 	} else if (level == 2) {
 		add[i++] = (void*)&dFastInt[ch];
 		add[i++] = (void*)&dSlowInt[ch];
-		add[i++] = (void*)&sdSample[ch];
+		add[i++] = (void*)&dSample[ch];
 		add[i++] = (void*)&dPeak2[ch];
 		add[i++] = (void*)&dXsq[0][ch];
 		add[i++] = (void*)&dXsq[1][ch];
@@ -472,8 +475,10 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	}
 	memset(buffer.get(), 0, iEventsize);
 	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
-//	ulpTimestamp = (unsigned long*)(buffer.get() + sizeof(long));
-
+	vector<vector<short>>* pRise(&sRise);
+	vector<vector<short>>* pPeakX(&sPeakX);
+	vector<vector<short>>* pHWHM(&sHWHM);
+	vector<vector<double>>* pPeak0(&dPeak0);
 	if (iLevel > 1) {
 		try {
 			T0 = unique_ptr<TTree>(new TTree("T2","Discriminator"));
@@ -492,20 +497,15 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		cout << error_message[alloc_error] << "Trees\n";
 		throw ProcessorException();
 	}
-	
-//	TS->Branch("Timestamp", ulpTimestamp, "timestamp/l");
-//	TS->Branch("Timestamp_prev", &ulTSPrev, "timestampprev/l");
 
-	T0->Branch("FullWaveform",	bFullWave, "fullwave[8]/O");
+	T0->Branch("FullWaveform",	bFullWave,	"fullwave[8]/O");
 	T0->Branch("Saturated",		bSaturated, "sat[8]/O");
 
 	T0->Branch("Decaytime",		sDecay,		"decay[8]/S");
-	T0->Branch("Risetime",		sRise,		"rise[8]/S");
-	T0->Branch("Peakx",			sPeakX,		"peakx[8]/S");
-	T0->Branch("Peakxs",		sPeakXs,	"peakxs[8]/S");
+	T0->Branch("Risetime",		&pRise);
+	T0->Branch("Peakx",			&pPeakX);
 	T0->Branch("Trigger",		sTrigger,	"trig[8]/S");
-	T0->Branch("Peaks",			sPeaks,		"peaks[8]/S");
-	T0->Branch("HWHM",			sHWHM,		"hwhm[8]/S");
+	T0->Branch("HWHM",			&pHWHM);
 
 	T0->Branch("Base",			dBase,		"base[8]/D");
 	T0->Branch("Sigma",			dSigma,		"sigma[8]/D");
@@ -513,8 +513,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("BasePS",		dBasePS,	"baseps[8]/D");
 	T0->Branch("BasePkP",		dBasePeakP,	"basepkp[8]/D");
 	T0->Branch("BasePkN",		dBasePeakN,	"basepkn[8]/D");
-	T0->Branch("Peakheight0",	dPeak0,		"peak0[8]/D");
-	T0->Branch("Peakheight0s",	dPeak0s,	"peak0s[8]/D");
+	T0->Branch("Peakheight0",	&pPeak0);
 	T0->Branch("Integral",		dFullInt,	"integral[8]/D");
 
 	if (iLevel > 0) {
