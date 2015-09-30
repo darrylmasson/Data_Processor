@@ -131,7 +131,6 @@ class Processor {
 		double dPeak_err[2][4]; // errors
 		double dPeak_err_f[2][4];
 		double dBase_err[2][4];
-		double dBase_err_f[2][4];
 		double dOff_err[2][4];
 		double dOff_err_f[2][4];
 

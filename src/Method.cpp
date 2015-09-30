@@ -4,7 +4,7 @@
 
 const double pi = acos(-1.0);
 
-float Method::sfVersion = 1.0;
+float Method::sfVersion = 1.1;
 
 Method::Method(int length, int fast, int slow, int samples, float gain[2], double scaleT, double scaleV, shared_ptr<Event> ev) : dSlow(0.01), dShigh(1.0) {
 	if (g_verbose) cout << "Method c'tor\n";
@@ -199,7 +199,7 @@ void Method::SetDefaultValues() {
 	//LAP
 	*dLaplaceHigh	= 0;
 	*dLaplaceLow	= 0;
-	
+
 	//TF1
 	*dXsq_n			= -1;
 	*dPeakheight_n	= (event->dPeak0->front()/dScaleV)*dStdNorm[n]*fGain[n];
@@ -217,6 +217,19 @@ void Method::SetDefaultValues() {
 	*dBase_err_y	= -1;
 	*dOff_err_n		= -1;
 	*dOff_err_y		= -1;
+
+	*dXsq_n_f		= -1;
+	*dPeakheight_n_f= (event->dPeak0->front()/dScaleV)*dStdNorm[n]*fGain[n];
+	*dOffset_n_f	= *(event->sTrigger) - iStdTrig;
+
+	*dXsq_y_f		= -1;
+	*dPeakheight_y_f= (event->dPeak0->front()/dScaleV)*dStdNorm[y]*fGain[y];
+	*dOffset_y_f	= *(event->sTrigger) - iStdTrig;
+
+	*dPeak_err_n_f	= -1;
+	*dPeak_err_y_f	= -1;
+	*dOff_err_n_f	= -1;
+	*dOff_err_y_f	= -1;
 
 	return;
 }
@@ -319,6 +332,17 @@ void Method::Analyze() {
 	*dBase_err_n	= fit->GetParError(1);
 	*dOff_err_n		= fit->GetParError(2);
 
+	fit->SetParameter(0, *dPeakheight_n_f);
+	fit->FixParameter(1, *event->dBaseline);
+	fit->SetParameter(2, *dOffset_n_f);
+	graph->Fit(fit.get(), "Q N"); // quiet, no-plot
+
+	*dXsq_n_f		= fit->GetChisquare();
+	*dPeakheight_n_f= fit->GetParameter(0)/fGain[n]/iResolutionScale;
+	*dOffset_n_f	= fit->GetParameter(2);
+
+	*dPeak_err_n_f	= fit->GetParError(0)/fGain[n]/iResolutionScale;
+	*dOff_err_n_f	= fit->GetParError(2);
 
 	fit->SetParameter(0, *dPeakheight_y);
 	fit->SetParameter(1, *dBaseline_y);
@@ -334,6 +358,18 @@ void Method::Analyze() {
 	*dPeak_err_y	= fit->GetParError(0)/fGain[y]/iResolutionScale;
 	*dBase_err_y	= fit->GetParError(1);
 	*dOff_err_y		= fit->GetParError(2);
+
+	fit->SetParameter(0, *dPeakheight_y_f);
+	fit->FixParameter(1, *event->dBaseline);
+	fit->SetParameter(2, *dOffset_y_f);
+	graph->Fit(fit.get(), "Q N"); // quiet, no-plot
+
+	*dXsq_y_f		= fit->GetChisquare();
+	*dPeakheight_y_f= fit->GetParameter(0)/fGain[y]/iResolutionScale;
+	*dOffset_y_f	= fit->GetParameter(2);
+
+	*dPeak_err_y_f	= fit->GetParError(0)/fGain[y]/iResolutionScale;
+	*dOff_err_y_f	= fit->GetParError(2);
 }
 
 void Method::SetAddresses(vector<void*> add) {
@@ -363,16 +399,26 @@ void Method::SetAddresses(vector<void*> add) {
 	//NGM
 	dXsq_n =			(double*)add[i++];
 	dXsq_y =			(double*)add[i++];
+	dXsq_n_f =			(double*)add[i++];
+	dXsq_y_f =			(double*)add[i++];
 	dPeakheight_n =		(double*)add[i++];
 	dPeakheight_y =		(double*)add[i++];
+	dPeakheight_n_f =	(double*)add[i++];
+	dPeakheight_y_f =	(double*)add[i++];
 	dBaseline_n =		(double*)add[i++];
 	dBaseline_y =		(double*)add[i++];
 	dOffset_n =			(double*)add[i++];
 	dOffset_y =			(double*)add[i++];
+	dOffset_n_f =		(double*)add[i++];
+	dOffset_y_f =		(double*)add[i++];
 	dPeak_err_n =		(double*)add[i++];
 	dPeak_err_y =		(double*)add[i++];
+	dPeak_err_n_f =		(double*)add[i++];
+	dPeak_err_y_f =		(double*)add[i++];
 	dBase_err_n =		(double*)add[i++];
 	dBase_err_y =		(double*)add[i++];
 	dOff_err_n =		(double*)add[i++];
 	dOff_err_y =		(double*)add[i++];
+	dOff_err_n_f =		(double*)add[i++];
+	dOff_err_y_f =		(double*)add[i++];
 }

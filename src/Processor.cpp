@@ -84,12 +84,17 @@ Processor::Processor() {
 	memset(dLaplaceLow,		0, sizeof(dLaplaceLow));
 	memset(dLaplaceHigh,	0, sizeof(dLaplaceHigh));
 	memset(dXsq,			0, sizeof(dXsq));
+	memset(dXsq_f,			0, sizeof(dXsq_f));
 	memset(dPeak_scale,		0, sizeof(dPeak_scale));
+	memset(dPeak_scale_f,	0, sizeof(dPeak_scale_f));
 	memset(dBase_shift,		0, sizeof(dBase_shift));
 	memset(dOffset,			0, sizeof(dOffset));
+	memset(dOffset_f,		0, sizeof(dOffset_f));
 	memset(dPeak_err,		0, sizeof(dPeak_err));
+	memset(dPeak_err_f,		0, sizeof(dPeak_err_f));
 	memset(dBase_err,		0, sizeof(dBase_err));
 	memset(dOff_err,		0, sizeof(dOff_err));
+	memset(dOff_err_f,		0, sizeof(dOff_err_f));
 }
 
 Processor::~Processor() {
@@ -112,10 +117,10 @@ Processor::~Processor() {
 }
 
 void Processor::BusinessTime() {
-	int ch(0), ev(0), iProgCheck(0), iRate(0), iTimeleft(0), iLivetime(0);
+	int ch(0), ev(0), iProgCheck(0), iRate(0), iTimeleft(0);
 
 	unsigned long* ulpTimestamp = (unsigned long*)(buffer.get()+sizeof(long));
-	unsigned long ulTSFirst(0), ulTSLast(0), ulTSPrev(0);
+	unsigned long ulTSPrev(0);
 
 	TS->Branch("Timestamp", ulpTimestamp, "time_stamp/l");
 	TS->Branch("Timestamp_prev", &ulTSPrev, "time_stamp_prev/l");
@@ -157,7 +162,6 @@ void Processor::BusinessTime() {
 			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
 			else cout << iTimeleft << "s\n";
 		}
-		if (ev == 0) ulTSFirst = ulpTimestamp[0];
 	}
 	cout << "Processing completed\n";
 	T0->AddFriend("TS");
@@ -175,9 +179,7 @@ void Processor::BusinessTime() {
 	}
 	T0->Write("",TObject::kOverwrite);
 	TS->Write("",TObject::kOverwrite);
-	ulTSLast = ulpTimestamp[0];
-	iLivetime = (ulTSLast - ulTSFirst)/125e6;
-	cout << "Acquisition livetime: " << iLivetime << "s\nBeginning cleanup: ";
+	cout << "Beginning cleanup: ";
 	fin.close();
 	buffer.reset();
 	Discriminator::Cuts_deinit();
@@ -234,19 +236,29 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 
 		add[i++] = (void*)&dXsq[0][ch];
 		add[i++] = (void*)&dXsq[1][ch];
+		add[i++] = (void*)&dXsq_f[0][ch];
+		add[i++] = (void*)&dXsq_f[1][ch];
 		add[i++] = (void*)&dPeak_scale[0][ch];
 		add[i++] = (void*)&dPeak_scale[1][ch];
+		add[i++] = (void*)&dPeak_scale_f[0][ch];
+		add[i++] = (void*)&dPeak_scale_f[1][ch];
 		add[i++] = (void*)&dBase_shift[0][ch];
 		add[i++] = (void*)&dBase_shift[1][ch];
 		add[i++] = (void*)&dOffset[0][ch];
 		add[i++] = (void*)&dOffset[1][ch];
+		add[i++] = (void*)&dOffset_f[0][ch];
+		add[i++] = (void*)&dOffset_f[1][ch];
 
 		add[i++] = (void*)&dPeak_err[0][ch];
 		add[i++] = (void*)&dPeak_err[1][ch];
+		add[i++] = (void*)&dPeak_err_f[0][ch];
+		add[i++] = (void*)&dPeak_err_f[1][ch];
 		add[i++] = (void*)&dBase_err[0][ch];
 		add[i++] = (void*)&dBase_err[1][ch];
 		add[i++] = (void*)&dOff_err[0][ch];
 		add[i++] = (void*)&dOff_err[1][ch];
+		add[i++] = (void*)&dOff_err_f[0][ch];
+		add[i++] = (void*)&dOff_err_f[1][ch];
 	} else if (level == 2) {
 		add[i++] = (void*)&dFastInt[ch];
 		add[i++] = (void*)&dSlowInt[ch];
@@ -536,19 +548,29 @@ void Processor::Setup(string in) { // also opens raw and processed files
 
 		T1->Branch("Xsq_n",			dXsq[0],		"xsqn[4]/D");
 		T1->Branch("Xsq_y",			dXsq[1],		"xsqy[4]/D");
+		T1->Branch("Xsq_n_f",		dXsq_f[0],		"xsqnf[4]/D");
+		T1->Branch("Xsq_y_f",		dXsq_f[1],		"xsqyf[4]/D");
 		T1->Branch("Peakscale_n",	dPeak_scale[0],	"pkn[4]/D");
 		T1->Branch("Peakscale_y",	dPeak_scale[1],	"pky[4]/D");
+		T1->Branch("Peakscale_n_f",	dPeak_scale_f[0],"pknf[4]/D");
+		T1->Branch("Peakscale_y_f",	dPeak_scale_f[1],"pkyf[4]/D");
 		T1->Branch("Base_shift_n",	dBase_shift[0],	"bshn[4]/D");
 		T1->Branch("Base_shift_y",	dBase_shift[1],	"bshy[4]/D");
 		T1->Branch("Offset_n",		dOffset[0],		"offn[4]/D");
 		T1->Branch("Offset_y",		dOffset[1],		"offy[4]/D");
+		T1->Branch("Offset_n_f",	dOffset_f[0],	"offnf[4]/D");
+		T1->Branch("Offset_y_f",	dOffset_f[1],	"offyf[4]/D");
 
 		T1->Branch("Peak_err_n",	dPeak_err[0],	"pkerrn[4]/D");
 		T1->Branch("Peak_err_y",	dPeak_err[1],	"pkerry[4]/D");
+		T1->Branch("Peak_err_n_f",	dPeak_err_f[0],	"pkerrnf[4]/D");
+		T1->Branch("Peak_err_y_f",	dPeak_err_f[1],	"pkerryf[4]/D");
 		T1->Branch("Base_err_n",	dBase_err[0],	"baerrn[4]/D");
 		T1->Branch("Base_err_y",	dBase_err[1],	"baerry[4]/D");
 		T1->Branch("Off_err_n",		dOff_err[0],	"oferrn[4]/D");
 		T1->Branch("Off_err_y",		dOff_err[1],	"oferry[4]/D");
+		T1->Branch("Off_err_n_f",	dOff_err_f[0],	"oferrnf[4]/D");
+		T1->Branch("Off_err_y_f",	dOff_err_f[1],	"oferryf[4]/D");
 	}
 
 	cout << "Processing level " << iLevel << '\n';

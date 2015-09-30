@@ -98,6 +98,17 @@ public:
 	double *dOff_err_n;
 	double *dOff_err_y;
 
+	double *dXsq_n_f;
+	double *dPeakheight_n_f;
+	double *dOffset_n_f;
+	double *dXsq_y_f;
+	double *dPeakheight_y_f;
+	double *dOffset_y_f;
+	double *dPeak_err_n_f;
+	double *dPeak_err_y_f;
+	double *dOff_err_n_f;
+	double *dOff_err_y_f;
+
 	static float sfVersion;
 };
 
