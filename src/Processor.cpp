@@ -45,16 +45,16 @@ Processor::Processor() {
 	memset(bFullWave,		0, sizeof(bFullWave));
 	memset(bSaturated,		0, sizeof(bSaturated));
 	memset(sDecay,			0, sizeof(sDecay));
-	sRise.assign(MAX_CH,	vector<short>());
+	sRise.assign(MAX_CH,	vector<double>());
 	for (auto it = sRise.begin(); it < sRise.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
 	pRise = &sRise;
 //	memset(sRise,			0, sizeof(sRise));
-	sPeakX.assign(MAX_CH,	vector<short>());
+	sPeakX.assign(MAX_CH,	vector<double>());
 	for (auto it = sPeakX.begin(); it < sPeakX.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
 	pPeakX = &sPeakX;
 //	memset(sPeakX,			0, sizeof(sPeakX)); //
 	memset(sTrigger,		0, sizeof(sTrigger));
-	sHWHM.assign(MAX_CH,	vector<short>());
+	sHWHM.assign(MAX_CH,	vector<double>());
 	for (auto it = sHWHM.begin(); it < sHWHM.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
 	pHWHM = &sHWHM;
 //	memset(sHWHM,			0, sizeof(sHWHM)); //
@@ -114,7 +114,7 @@ Processor::~Processor() {
 void Processor::BusinessTime() {
 	int ch(0), ev(0), iProgCheck(0), iRate(0), iTimeleft(0), iLivetime(0);
 
-	unsigned long* ulpTimestamp = (unsigned long*)buffer.get();
+	unsigned long* ulpTimestamp = (unsigned long*)(buffer.get()+sizeof(long));
 	unsigned long ulTSFirst(0), ulTSLast(0), ulTSPrev(0);
 
 	TS->Branch("Timestamp", ulpTimestamp, "time_stamp/l");
@@ -475,10 +475,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	}
 	memset(buffer.get(), 0, iEventsize);
 	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
-	vector<vector<short>>* pRise(&sRise);
-	vector<vector<short>>* pPeakX(&sPeakX);
-	vector<vector<short>>* pHWHM(&sHWHM);
-	vector<vector<double>>* pPeak0(&dPeak0);
+
 	if (iLevel > 1) {
 		try {
 			T0 = unique_ptr<TTree>(new TTree("T2","Discriminator"));
@@ -490,7 +487,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	}
 
 	try {
-//		TS = unique_ptr<TTree>(new TTree("TS","Timestamps"));
+		TS = unique_ptr<TTree>(new TTree("TS","Timestamps"));
 		T0 = unique_ptr<TTree>(new TTree("T0","Event"));
 		if (iLevel > 0) T1 = unique_ptr<TTree>(new TTree("T1","Method"));
 	} catch (bad_alloc& ba) {
@@ -502,10 +499,10 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("Saturated",		bSaturated, "sat[8]/O");
 
 	T0->Branch("Decaytime",		sDecay,		"decay[8]/S");
-	T0->Branch("Risetime",		&pRise);
-	T0->Branch("Peakx",			&pPeakX);
+	T0->Branch("Risetime",		"vector<vector<double>>", &pRise);
+	T0->Branch("Peakx",			"vector<vector<double>>", &pPeakX);
 	T0->Branch("Trigger",		sTrigger,	"trig[8]/S");
-	T0->Branch("HWHM",			&pHWHM);
+	T0->Branch("HWHM",			"vector<vector<double>>", &pHWHM);
 
 	T0->Branch("Base",			dBase,		"base[8]/D");
 	T0->Branch("Sigma",			dSigma,		"sigma[8]/D");
@@ -513,7 +510,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("BasePS",		dBasePS,	"baseps[8]/D");
 	T0->Branch("BasePkP",		dBasePeakP,	"basepkp[8]/D");
 	T0->Branch("BasePkN",		dBasePeakN,	"basepkn[8]/D");
-	T0->Branch("Peakheight0",	&pPeak0);
+	T0->Branch("Peakheight0",	"vector<vector<double>>", &pPeak0);
 	T0->Branch("Integral",		dFullInt,	"integral[8]/D");
 
 	if (iLevel > 0) {

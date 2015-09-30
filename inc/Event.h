@@ -75,10 +75,10 @@ class Event {
 		bool* bSaturated;
 
 		short* sDecay;
-		vector<short>* sRise;
-		vector<short>* sPeakX;
+		vector<double>* sRise;
+		vector<double>* sPeakX;
 		short* sTrigger;
-		vector<short>* sHWHM;
+		vector<double>* sHWHM;
 
 		const int ciChan;
 

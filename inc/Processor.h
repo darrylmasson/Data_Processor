@@ -81,13 +81,13 @@ class Processor {
 		bool bSaturated[8]; // voltage saturation on digitizer
 
 		short sDecay[8]; // decay time
-		vector<vector<short>> sRise; // risetime
-		vector<vector<short>>* pRise;
-		vector<vector<short>> sPeakX; // x location of peak
-		vector<vector<short>>* pPeakX;
+		vector<vector<double>> sRise; // risetime
+		vector<vector<double>>* pRise;
+		vector<vector<double>> sPeakX; // x location of peak
+		vector<vector<double>>* pPeakX;
 		short sTrigger[8];
-		vector<vector<short>> sHWHM;
-		vector<vector<short>>* pHWHM;
+		vector<vector<double>> sHWHM;
+		vector<vector<double>>* pHWHM;
 
 		double dBase[8]; // these values in samples
 		double dSigma[8];

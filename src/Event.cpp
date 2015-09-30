@@ -218,10 +218,10 @@ void Event::SetAddresses(vector<void*> add) {
 	bSaturated		= (bool*)add[i++];
 
 	sDecay			= (short*)add[i++];
-	sRise			= (vector<short>*)add[i++];
-	sPeakX			= (vector<short>*)add[i++];
+	sRise			= (vector<double>*)add[i++];
+	sPeakX			= (vector<double>*)add[i++];
 	sTrigger		= (short*)add[i++];
-	sHWHM			= (vector<short>*)add[i++];
+	sHWHM			= (vector<double>*)add[i++];
 
 	dBaseline		= (double*)add[i++];
 	dBaseSigma		= (double*)add[i++];
