@@ -50,7 +50,7 @@ public:
 	Method(int length, int fast, int slow, int samples, float gain[2], double scaleT, double scaleV, shared_ptr<Event> ev);
 	~Method();
 	void Analyze();
-	void SetDCOffset(short sResolution, int dc_offset)	{dZero = sResolution*(1.-(double)dc_offset/65535.);}
+	void SetDCOffset(short sResolution, int dc_offset)	{dZero = sResolution*(1.-(double)dc_offset/65535.);} // conversion from wavedump code
 	void SetDefaultValues();
 	void SetAddresses(vector<void*> add);
 	int Failed() {return iFailed;}

@@ -22,9 +22,9 @@ void PrintVersions() {
 
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v4\n";
-	int i(0), iSpecial(-1), iElapsed(0), iAverage(0);
+	int i(0), iElapsed(0), iAverage(0), iLevel(0);
 	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
-	const string sArgs = "Arguments: -f file [-s source -c config -x special -a moving_average -p detector_positions -v -e]";
+	const string sArgs = "Arguments: -f file [-s source -l level -c config -a moving_average -p detector_positions -v -e]";
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
 	Processor processor;
@@ -38,10 +38,11 @@ int main(int argc, char **argv) {
 			case 'c': sConfigFile = optarg;		break;
 			case 'e': g_verbose = true;			break;
 			case 'f': sFileset = optarg;		break;
+			case 'l': iLevel = atoi(optarg);	break;
 			case 'p': sDetectorPos = optarg;	break;
 			case 's': sSource = optarg;			break;
 			case 'v': PrintVersions();			return 0;
-			case 'x': iSpecial = atoi(optarg);	break;
+//			case 'x': iSpecial = atoi(optarg);	break;
 			default: cout << sArgs << '\n';
 				return -1;
 	}	}
@@ -49,7 +50,7 @@ int main(int argc, char **argv) {
 		cout << "No file specified\n";
 		return 0;
 	}
-	switch(iSpecial) {
+/*	switch(iSpecial) {
 		case -1: break; //cout << "No special options\n"; break; // default
 		case 0: cout << "Special samplerate\n"; break; // 500 MSa/s samplerate
 		case 1: cout << "Special resolution: 13-bit\n"; break; // 13-bit simulation
@@ -57,10 +58,10 @@ int main(int argc, char **argv) {
 		case 3: cout << "Special resolution: 11-bit\n"; break; // 11-bit simulation
 		case 4: cout << "Special resolution: 10-bit\n"; break; // 10-bit simulation
 		default : cout << "Error: invalid special option specified\n"; return 0;
-	}
+	} */
 
 	try { // general setup and preparatory steps
-		processor.SetSpecials(iSpecial, iAverage);
+		processor.SetParams(iAverage, iLevel);
 		processor.SetConfigFile(sConfigFile);
 		processor.SetSource(sSource);
 		processor.SetDetectorPositions(sDetectorPos);
