@@ -254,7 +254,7 @@ void Method::Analyze() {
 
 	for (auto it = event->vPeaks.front().itStart; it <= event->vPeaks.front().itStart + iFast; it++) *dFastInt += *it;
 	*dSlowInt = *dFastInt;
-	for (auto it = event->vPeaks.front().itStart + iFast; it <= event->vPeaks.front().itStart + iSlow; it++) *dSlowInt += *it;
+	for (auto it = event->vPeaks.front().itStart + iFast+1; it <= event->vPeaks.front().itStart + iSlow; it++) *dSlowInt += *it;
 
 	*dFastInt *= 2.; // trapezoid rule: integral = f(0) + 2*f(1) + ... + 2*f(n-1) + f(n)
 	*dSlowInt *= 2.; // faster to do sum f(i), double, and subtract endpoints
@@ -380,8 +380,8 @@ void Method::SetAddresses(vector<void*> add) {
 	dBaseSigma =		(double*)add[i++];
 	dBasePost =			(double*)add[i++];
 	dBasePostSigma =	(double*)add[i++];
-	dSlowInt =			(double*)add[i++];
 	dFastInt =			(double*)add[i++];
+	dSlowInt =			(double*)add[i++];
 	dPeak1 =			(double*)add[i++];
 	dPeak2 =			(double*)add[i++];
 
