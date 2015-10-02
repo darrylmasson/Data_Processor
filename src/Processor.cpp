@@ -6,11 +6,37 @@
 
 using namespace std::chrono;
 
+long UnixConverter(string in){
+	//Read in file time
+	int nYY = stoi(in.substr(0,2));
+	int nMM = stoi(in.substr(2,2));
+	int nDD = stoi(in.substr(4,2));
+	int nHH = stoi(in.substr(7,2));
+	int nMinutes = stoi(in.substr(9.2));
+
+	//Number of Days since 1 Jan 1970
+	long nDays = 365*(nYY-1970);
+	//Add leap days
+	for(int i = 1970; i < nYY; i++) if((i%4 == 0) && (i%200 != 0)) nDays++;
+	int MonthArr[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+	if (nYY%4 == 0)	MonthArr[1] = 29;
+	for(int i = 0; i < nMM - 1 ; i++) nDays += MonthArr[i];
+	nDays += nDD;
+
+	//Convert to Unix Timestamp
+	long nFiletime = ((nDays*24 + nHH)*60l + nMinutes)*60l;
+	if ((nYY == 14) && ((nMM == 3 && nDD >= 9) || (3 < nMM && nMM < 11) || (nMM == 11 && nDD < 2))) nFiletime += 4l*60l*60l;
+	else if ((nYY == 15) && ((nMM == 3 && nDD >= 8) || (3 < nMM && nMM < 11))) nFiletime += 4l*60l*60l;
+	else nFiletime += 5l*60l*60l;
+	return nFiletime;
+}
+
 Processor::Processor() {
 	if (g_verbose) cout << "Processor c'tor\n";
 //	memset(this, 0, sizeof(*this));
 	iAverage = 0;
 	iSpecial = -1;
+	iLevel = 0;
 
 	sConfigFileName = "\0";
 	sRawDataFile = "\0";
@@ -175,7 +201,7 @@ void Processor::BusinessTime() {
 			Discriminator::FriendshipIsMagic();
 			Discriminator::Cuts_write();
 		}
-		T1->Write();
+		T1->Write("",TObject::kOverwrite);
 	}
 	T0->Write("",TObject::kOverwrite);
 	TS->Write("",TObject::kOverwrite);
@@ -302,6 +328,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	char cBuffer[sizeof_f_header];
 	long filesize;
 	int ch(-1);
+	long lUnixTS(0);
 
 	if (g_verbose) cout << "Opening files\n";
 	sRawDataFile = sWorkingDir + "/rawdata/" + in + ".dat";
@@ -422,6 +449,8 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	iTimeNow = (t_today->tm_hour)*100 + t_today->tm_min; // hhmm
 	iDateNow = (t_today->tm_year-100)*10000 + (t_today->tm_mon+1)*100 + t_today->tm_mday; // yymmdd
 	sprintf(cTime, "%i_%i",iDateNow,iTimeNow);
+	lUnixTS = UnixConverter(in);
+
 	switch (digitizer.id) {
 		case dt5751 :
 			if (iSpecial == 0) iXSQ_ndf = min(iEventlength/2, 225)-3; // length - number of free parameters
@@ -455,6 +484,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("DC_offset",			uiDCOffset,		"dc_off[8]/i");
 	T0->Branch("Posttrigger",		&iTrigPost,		"tri_post/I");
 	T0->Branch("Eventlength",		&iEventlength,	"ev_len/I");
+	T0->Branch("UnixTS",			&lUnixTS,		"unixts/L");
 	T0->Branch("Level",				&iLevel,		"level/I");
 	T0->Branch("Chisquared_NDF",	&iXSQ_ndf,		"ndf/I");
 	T0->Branch("Fitter",			&iXSQ_ndf,		"fitter/I");

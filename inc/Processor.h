@@ -144,7 +144,7 @@ class Processor {
 		void SetConfigFile(string in)				{sConfigFileName = in;}
 		void SetDetectorPositions(string in);
 		void SetSource(string in)					{strcpy(cSource,in.c_str());}
-		void SetSpecials(int special, int average)	{iSpecial = special; iAverage = average;}
+		void SetParams(int average, int level)	{iAverage = average; iLevel = level;}
 		void Setup(string in); // opens files, parses header and config file, does trees and alloc'ing
 };
 
