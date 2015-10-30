@@ -18,7 +18,7 @@ using namespace std;
 
 const int MAX_CH = 8;
 const string sWorkingDir(WORKING_DIR, string(WORKING_DIR).find_last_of('/'));
-const int sizeof_f_header = 86; // sizeof(f_header_t) returns the wrong value due to padding
+const int sizeof_f_header = 94; // 86 until 2016
 const int sizeof_ev_header = 16;
 
 extern bool g_verbose; // for debugging purposes

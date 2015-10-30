@@ -2,9 +2,9 @@
 #include "TFile.h"
 #include "TVectorT.h"
 
-const double pi = acos(-1.0);
+const auto pi = acos(-1.0);
 
-float Method::sfVersion = 1.1;
+float Method::sfVersion = 1.2;
 
 Method::Method(int length, int fast, int slow, int samples, float gain[2], double scaleT, double scaleV, shared_ptr<Event> ev) : dSlow(0.01), dShigh(1.0) {
 	if (g_verbose) cout << "Method c'tor\n";
@@ -60,7 +60,6 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		for (auto i = 0; i < iEventlength; i++) dExp[n][i] = exp(-dS[n]*i*dScaleT);
 	}
 
-	int i(0), p(0);
 	if (dScaleT == 1) { // ns/Sa
 		iStdLength	= 450;
 		iStdTrig	= 64;
@@ -100,7 +99,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		iFailed = 1;
 		return;
 	}
-	for (p = 0; p < P; p++) {
+	for (int p = 0; p < P; p++) {
 		try {dStdWave[p].reset(new double[iStdLength]);}
 		catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "Std Events\n";
@@ -116,17 +115,17 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		dStdPeak[p] = 1000;
 		switch(iStdLength) {
 			case 225 : // 500 MSa/s
-				for (i = 0; i < iStdLength; i++) { // averages
+				for (int i = 0; i < iStdLength; i++) { // averages
 					dStdWave[p][i] = ((*pWave)[2*i] + (*pWave)[2*i+1])/2.;
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 899 : // 2 GSa/s
-				for (i = 0; i < iStdLength; i++) { // interpolates
+				for (int i = 0; i < iStdLength; i++) { // interpolates
 					dStdWave[p][i] = (i%2) ? ((*pWave)[(i+1)/2] + (*pWave)[(i-1)/2])/2. : (*pWave)[i/2]; // i%2==1 so i/2 = (i-1)/2
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 450 : // 1 GSa/s
-				for (i = 0; i < iStdLength; i++) {
+				for (int i = 0; i < iStdLength; i++) {
 					dStdWave[p][i] = (*pWave)[i];
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
@@ -142,19 +141,34 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 
 	try {
 		dX.reset(new double[iEventlength]);
-		fit = unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
+		fit_n	= unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
+		fit_y	= unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
+		fit_n_f	= unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
+		fit_y_f	= unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Fitter\n";
 		iFailed = 1;
 		return;
 	}
-	fit->SetParNames("Peakscale","Baseline","Offset","particle");
+	fit_n->SetParNames("Peakscale","Baseline","Offset","particle");
+	fit_y->SetParNames("Peakscale","Baseline","Offset","particle");
+	fit_n_f->SetParNames("Peakscale","Baseline","Offset","particle");
+	fit_y_f->SetParNames("Peakscale","Baseline","Offset","particle");
+
+	fit_n->FixParameter(3, n);
+	fit_y->FixParameter(3, y);
+	fit_n_f->FixParameter(3, n);
+	fit_y_f->FixParameter(3, y);
+
 	for (auto i = 0; i < iEventlength; i++) dX[i] = i;
 }
 
 Method::~Method() {
 	if (g_verbose) cout << "Method d'tor\n";
-	fit.reset();
+	fit_n.reset();
+	fit_y.reset();
+	fit_n_f.reset();
+	fit_y_f.reset();
 	graph.reset();
 	event.reset();
 	for (auto i = 0; i < ciDFTOrder; i++) {
@@ -256,7 +270,7 @@ void Method::Analyze() {
 	*dSlowInt = *dFastInt;
 	for (auto it = event->vPeaks.front().itStart + iFast+1; it <= event->vPeaks.front().itStart + iSlow; it++) *dSlowInt += *it;
 
-	*dFastInt *= 2.; // trapezoid rule: integral = f(0) + 2*f(1) + ... + 2*f(n-1) + f(n)
+	*dFastInt *= 2.; // trapezoid rule: integral ~ f(0) + 2*f(1) + ... + 2*f(n-1) + f(n)
 	*dSlowInt *= 2.; // faster to do sum f(i), double, and subtract endpoints
 	*dFastInt -= (*event->vPeaks.front().itStart + *(event->vPeaks.front().itStart + iFast));
 	*dSlowInt -= (*event->vPeaks.front().itStart + *(event->vPeaks.front().itStart + iSlow));
@@ -313,63 +327,62 @@ void Method::Analyze() {
 	*dLaplaceLow *= 0.5*dScaleV;
 
 	//NGM
-	try {graph.reset(new TGraph(event->Length(), dX.get(), event->itBegin));}
-	catch (bad_alloc& ba) {
+	try {
+		graph.reset(new TGraph(event->Length(), dX.get(), event->itBegin));
+	} catch (bad_alloc& ba) {
 		return;
 	}
-	fit->SetParameter(0, *dPeakheight_n);
-	fit->SetParameter(1, *dBaseline_n);
-	fit->SetParameter(2, *dOffset_n);
-	fit->FixParameter(3, n);
-	graph->Fit(fit.get(), "Q N"); // quiet, no-plot
+	fit_n->SetParameter(0, *dPeakheight_n);
+	fit_n->SetParameter(1, *(event->dBaseline));
+	fit_n->SetParameter(2, *dOffset_n);
+	graph->Fit(fit_n.get(), "Q N"); // quiet, no-plot
 
-	*dXsq_n			= fit->GetChisquare();
-	*dPeakheight_n	= fit->GetParameter(0)/fGain[n]/iResolutionScale;
-	*dBaseline_n	= fit->GetParameter(1);
-	*dOffset_n		= fit->GetParameter(2);
+	*dXsq_n			= fit_n->GetChisquare();
+	*dPeakheight_n	= fit_n->GetParameter(0)/fGain[n]/iResolutionScale;
+	*dBaseline_n	= fit_n->GetParameter(1);
+	*dOffset_n		= fit_n->GetParameter(2);
 
-	*dPeak_err_n	= fit->GetParError(0)/fGain[n]/iResolutionScale;
-	*dBase_err_n	= fit->GetParError(1);
-	*dOff_err_n		= fit->GetParError(2);
+	*dPeak_err_n	= fit_n->GetParError(0)/fGain[n]/iResolutionScale;
+	*dBase_err_n	= fit_n->GetParError(1);
+	*dOff_err_n		= fit_n->GetParError(2);
 
-	fit->SetParameter(0, *dPeakheight_n_f);
-	fit->FixParameter(1, *event->dBaseline);
-	fit->SetParameter(2, *dOffset_n_f);
-	graph->Fit(fit.get(), "Q N"); // quiet, no-plot
+	fit_y->SetParameter(0, *dPeakheight_y);
+	fit_y->SetParameter(1, *(event->dBaseline));
+	fit_y->SetParameter(2, *dOffset_y);
+	graph->Fit(fit_y.get(), "Q N");
 
-	*dXsq_n_f		= fit->GetChisquare();
-	*dPeakheight_n_f= fit->GetParameter(0)/fGain[n]/iResolutionScale;
-	*dOffset_n_f	= fit->GetParameter(2);
+	*dXsq_y			= fit_y->GetChisquare();
+	*dPeakheight_y	= fit_y->GetParameter(0)/fGain[y]/iResolutionScale;
+	*dBaseline_y	= fit_y->GetParameter(1);
+	*dOffset_y		= fit_y->GetParameter(2);
 
-	*dPeak_err_n_f	= fit->GetParError(0)/fGain[n]/iResolutionScale;
-	*dOff_err_n_f	= fit->GetParError(2);
+	*dPeak_err_y	= fit_y->GetParError(0)/fGain[y]/iResolutionScale;
+	*dBase_err_y	= fit_y->GetParError(1);
+	*dOff_err_y		= fit_y->GetParError(2);
 
-	fit->SetParameter(0, *dPeakheight_y);
-	fit->SetParameter(1, *dBaseline_y);
-	fit->SetParameter(2, *dOffset_y);
-	fit->FixParameter(3, y);
-	graph->Fit(fit.get(), "Q N");
+	fit_n_f->SetParameter(0, *dPeakheight_n_f); // fitting with fixed baseline must be done after free baseline
+	fit_n_f->FixParameter(1, *(event->dBaseline));
+	fit_n_f->SetParameter(2, *dOffset_n_f);
+	graph->Fit(fit_n_f.get(), "Q N"); // quiet, no-plot
 
-	*dXsq_y			= fit->GetChisquare();
-	*dPeakheight_y	= fit->GetParameter(0)/fGain[y]/iResolutionScale;
-	*dBaseline_y	= fit->GetParameter(1);
-	*dOffset_y		= fit->GetParameter(2);
+	*dXsq_n_f		= fit_n_f->GetChisquare();
+	*dPeakheight_n_f= fit_n_f->GetParameter(0)/fGain[n]/iResolutionScale;
+	*dOffset_n_f	= fit_n_f->GetParameter(2);
 
-	*dPeak_err_y	= fit->GetParError(0)/fGain[y]/iResolutionScale;
-	*dBase_err_y	= fit->GetParError(1);
-	*dOff_err_y		= fit->GetParError(2);
+	*dPeak_err_n_f	= fit_n_f->GetParError(0)/fGain[n]/iResolutionScale;
+	*dOff_err_n_f	= fit_n_f->GetParError(2);
 
-	fit->SetParameter(0, *dPeakheight_y_f);
-	fit->FixParameter(1, *event->dBaseline);
-	fit->SetParameter(2, *dOffset_y_f);
-	graph->Fit(fit.get(), "Q N"); // quiet, no-plot
+	fit_y_f->SetParameter(0, *dPeakheight_y_f); // baseline already fixed
+	fit_y_f->SetParameter(2, *dOffset_y_f);
+	fit_y_f->FixParameter(3, y);
+	graph->Fit(fit_y_f.get(), "Q N"); // quiet, no-plot
 
-	*dXsq_y_f		= fit->GetChisquare();
-	*dPeakheight_y_f= fit->GetParameter(0)/fGain[y]/iResolutionScale;
-	*dOffset_y_f	= fit->GetParameter(2);
+	*dXsq_y_f		= fit_y_f->GetChisquare();
+	*dPeakheight_y_f= fit_y_f->GetParameter(0)/fGain[y]/iResolutionScale;
+	*dOffset_y_f	= fit_y_f->GetParameter(2);
 
-	*dPeak_err_y_f	= fit->GetParError(0)/fGain[y]/iResolutionScale;
-	*dOff_err_y_f	= fit->GetParError(2);
+	*dPeak_err_y_f	= fit_y_f->GetParError(0)/fGain[y]/iResolutionScale;
+	*dOff_err_y_f	= fit_y_f->GetParError(2);
 }
 
 void Method::SetAddresses(vector<void*> add) {

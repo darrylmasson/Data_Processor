@@ -42,7 +42,10 @@ protected:
 	unique_ptr<double[]> dX;
 	double dStdNorm[P];
 	double dStdPeak[P];
-	unique_ptr<TF1> fit;
+	unique_ptr<TF1> fit_n;
+	unique_ptr<TF1> fit_y;
+	unique_ptr<TF1> fit_n_f;
+	unique_ptr<TF1> fit_y_f;
 	unique_ptr<TGraph> graph;
 
 public:

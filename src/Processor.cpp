@@ -153,12 +153,11 @@ void Processor::BusinessTime() {
 
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
-	iProgCheck = max(iNumEvents/(iLevel ? 100 : 10) + 1, 10000); // too many print statements slows the process
+	iProgCheck = max(iNumEvents/(iLevel ? 100 : 10) + 1, (iLevel ? 1000 : 10000)); // too many print statements slows the process
 
 	t_that = steady_clock::now();
 	cout << "Processing:\n";
 	cout << "Completed\tRate (ev/s)\tTime left\n";
-	fin.seekg(sizeof_f_header, fin.beg);
 	f->cd();
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.get(), iEventsize);
@@ -356,13 +355,14 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	filesize = fin.tellg();
 	fin.seekg(0, fin.beg);
 	fin.read(cBuffer, sizeof_f_header);
-
+	fin.seekg((in[1] >= '6' ? sizeof_f_header : sizeof_f_header-sizeof(long)),fin.beg);
 	strncpy(digitizer.cName, cBuffer, sizeof(digitizer.cName)); // digitizer name
 	memcpy(&usMask, cBuffer + 12, sizeof(usMask)); // channel mask
 	memcpy(&iEventlength, cBuffer + 14, sizeof(iEventlength)); // Eventlength
 	memcpy(&iTrigPost, cBuffer + 18, sizeof(iTrigPost)); // post-trigger
 	memcpy(uiDCOffset, cBuffer + 22, sizeof(uiDCOffset)); // dc offsets
 	memcpy(uiThreshold, cBuffer + 54, sizeof(uiThreshold)); // trigger thresholds
+	if (in[1] >= '6') memcpy(&lUnixTS, cBuffer + 86, sizeof(lUnixTS)); // unix timestamp
 
 	if (strcmp(digitizer.cName, "DT5730") == 0) {
 		digitizer.dSamplerate = 5E8;
@@ -409,7 +409,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	iNchan = 0;
 	for (auto i = 0; i < MAX_CH; i++) if (usMask & (1<<i)) iChan[iNchan++] = i;
 	iEventsize = sizeof_ev_header + iNchan*iEventlength*sizeof(short); // each sample is size 2
-	iNumEvents = (filesize - sizeof_f_header)/iEventsize;
+	iNumEvents = (filesize - (in[1] >= '6' ? sizeof_f_header : sizeof_f_header-sizeof(long)))/iEventsize;
 
 	if (g_verbose) cout << "Parsing config file\n";
 	string sFilename = sWorkingDir + "/Data_Processor/config/" + sConfigFileName;
@@ -424,7 +424,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	while (!fconf.eof()) {
 		fconf.getline(cBuffer, 64, '\n');
 		if (cBuffer[0] == '#') continue;
-		if (strstr(cBuffer, "LEVEL") != 0) iLevel = atoi(cBuffer + 6);
+//		if (strstr(cBuffer, "LEVEL") != 0) iLevel = atoi(cBuffer + 6);
 		if (strcmp(cBuffer + 10, digitizer.cName) == 0) {
 			fconf.getline(cBuffer, 64, '\n');
 			while (strstr(cBuffer, "END") == NULL) {
@@ -449,7 +449,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	iTimeNow = (t_today->tm_hour)*100 + t_today->tm_min; // hhmm
 	iDateNow = (t_today->tm_year-100)*10000 + (t_today->tm_mon+1)*100 + t_today->tm_mday; // yymmdd
 	sprintf(cTime, "%i_%i",iDateNow,iTimeNow);
-	lUnixTS = UnixConverter(in);
+	lUnixTS = in[1] >= '6' ? lUnixTS : UnixConverter(in);
 
 	switch (digitizer.id) {
 		case dt5751 :
