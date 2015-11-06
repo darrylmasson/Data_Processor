@@ -22,6 +22,7 @@ const int sizeof_f_header = 94; // 86 until 2016
 const int sizeof_ev_header = 16;
 
 extern bool g_verbose; // for debugging purposes
+extern bool g_quiet;
 
 enum ret_codes_t {
 	no_error = 0,

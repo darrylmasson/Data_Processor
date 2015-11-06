@@ -25,7 +25,7 @@ long UnixConverter(string in){
 
 	//Convert to Unix Timestamp
 	long nFiletime = ((nDays*24 + nHH)*60l + nMinutes)*60l;
-	if ((nYY == 14) && ((nMM == 3 && nDD >= 9) || (3 < nMM && nMM < 11) || (nMM == 11 && nDD < 2))) nFiletime += 4l*60l*60l;
+	if ((nYY == 14) && ((nMM == 3 && nDD >= 9) || (3 < nMM && nMM < 11) || (nMM == 11 && nDD < 2))) nFiletime += 4l*60l*60l; // daylight savings
 	else if ((nYY == 15) && ((nMM == 3 && nDD >= 8) || (3 < nMM && nMM < 11))) nFiletime += 4l*60l*60l;
 	else nFiletime += 5l*60l*60l;
 	return nFiletime;
@@ -128,7 +128,6 @@ Processor::~Processor() {
 		dTrace[ch] = nullptr;
 		event[ch] = nullptr;
 		method[ch] = nullptr;
-		discriminator[ch] = nullptr;
 	}
 	if (g_verbose) cout << "Processor d'tor\n";
 	TS = nullptr;
@@ -156,26 +155,22 @@ void Processor::BusinessTime() {
 	iProgCheck = max(iNumEvents/(iLevel ? 100 : 10) + 1, (iLevel ? 1000 : 10000)); // too many print statements slows the process
 
 	t_that = steady_clock::now();
-	cout << "Processing:\n";
-	cout << "Completed\tRate (ev/s)\tTime left\n";
+	if (!g_quiet) {
+		cout << "Processing:\n";
+		cout << "Completed\tRate (ev/s)\tTime left\n";
+	}
 	f->cd();
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.get(), iEventsize);
 		for (ch = 0; ch < iNchan; ch++) {
 			event[ch]->Analyze();
-			if (iLevel > 0) {
-				method[ch]->Analyze();
-				if (iLevel > 1) discriminator[ch]->Discriminate();
-			}
+			if (iLevel > 0) method[ch]->Analyze();
 		}
 		T0->Fill();
 		TS->Fill();
-		if (iLevel > 0) {
-			T1->Fill();
-			if (iLevel > 1) Discriminator::Cuts_fill();
-		}
+		if (iLevel > 0) T1->Fill();
 		ulTSPrev = *ulpTimestamp;
-		if (ev % iProgCheck == iProgCheck/2) { // progress updates
+		if ((!g_quiet) && (ev % iProgCheck == iProgCheck/2)) { // progress updates
 			cout << ev*100l/iNumEvents << "%\t\t";
 			t_this = steady_clock::now();
 			t_elapsed = duration_cast<duration<double>>(t_this-t_that);
@@ -194,12 +189,6 @@ void Processor::BusinessTime() {
 		T1->AddFriend("TS");
 		T1->AddFriend("T0");
 		T0->AddFriend("T1");
-		if (iLevel > 1) {
-			T0->AddFriend("T2");
-			T1->AddFriend("T2");
-			Discriminator::FriendshipIsMagic();
-			Discriminator::Cuts_write();
-		}
 		T1->Write("",TObject::kOverwrite);
 	}
 	T0->Write("",TObject::kOverwrite);
@@ -207,7 +196,6 @@ void Processor::BusinessTime() {
 	cout << "Beginning cleanup: ";
 	fin.close();
 	buffer.reset();
-	Discriminator::Cuts_deinit();
 	TS.reset();
 	T0.reset();
 	T1.reset();
@@ -518,16 +506,6 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	memset(buffer.get(), 0, iEventsize);
 	unsigned short* uspTrace = (unsigned short*)(buffer.get() + sizeof_ev_header);
 
-	if (iLevel > 1) {
-		try {
-			T0 = unique_ptr<TTree>(new TTree("T2","Discriminator"));
-		} catch (bad_alloc& ba) {
-			cout << error_message[alloc_error] << "T2\n";
-			throw ProcessorException();
-		}
-		Discriminator::CutsTree_init(T0.release());
-	}
-
 	try {
 		TS = unique_ptr<TTree>(new TTree("TS","Timestamps"));
 		T0 = unique_ptr<TTree>(new TTree("T0","Event"));
@@ -602,7 +580,6 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		T1->Branch("Off_err_n_f",	dOff_err_f[0],	"oferrnf[4]/D");
 		T1->Branch("Off_err_y_f",	dOff_err_f[1],	"oferryf[4]/D");
 	}
-
 	cout << "Processing level " << iLevel << '\n';
 
 	for (auto ch = 0; ch < iNchan; ch++) { // initializing all classes needed
@@ -634,19 +611,5 @@ void Processor::Setup(string in) { // also opens raw and processed files
 			method[ch]->SetAddresses(SetAddresses(ch,1));
 			method[ch]->SetDCOffset(digitizer.sResolution, uiDCOffset[iChan[ch]]);
 		}
-		if (iLevel > 1) {
-			try {
-				discriminator[ch].reset(new Discriminator(iChan[ch]));
-			} catch (bad_alloc& ba) {
-				cout << error_message[alloc_error] << "Discriminator\n";
-				throw ProcessorException();
-			}
-			if (discriminator[ch]->Failed()) {
-				cout << error_message[method_error] << "Discriminator\n";
-				throw ProcessorException();
-			}
-			discriminator[ch]->SetAddresses(SetAddresses(ch,2));
-		}
 	} // ch loop
-
 }

@@ -8,10 +8,14 @@
 #ifndef PROCESSOR_H
 #include "Processor.h"
 #endif
+#ifndef DISCRIMINATOR_H
+#include "Discriminator.h"
+#endif
 
 using namespace std::chrono;
 
 bool g_verbose(false);
+bool g_quiet(false);
 
 void PrintVersions() {
 	cout << "Versions installed:\n";
@@ -28,6 +32,7 @@ int main(int argc, char **argv) {
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
 	Processor processor;
+	Discriminator discriminator;
 	if (argc < 2) {
 		cout << sArgs << '\n';
 		return 0;
@@ -60,20 +65,30 @@ int main(int argc, char **argv) {
 		default : cout << "Error: invalid special option specified\n"; return 0;
 	} */
 
-	try { // general setup and preparatory steps
-		processor.SetParams(iAverage, iLevel);
-		processor.SetConfigFile(sConfigFile);
-		processor.SetSource(sSource);
-		processor.SetDetectorPositions(sDetectorPos);
-		processor.Setup(sFileset);
-	} catch (ProcessorException& e) {
-		cout << e.what();
-		cout << "Setup failed, exiting\n";
-		return 0;
+	if (iLevel <= 2) {
+		try { // general setup and preparatory steps
+			processor.SetParams(iAverage, iLevel);
+			processor.SetConfigFile(sConfigFile);
+			processor.SetSource(sSource);
+			processor.SetDetectorPositions(sDetectorPos);
+			processor.Setup(sFileset);
+		} catch (ProcessorException& e) {
+			cout << e.what();
+			cout << "Setup failed, exiting\n";
+			return 0;
+		}
+	}
+	if (iLevel >= 2) {
+		discriminator.Setup(sFileset);
+		if (discriminator.Failed()) {
+			cout << "Discriminator setup failed\n";
+			iLevel = 1;
+		}
 	}
 
 	t_start = steady_clock::now();
-	processor.BusinessTime();
+	if (iLevel <= 2) processor.BusinessTime();
+	if (iLevel >= 2) discriminator.Discriminate();
 	t_end = steady_clock::now();
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
 	iElapsed = t_elapsed.count();

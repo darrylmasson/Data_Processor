@@ -1,70 +1,60 @@
 #ifndef DISCRIMINATOR_H
 #define DISCRIMINATOR_H
 
-#ifndef METHOD_H
-#include "Method.h"
+#ifndef NGDP_TYPES_H
+#include "NGDP_types.h"
 #endif
 
 #include "TTree.h"
+#include "TFile.h"
 
 class Discriminator {
 	private:
-		enum { mean = 0, sig1, sig3, NUM_BANDS};
+		enum { mean = 0, sig1, sig3, NUM_BANDS, NUM_CHANS = 4, iDiscrimBins = 500};
 
 		const double gain[3];
 
 		char			cDiscrimNames[NUM_DISCRIMS][4];
 		char			cBandNames[NUM_BANDS][5];
 
-		vector<double> 		vDiscrimBand[NUM_DISCRIMS][4][NUM_BANDS];
+		double 		dDiscrimBand[NUM_DISCRIMS][NUM_CHANS][NUM_BANDS][iDiscrimBins];
 
-		static unique_ptr<TTree> tree;
+		unique_ptr<TTree> T0;
+		unique_ptr<TTree> T1;
+		unique_ptr<TTree> T2;
+		unique_ptr<TFile> f;
 
-		static bool sbCCMCutPass[4][NUM_BANDS];
-		static bool sbPGACutPass[4][NUM_BANDS];
-		static bool sbNGMCutPass[4][NUM_BANDS];
-		static bool sbWBSCutPass[4][NUM_BANDS];
-		static bool sbLAPCutPass[4][NUM_BANDS];
-		static bool sbDFTCutPass[4][NUM_BANDS];
+		bool sbCutPass[NUM_DISCRIMS][NUM_CHANS][NUM_BANDS];
 
-		static bool sbCutPass[NUM_DISCRIMS][4][NUM_BANDS];
-
-		int			iChan[4];
-		int			iDiscrimBins;
+		int			iChan[NUM_CHANS];
+		int			iNChan;
 		int			iFailed;
-		const int	ch;
-		const int	ciChan;
+		long		lNumEvents;
 
-		const double* fastint;
-		const double* slowint;
-		const double* sample;
-		const double* peakheight2;
-		const double* xsq_n;
-		const double* xsq_y;
-		const double* peakscale_n;
-		const double* peakscale_y;
-		const double* baseshift_n;
-		const double* baseshift_y;
-		const double* dft_even;
-		const double* dft_odd;
-		const double* lap_high;
-		const double* lap_low;
-		const double* integral;
+		double fastint[8];
+		double slowint[8];
+		double sample[8];
+		double peakheight2[8];
+		double xsq_n[8];
+		double xsq_y[8];
+		double peakscale_n[8];
+		double peakscale_y[8];
+		double baseshift_n[8];
+		double baseshift_y[8];
+		double dft_even[8];
+		double dft_odd[8];
+		double lap_high[8];
+		double lap_low[8];
+		double integral[8];
 
-		static double dDiscrim[NUM_DISCRIMS][4];
+		double dDiscrim[NUM_DISCRIMS][NUM_CHANS];
 
 public:
-		Discriminator(int channel);
+		Discriminator();
 		~Discriminator();
-		void SetDiscriminationValue();
 		void Discriminate();
 		int Failed() {return iFailed;}
-		void SetAddresses(vector<void*> add);
-		static void FriendshipIsMagic();
-		static void CutsTree_init(TTree* tree_cuts);
-		static void Cuts_fill();
-		static void Cuts_write()		{Discriminator::tree->Write();}
-		static void Cuts_deinit()		{Discriminator::tree.reset();}
+		void Setup(string filein);
 
 		static float sfVersion;
 };

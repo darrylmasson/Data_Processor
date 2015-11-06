@@ -284,6 +284,8 @@ void Method::Analyze() {
 		*dSample /= (2.*iPGAAverage + 1);
 	} else *dSample = -1;
 
+#ifndef CCM_ONLY
+
 	//DFT
 	for (m = 0; m < ciDFTOrder; m++) {
 		dReal = 0;
@@ -383,6 +385,8 @@ void Method::Analyze() {
 
 	*dPeak_err_y_f	= fit_y_f->GetParError(0)/fGain[y]/iResolutionScale;
 	*dOff_err_y_f	= fit_y_f->GetParError(2);
+
+#endif
 }
 
 void Method::SetAddresses(vector<void*> add) {

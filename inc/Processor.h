@@ -6,10 +6,8 @@
 #ifndef METHOD_H
 #include "Method.h"
 #endif
-#ifndef DISCRIMINATOR_H
-#include "Discriminator.h"
-#endif
 #include "TFile.h"
+#include "TTree.h"
 
 class ProcessorException : public exception { // simpler than checking Failed() after every step in setup
 	public:
@@ -45,7 +43,6 @@ class Processor {
 		unique_ptr<double[]> dTrace[MAX_CH];
 		shared_ptr<Event> event[MAX_CH];
 		shared_ptr<Method> method[MAX_CH];
-		shared_ptr<Discriminator> discriminator[MAX_CH];
 
 		bool			bPositionsSet;
 
@@ -140,6 +137,7 @@ class Processor {
 		~Processor();
 		void BusinessTime(); // it's business, it's business time!
 		int Failed()								{return iFailed;}
+		unsigned short GetMask() {return usMask;}
 		vector<void*> SetAddresses(int ch, int level);
 		void SetConfigFile(string in)				{sConfigFileName = in;}
 		void SetDetectorPositions(string in);

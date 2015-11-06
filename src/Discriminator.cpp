@@ -1,35 +1,10 @@
 #include "Discriminator.h"
 #include "TGraph.h"
-#include "TFile.h"
 
-float Discriminator::sfVersion = 1.0;
+float Discriminator::sfVersion = 1.05;
 
-bool Discriminator::sbCCMCutPass[4][NUM_BANDS] = {{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
-bool Discriminator::sbPGACutPass[4][NUM_BANDS] = {{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
-bool Discriminator::sbNGMCutPass[4][NUM_BANDS] = {{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
-bool Discriminator::sbWBSCutPass[4][NUM_BANDS] = {{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
-bool Discriminator::sbLAPCutPass[4][NUM_BANDS] = {{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
-bool Discriminator::sbDFTCutPass[4][NUM_BANDS] = {{0,0,0},{0,0,0},{0,0,0},{0,0,0}};
-
-bool Discriminator::sbCutPass[NUM_DISCRIMS][4][NUM_BANDS] = {{{0,0,0},{0,0,0},{0,0,0},{0,0,0}},
-															{{0,0,0},{0,0,0},{0,0,0},{0,0,0}},
-															{{0,0,0},{0,0,0},{0,0,0},{0,0,0}},
-															{{0,0,0},{0,0,0},{0,0,0},{0,0,0}},
-															{{0,0,0},{0,0,0},{0,0,0},{0,0,0}},
-															{{0,0,0},{0,0,0},{0,0,0},{0,0,0}}};
-
-double Discriminator::dDiscrim[NUM_DISCRIMS][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
-
-unique_ptr<TTree> Discriminator::tree = nullptr;
-
-Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, ch(channel), ciChan(4) {
-	if (g_verbose) cout << "Discriminator " << ch << " c'tor\n";
-	if ((ch >= ciChan) || (ch < 0)) {
-		cout << error_message[method_error] << "Channel\n";
-		iFailed = 1;
-		return;
-	}
-	int d(0), b(0), i(0), chan(0);
+Discriminator::Discriminator() : gain{0.0093634,0.0115473,0.0092957} {
+	if (g_verbose) cout << "Discriminator c'tor\n";
 
 	strcpy(cDiscrimNames[d_CCM_t], "CCM");
 	strcpy(cDiscrimNames[d_DFT_t], "DFT");
@@ -42,7 +17,9 @@ Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, 
 	strcpy(cBandNames[sig1], "sig1");
 	strcpy(cBandNames[sig3], "sig3");
 
-	iDiscrimBins = 500;
+	memset(sbCutPass, 0, sizeof(sbCutPass));
+	memset(dDiscrim, 0, sizeof(dDiscrim));
+	memset(dDiscrimBand, 0, sizeof(dDiscrimBand));
 
 	TGraph* gDiscrimCut = nullptr;
 
@@ -58,31 +35,23 @@ Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, 
 		iFailed = 1;
 		return;
 	}
-	if (!discrim_file->IsOpen()){
-		cout << error_message[file_error] << "Bands\n"; 
+	if (!discrim_file->IsOpen()) {
+		cout << error_message[file_error] << "Bands\n";
 		iFailed = 1;
 		return;
 	}
-	for (d=0; d<NUM_DISCRIMS; d++){
-		for (chan =0; chan<ciChan; chan++){
-			for (b=0; b<NUM_BANDS; b++){
-				try{
-					vDiscrimBand[d][chan][b].reserve(iDiscrimBins);
-				}
-				catch (bad_alloc& ba) {
-					cout << error_message[alloc_error] << "Bands\n";
-					iFailed = 1;
-					return;
-				}
-				sprintf(cBand, "%s_%d_%s", cDiscrimNames[d], chan ,cBandNames[b]);
+	for (int d = 0; d < NUM_DISCRIMS; d++) {
+		for (int ch = 0; ch < NUM_CHANS; ch++) {
+			for (int b = 0; b < NUM_BANDS; b++) {
+				sprintf(cBand, "%s_%d_%s", cDiscrimNames[d], ch ,cBandNames[b]);
 				gDiscrimCut = (TGraph*)discrim_file->Get(cBand);
-				if (gDiscrimCut==nullptr) {
+				if (gDiscrimCut == nullptr) {
 					cout << error_message[root_error] << "Bands\n";
 					iFailed = 1;
 					return;
 				}
 				dDiscrimValue = gDiscrimCut->GetY();
-				for (i=0; i<iDiscrimBins; i++)vDiscrimBand[d][chan][b].push_back(dDiscrimValue[i]);
+				for (int i = 0; i < iDiscrimBins; i++) dDiscrimBand[d][ch][b][i] = dDiscrimValue[i];
 			}
 		}
 	}
@@ -90,95 +59,148 @@ Discriminator::Discriminator(int channel): gain{0.0093634,0.0115473,0.0092957}, 
 	dDiscrimValue = nullptr;
 	discrim_file->Close();
 	discrim_file = nullptr;
-
 }
-
 
 Discriminator::~Discriminator(){
-	if (g_verbose) cout << "Discriminator " << ch << " c'tor\n";
-	for (int d=0; d<NUM_DISCRIMS; d++){
-		for (int chan=0; chan<ciChan; chan++){
-			for (int b=0; b<NUM_BANDS; b++){
-//				vDiscrimBand[d][chan][b].reset();
+	if (g_verbose) cout << "Discriminator c'tor\n";
+	T0.reset();
+	T1.reset();
+	T2.reset();
+	f->Close();
+	f.reset();
+}
+
+void Discriminator::Setup(string filein) {
+	unsigned short mask;
+	f.reset(new TFile((sWorkingDir + "/prodata/" + filein + ".root").c_str(), "UPDATE"));
+	if (f->IsZombie()) {
+		cout << error_message[root_error] << "TFile\n";
+		iFailed = 1;
+		return;
+	} else {
+		f->cd();
+	}
+	iNChan = 0;
+	memset(iChan, 0, sizeof(iChan));
+	T0 = unique_ptr<TTree>((TTree*)f->Get("TI"));
+	if (!T0) {
+		cout << error_message[root_error] << "TI\n";
+		iFailed = 1;
+		return;
+	} else {
+		T0->SetBranchAddress("Mask", &mask);
+		T0->GetEntry(0);
+		for (int i = 0; i < NUM_CHANS; i++) if (mask & (1 << i)) iChan[iNChan++] = i;
+		T0.reset();
+	}
+
+	T0 = unique_ptr<TTree>((TTree*)f->Get("T0"));
+	if (!T0) {
+		cout << error_message[root_error] << "T0\n";
+		iFailed = 1;
+		return;
+	} else {
+		T0->SetBranchStatus("*",0);
+		T0->SetBranchStatus("Integral",1);
+		T0->SetBranchAddress("Integral", integral);
+		lNumEvents = T0->GetEntries();
+	}
+
+	T1 = unique_ptr<TTree>((TTree*)f->Get("T1"));
+	if (!T1) {
+		cout << error_message[root_error] << "T1\n";
+		iFailed = 1;
+		return;
+	} else {
+		T1->SetBranchStatus("*",0);
+		T1->SetBranchStatus("FastInt",		1);
+		T1->SetBranchStatus("SlowInt",		1);
+		T1->SetBranchStatus("Sample",		1);
+		T1->SetBranchStatus("Peakheight2",	1);
+		T1->SetBranchStatus("Xsq_n",		1);
+		T1->SetBranchStatus("Xsq_y",		1);
+		T1->SetBranchStatus("Peakscale_n",	1);
+		T1->SetBranchStatus("Peakscale_y",	1);
+		T1->SetBranchStatus("Base_shift_n",	1);
+		T1->SetBranchStatus("Base_shift_y",	1);
+		T1->SetBranchStatus("Even",			1);
+		T1->SetBranchStatus("Odd",			1);
+		T1->SetBranchStatus("LapHi",		1);
+		T1->SetBranchStatus("LapLow",		1);
+
+		T1->SetBranchAddress("FastInt",			fastint);
+		T1->SetBranchAddress("SlowInt",			slowint);
+		T1->SetBranchAddress("Sample",			sample);
+		T1->SetBranchAddress("Peakheight2",		peakheight2);
+		T1->SetBranchAddress("Xsq_n",			xsq_n);
+		T1->SetBranchAddress("Xsq_y",			xsq_y);
+		T1->SetBranchAddress("Peakscale_n",		peakscale_n);
+		T1->SetBranchAddress("Peakscale_y",		peakscale_y);
+		T1->SetBranchAddress("Base_shift_n",	baseshift_n);
+		T1->SetBranchAddress("Base_shift_y",	baseshift_y);
+		T1->SetBranchAddress("Even",			dft_even);
+		T1->SetBranchAddress("Odd",				dft_odd);
+		T1->SetBranchAddress("LapHi",			lap_high);
+		T1->SetBranchAddress("LapLow",			lap_low);
+	}
+
+	try {T2 = unique_ptr<TTree>(new TTree("T2","Distriminator"));}
+	catch (bad_alloc& ba) {
+		cout << error_message[alloc_error] << "T2\n";
+		iFailed = 1;
+		return;
+	}
+	if (T2->IsZombie()) {
+		cout << error_message[root_error] << "T2\n";
+		iFailed = 1;
+		return;
+	} else {
+		T2->Branch("CCM", sbCutPass[d_CCM_t], "ccmPass[4][3]/O");
+		T2->Branch("PGA", sbCutPass[d_PGA_t], "pgaPass[4][3]/O");
+		T2->Branch("NGM", sbCutPass[d_NGM_t], "ngmPass[4][3]/O");
+		T2->Branch("WBS", sbCutPass[d_WBS_t], "wbsPass[4][3]/O");
+		T2->Branch("LAP", sbCutPass[d_LAP_t], "lapPass[4][3]/O");
+		T2->Branch("DFT", sbCutPass[d_DFT_t], "dftPass[4][3]/O");
+	}
+}
+
+void Discriminator::Discriminate() {
+	cout << "Discriminating...\n";
+	int iBinNumber(0);
+	for (long e = 0; e < lNumEvents; e++) {
+		T0->GetEntry(e);
+		T1->GetEntry(e);
+		for (int ch = 0; ch < iNChan; ch++) {
+			dDiscrim[d_CCM_t][iChan[ch]] = fastint[iChan[ch]] == 0 ?									-1 : slowint[iChan[ch]]/fastint[iChan[ch]];
+			dDiscrim[d_DFT_t][iChan[ch]] = dft_odd[iChan[ch]] == 0 ?									-1 : dft_even[iChan[ch]]/dft_odd[iChan[ch]];
+			dDiscrim[d_NGM_t][iChan[ch]] = peakscale_y[iChan[ch]] == 0 || peakscale_n[iChan[ch]] == 0 ?	-1 : xsq_y[iChan[ch]]/peakscale_y[iChan[ch]]-xsq_n[iChan[ch]]/peakscale_n[iChan[ch]];
+			dDiscrim[d_LAP_t][iChan[ch]] = lap_low[iChan[ch]] == 0 ?									-1 : lap_high[iChan[ch]]/lap_low[iChan[ch]];
+			dDiscrim[d_PGA_t][iChan[ch]] = peakheight2[iChan[ch]] == 0 ?								-1 : sample[iChan[ch]]/peakheight2[iChan[ch]];
+			dDiscrim[d_WBS_t][iChan[ch]] = baseshift_n[iChan[ch]]+baseshift_y[iChan[ch]];
+			iBinNumber = integral[iChan[ch]]/(gain[ch]*iDiscrimBins); // gain isn't handled the same way as the stuff from the tree
+			for (int d = 0; d < NUM_DISCRIMS; d++) {
+				for (int b = 0; b < NUM_BANDS; b++) {
+					sbCutPass[d][iChan[ch]][b] = false;
+					if ((d == d_WBS_t) || (d == d_DFT_t)) {
+						if (dDiscrim[d][iChan[ch]] < dDiscrimBand[d][iChan[ch]][b][iBinNumber]) sbCutPass[d][iChan[ch]][b] = true;
+					} else if (dDiscrim[d][iChan[ch]] > dDiscrimBand[d][iChan[ch]][b][iBinNumber]) sbCutPass[d][iChan[ch]][b] = true;
+				}
 			}
 		}
+		T2->Fill();
 	}
-}
-
-void Discriminator::CutsTree_init(TTree* tree_cuts){
-	Discriminator::tree = unique_ptr<TTree>(tree_cuts);
-
-	Discriminator::tree->Branch("CCM", Discriminator::sbCCMCutPass , "ccmPass[4][3]/O");
-	Discriminator::tree->Branch("PGA", Discriminator::sbPGACutPass , "pgaPass[4][3]/O");
-	Discriminator::tree->Branch("NGM", Discriminator::sbNGMCutPass , "ngmPass[4][3]/O");
-	Discriminator::tree->Branch("WBS", Discriminator::sbWBSCutPass , "wbsPass[4][3]/O");
-	Discriminator::tree->Branch("LAP", Discriminator::sbLAPCutPass , "lapPass[4][3]/O");
-	Discriminator::tree->Branch("DFT", Discriminator::sbDFTCutPass , "dftPass[4][3]/O");
-}
-
-void Discriminator::SetDiscriminationValue(){
-	dDiscrim[d_CCM_t][ch] = *slowint/(*fastint);
-	dDiscrim[d_PGA_t][ch] = *sample/(*peakheight2);
-	dDiscrim[d_NGM_t][ch] = *xsq_y/(*peakscale_y)-*xsq_n/(*peakscale_n);
-	dDiscrim[d_WBS_t][ch] = *baseshift_n+*baseshift_y;
-	dDiscrim[d_DFT_t][ch] = *dft_even/(*dft_odd);
-	dDiscrim[d_LAP_t][ch] = *lap_high/(*lap_low);
-}
-
-void Discriminator::SetAddresses(vector<void*> add) {
-	int i(0);
-	fastint = (double*)add[i++];
-	slowint = (double*)add[i++];
-	sample = (double*)add[i++];
-	peakheight2 = (double*)add[i++];
-	xsq_n = (double*)add[i++];
-	xsq_y = (double*)add[i++];
-	peakscale_n = (double*)add[i++];
-	peakscale_y = (double*)add[i++];
-	baseshift_n = (double*)add[i++];
-	baseshift_y = (double*)add[i++];
-	dft_even = (double*)add[i++];
-	dft_odd = (double*)add[i++];
-	lap_high = (double*)add[i++];
-	lap_low = (double*)add[i++];
-	integral = (double*)add[i++];
-}
-
-void Discriminator::Discriminate(){
-
-	for (int d=0; d<NUM_DISCRIMS; d++){
-		for (int b=0; b<NUM_BANDS; b++) sbCutPass[d][ch][b] = false;
-	}
-
-	for (int d=0; d<NUM_DISCRIMS; d++){
-		int iBinNumber = *integral/(gain[ch]*iDiscrimBins);
-		for (int b=0; b<NUM_BANDS; b++){
-			if (d_WBS_t||d_DFT_t){
-				if (dDiscrim[d][ch]<vDiscrimBand[d][ch][b].at(iBinNumber)) sbCutPass[d][ch][b] = true;
-			}
-			else{
-				if (dDiscrim[d][ch]>vDiscrimBand[d][ch][b].at(iBinNumber)) sbCutPass[d][ch][b] = true;
-			}
-		}
-	}
-}
-
-void Discriminator::Cuts_fill(){
-	for (int ch=0; ch<4; ch++){
-		for (int b=0; b<NUM_BANDS; b++){
-			sbCCMCutPass[ch][b] = sbCutPass[0][ch][b];
-			sbDFTCutPass[ch][b] = sbCutPass[1][ch][b];
-			sbNGMCutPass[ch][b] = sbCutPass[2][ch][b];
-			sbLAPCutPass[ch][b] = sbCutPass[3][ch][b];
-			sbPGACutPass[ch][b] = sbCutPass[4][ch][b];
-			sbWBSCutPass[ch][b] = sbCutPass[5][ch][b];
-		}
-	}
-	Discriminator::tree->Fill();
-}
-
-void Discriminator::FriendshipIsMagic() {
-	tree->AddFriend("TS");
-	tree->AddFriend("T0");
-	tree->AddFriend("T1");
+	cout << "Discriminated\n";
+	T2->AddFriend("TS");
+	T2->AddFriend("T0");
+	T2->AddFriend("T1");
+	T0->AddFriend("T2");
+	T1->AddFriend("T2");
+	T0->Write("", TObject::kOverwrite);
+	T1->Write("", TObject::kOverwrite);
+	T2->Write("", TObject::kOverwrite);
+	T0.reset();
+	T1.reset();
+	T2.reset();
+	f->Close();
+	f.reset();
 }
