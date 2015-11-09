@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 		switch(i) {
 			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;
-			case 'e': g_verbose = atoi(optart);	break;
+			case 'e': g_verbose = atoi(optarg);	break;
 			case 'f': sFileset = optarg;		break;
 			case 'l': iLevel = atoi(optarg);	break;
 			case 'p': sDetectorPos = optarg;	break;
