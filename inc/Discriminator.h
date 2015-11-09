@@ -35,12 +35,12 @@ class Discriminator {
 		double slowint[8];
 		double sample[8];
 		double peakheight2[8];
-		double xsq_n[8];
-		double xsq_y[8];
-		double peakscale_n[8];
-		double peakscale_y[8];
-		double baseshift_n[8];
-		double baseshift_y[8];
+		double xsq_n[4];
+		double xsq_y[4];
+		double peakscale_n[4];
+		double peakscale_y[4];
+		double baseshift_n[4];
+		double baseshift_y[4];
 		double dft_even[8];
 		double dft_odd[8];
 		double lap_high[8];

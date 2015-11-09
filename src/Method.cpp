@@ -7,7 +7,7 @@ const auto pi = acos(-1.0);
 float Method::sfVersion = 1.2;
 
 Method::Method(int length, int fast, int slow, int samples, float gain[2], double scaleT, double scaleV, shared_ptr<Event> ev) : dSlow(0.01), dShigh(1.0) {
-	if (g_verbose) cout << "Method c'tor\n";
+	if (g_verbose > 1) cout << "Method c'tor\n";
 	iFailed = 0;
 	iEventlength = length;
 	iFastTime = fast;
@@ -164,7 +164,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 }
 
 Method::~Method() {
-	if (g_verbose) cout << "Method d'tor\n";
+	if (g_verbose > 1) cout << "Method d'tor\n";
 	fit_n.reset();
 	fit_y.reset();
 	fit_n_f.reset();
@@ -278,13 +278,13 @@ void Method::Analyze() {
 	*dSlowInt = ((*event->dBaseline * (iSlow)) - 0.5 * (*dSlowInt)) * dScaleV * dScaleT; // baseline subtraction
 	*dFastInt = ((*event->dBaseline * (iFast)) - 0.5 * (*dFastInt)) * dScaleV * dScaleT;
 
+#ifndef CCM_ONLY
+
 	//PGA
 	if ((event->vPeaks.front().itPeak + iPGASamples + iPGAAverage) < event->itEnd) {
 		for (i = -iPGAAverage; i <= iPGAAverage; i++) *dSample += *(event->vPeaks.front().itPeak + iPGASamples + i); // average to reduce statistical fluctuations
 		*dSample /= (2.*iPGAAverage + 1);
 	} else *dSample = -1;
-
-#ifndef CCM_ONLY
 
 	//DFT
 	for (m = 0; m < ciDFTOrder; m++) {
@@ -362,7 +362,7 @@ void Method::Analyze() {
 	*dBase_err_y	= fit_y->GetParError(1);
 	*dOff_err_y		= fit_y->GetParError(2);
 
-	fit_n_f->SetParameter(0, *dPeakheight_n_f); // fitting with fixed baseline must be done after free baseline
+	fit_n_f->SetParameter(0, *dPeakheight_n_f); // Fixed baseline fit
 	fit_n_f->FixParameter(1, *(event->dBaseline));
 	fit_n_f->SetParameter(2, *dOffset_n_f);
 	graph->Fit(fit_n_f.get(), "Q N"); // quiet, no-plot
@@ -374,9 +374,9 @@ void Method::Analyze() {
 	*dPeak_err_n_f	= fit_n_f->GetParError(0)/fGain[n]/iResolutionScale;
 	*dOff_err_n_f	= fit_n_f->GetParError(2);
 
-	fit_y_f->SetParameter(0, *dPeakheight_y_f); // baseline already fixed
+	fit_y_f->SetParameter(0, *dPeakheight_y_f);
+	fit_y_f->FixParameter(1, *(event->dBaseline));
 	fit_y_f->SetParameter(2, *dOffset_y_f);
-	fit_y_f->FixParameter(3, y);
 	graph->Fit(fit_y_f.get(), "Q N"); // quiet, no-plot
 
 	*dXsq_y_f		= fit_y_f->GetChisquare();

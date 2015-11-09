@@ -4,7 +4,6 @@
 float Discriminator::sfVersion = 1.05;
 
 Discriminator::Discriminator() : gain{0.0093634,0.0115473,0.0092957} {
-	if (g_verbose) cout << "Discriminator c'tor\n";
 
 	strcpy(cDiscrimNames[d_CCM_t], "CCM");
 	strcpy(cDiscrimNames[d_DFT_t], "DFT");
@@ -62,7 +61,7 @@ Discriminator::Discriminator() : gain{0.0093634,0.0115473,0.0092957} {
 }
 
 Discriminator::~Discriminator(){
-	if (g_verbose) cout << "Discriminator c'tor\n";
+	if (g_verbose > 1) cout << "Discriminator c'tor\n";
 	T0.reset();
 	T1.reset();
 	T2.reset();
@@ -165,7 +164,7 @@ void Discriminator::Setup(string filein) {
 }
 
 void Discriminator::Discriminate() {
-	cout << "Discriminating...\n";
+	if (g_verbose) cout << "Discriminating...\n";
 	int iBinNumber(0);
 	for (long e = 0; e < lNumEvents; e++) {
 		T0->GetEntry(e);
@@ -189,7 +188,7 @@ void Discriminator::Discriminate() {
 		}
 		T2->Fill();
 	}
-	cout << "Discriminated\n";
+	if (g_verbose) cout << "Discriminated\nMaking friends";
 	T2->AddFriend("TS");
 	T2->AddFriend("T0");
 	T2->AddFriend("T1");

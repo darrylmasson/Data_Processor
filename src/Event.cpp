@@ -3,11 +3,11 @@
 float Event::sfVersion = 1.2;
 
 Event::Event() : usTrace(nullptr), itBegin(nullptr), itEnd(nullptr), ciChan(-1) {
-	if (g_verbose) cout << "Event c'tor\n";
+	if (g_verbose > 1) cout << "Event c'tor\n";
 }
 
 Event::Event(int eventlength, int baselength, int average, int threshold, int chan, unsigned short* usStart, double* dStart) : usTrace(usStart), itBegin(dStart), itEnd(dStart+eventlength-average), ciChan(chan) {
-	if (g_verbose) cout << "Event " << chan << " c'tor\n";
+	if (g_verbose > 1) cout << "Event " << chan << " c'tor\n";
 	if ((ciChan >= MAX_CH) || (ciChan < 0)) {
 		cout << error_message[method_error] << "Channel\n";
 		iFailed = 1;
@@ -30,7 +30,7 @@ Event::Event(int eventlength, int baselength, int average, int threshold, int ch
 }
 
 Event::~Event() {
-	if (g_verbose) cout << "Event " << ciChan << " d'tor\n";
+	if (g_verbose > 1) cout << "Event " << ciChan << " d'tor\n";
 }
 
 void Event::Analyze() {

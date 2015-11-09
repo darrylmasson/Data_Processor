@@ -32,8 +32,7 @@ long UnixConverter(string in){
 }
 
 Processor::Processor() {
-	if (g_verbose) cout << "Processor c'tor\n";
-//	memset(this, 0, sizeof(*this));
+
 	iAverage = 0;
 	iSpecial = -1;
 	iLevel = 0;
@@ -129,7 +128,7 @@ Processor::~Processor() {
 		event[ch] = nullptr;
 		method[ch] = nullptr;
 	}
-	if (g_verbose) cout << "Processor d'tor\n";
+	if (g_verbose > 1) cout << "Processor d'tor\n";
 	TS = nullptr;
 	T0 = nullptr;
 	T1 = nullptr;
@@ -155,7 +154,7 @@ void Processor::BusinessTime() {
 	iProgCheck = max(iNumEvents/(iLevel ? 100 : 10) + 1, (iLevel ? 1000 : 10000)); // too many print statements slows the process
 
 	t_that = steady_clock::now();
-	if (!g_quiet) {
+	if (g_verbose) {
 		cout << "Processing:\n";
 		cout << "Completed\tRate (ev/s)\tTime left\n";
 	}
@@ -170,7 +169,7 @@ void Processor::BusinessTime() {
 		TS->Fill();
 		if (iLevel > 0) T1->Fill();
 		ulTSPrev = *ulpTimestamp;
-		if ((!g_quiet) && (ev % iProgCheck == iProgCheck/2)) { // progress updates
+		if ((g_verbose) && (ev % iProgCheck == iProgCheck/2)) { // progress updates
 			cout << ev*100l/iNumEvents << "%\t\t";
 			t_this = steady_clock::now();
 			t_elapsed = duration_cast<duration<double>>(t_this-t_that);
@@ -183,7 +182,7 @@ void Processor::BusinessTime() {
 			else cout << iTimeleft << "s\n";
 		}
 	}
-	cout << "Processing completed\n";
+	if (g_verbose) cout << "Processing completed\n";
 	T0->AddFriend("TS");
 	if (iLevel > 0) {
 		T1->AddFriend("TS");
@@ -193,7 +192,7 @@ void Processor::BusinessTime() {
 	}
 	T0->Write("",TObject::kOverwrite);
 	TS->Write("",TObject::kOverwrite);
-	cout << "Beginning cleanup: ";
+	if (g_verbose) cout << "Beginning cleanup: ";
 	fin.close();
 	buffer.reset();
 	TS.reset();
@@ -201,7 +200,7 @@ void Processor::BusinessTime() {
 	T1.reset();
 	f->Close();
 	f.reset();
-	cout << " done\n";
+	if (g_verbose) cout << " done\n";
 	return;
 }
 
@@ -297,7 +296,7 @@ void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r
 		bPositionsSet = false;
 		return;
 	}
-	if (g_verbose) cout << "Setting detector positions\n";
+	if (g_verbose > 1) cout << "Setting detector positions\n"; // TODO add r* or z* functionality
 	unsigned int i(0), iCommas[2] = {0,1};
 	string glob; // for dealing with each each substring
 	for (i = 0; i < 6; i++) {
@@ -317,7 +316,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	int ch(-1);
 	long lUnixTS(0);
 
-	if (g_verbose) cout << "Opening files\n";
+	if (g_verbose > 1) cout << "Opening files\n";
 	sRawDataFile = sWorkingDir + "/rawdata/" + in + ".dat";
 	sRootFile = sWorkingDir + "/prodata/" + in;
 	if ((iSpecial == -1) && (iAverage == 0)) sRootFile += ".root";
@@ -406,7 +405,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		cout << "Config file " << sFilename << " not found\n";
 		cout << error_message[file_error];
 		throw ProcessorException();
-	} else if (g_verbose) cout << "Opened " << sFilename << '\n';
+	} else if (g_verbose > 1) cout << "Opened " << sFilename << '\n';
 
 	cBuffer[0] = {'\0'};
 	while (!fconf.eof()) {
@@ -497,7 +496,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Write();
 	T0.reset();
 
-	if (g_verbose) cout << "Alloc'ing\n";
+	if (g_verbose > 1) cout << "Alloc'ing trees\n";
 	try {buffer = unique_ptr<char[]>(new char[iEventsize]);}
 	catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Buffer\n";
@@ -583,7 +582,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	cout << "Processing level " << iLevel << '\n';
 
 	for (auto ch = 0; ch < iNchan; ch++) { // initializing all classes needed
-		if (g_verbose) cout << "CH" << ch << '\n';
+		if (g_verbose > 1) cout << "CH" << ch << '\n';
 		try {
 			dTrace[ch].reset(new double[iEventlength-iAverage]);
 			event[ch].reset(new Event(iEventlength, digitizer.iBaselength, iAverage, uiThreshold[iChan[ch]], iChan[ch], uspTrace + ch*iEventlength, dTrace[ch].get()));

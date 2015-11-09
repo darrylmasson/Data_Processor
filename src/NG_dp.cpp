@@ -14,8 +14,7 @@
 
 using namespace std::chrono;
 
-bool g_verbose(false);
-bool g_quiet(false);
+int g_verbose(1);
 
 void PrintVersions() {
 	cout << "Versions installed:\n";
@@ -37,11 +36,11 @@ int main(int argc, char **argv) {
 		cout << sArgs << '\n';
 		return 0;
 	}
-	while ((i = getopt(argc, argv, "a:c:ef:l:s:p:vx:")) != -1) { // command line options
+	while ((i = getopt(argc, argv, "a:c:e:f:l:s:p:vx:")) != -1) { // command line options
 		switch(i) {
 			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;
-			case 'e': g_verbose = true;			break;
+			case 'e': g_verbose = atoi(optart);	break;
 			case 'f': sFileset = optarg;		break;
 			case 'l': iLevel = atoi(optarg);	break;
 			case 'p': sDetectorPos = optarg;	break;
@@ -76,15 +75,18 @@ int main(int argc, char **argv) {
 			cout << e.what();
 			cout << "Setup failed, exiting\n";
 			return 0;
-		}
-	}
+	}	}
 	if (iLevel >= 2) {
 		discriminator.Setup(sFileset);
 		if (discriminator.Failed()) {
 			cout << "Discriminator setup failed\n";
-			iLevel = 1;
-		}
-	}
+			if (iLevel > 2) {
+				cout << "Returning\n";
+				return 0;
+			} else {
+				cout << "Continuing\n";
+				iLevel = 1;
+	}	}	}
 
 	t_start = steady_clock::now();
 	if (iLevel <= 2) processor.BusinessTime();

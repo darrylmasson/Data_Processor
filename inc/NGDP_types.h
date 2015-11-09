@@ -21,8 +21,7 @@ const string sWorkingDir(WORKING_DIR, string(WORKING_DIR).find_last_of('/'));
 const int sizeof_f_header = 94; // 86 until 2016
 const int sizeof_ev_header = 16;
 
-extern bool g_verbose; // for debugging purposes
-extern bool g_quiet;
+extern int g_verbose; // for debugging purposes
 
 enum ret_codes_t {
 	no_error = 0,
