@@ -65,7 +65,6 @@ Discriminator::~Discriminator(){
 	T0.reset();
 	T1.reset();
 	T2.reset();
-	f->Close();
 	f.reset();
 }
 

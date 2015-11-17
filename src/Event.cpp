@@ -120,8 +120,8 @@ void Event::Analyze() {
 }
 
 inline void Event::Average() {
-	auto itU = usTrace + (itSatEnd-itBegin);
-	for (auto it = itSatEnd; it < itEnd; it++, itU++) {
+	auto itU = usTrace + (itSatEnd-itBegin) + (itSatEnd-itBegin < iAverage ? iAverage - (itSatEnd - itBegin): 0);
+	for (auto it = itSatEnd + (itSatEnd-itBegin < iAverage ? iAverage - (itSatEnd - itBegin): 0); (it < itEnd) && (itU < usTrace + iEventlength - iAverage); it++, itU++) {
 		*it = 0.;
 		for (auto itt = itU-iAverage; itt <= itU+iAverage; itt++) *it += *itt;
 		*it /= (2.*iAverage+1.);
@@ -129,8 +129,7 @@ inline void Event::Average() {
 }
 
 void Event::Peakfinder() {
-	auto iPeakCutBL(8), iPeakCutMin(16); // Peaks less than this height don't get tagged, TODO add for DT5730
-//	auto iPrimaryTrigger(110); // primary peak in front of this point, TODO fix for other digitizers
+	int iPeakCutBL(8/(1000.*dScaleV)), iPeakCutMin(16/(1000.*dScaleV)); // ignores Peaks less than 8 or 16 mV depending on if the pulse reaches baseline or not
 	vPeakCandidates.clear();
 	vPeaks.clear();
 	Peak_t peak(itBegin);

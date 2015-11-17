@@ -16,9 +16,10 @@ class Event {
 		int iSpecial;
 		int iLength; // number of samples in the waveform
 		int iAverage; // 2*x+1 total samples averaged
+		int iScale; // scales
 		unsigned short* const usTrace;
-		double dScaleV;
-		double dScaleT;
+		double dScaleV; // V/bin
+		double dScaleT; // ns/Sa
 		struct Peak_t {
 			Peak_t() : itPeak(nullptr), itStart(nullptr), itEnd(nullptr) {};
 			Peak_t(double* ptr) {itPeak = ptr; itStart = ptr; itEnd = ptr;}
