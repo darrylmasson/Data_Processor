@@ -291,21 +291,29 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 	return add;
 }
 
-void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r2=#" or some permutation
+void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r2=#" or some permutation. Accepts z*=# or r*=#
 	if (in == "\0") {
 		bPositionsSet = false;
 		return;
 	}
-	if (g_verbose > 1) cout << "Setting detector positions\n"; // TODO add r* or z* functionality
-	unsigned int i(0), iCommas[2] = {0,1};
-	string glob; // for dealing with each each substring
+	if (g_verbose > 1) cout << "Setting detector positions\n";
+	int i(0);
+	unsigned iCommas[2] = {0,1};
+	vector<string> vGlobs; // for dealing with each each substring
 	for (i = 0; i < 6; i++) {
 		iCommas[1] = in.find(',',iCommas[0]);
-		glob = in.substr(iCommas[0],iCommas[1]-iCommas[0]); // grabs input between commas
-		if ((glob[0] == 'z') || (glob[0] == 'Z')) fDetectorZ[atoi(glob.c_str()+1)] = atof(glob.c_str()+glob.find('=')+1);
-		if ((glob[0] == 'r') || (glob[0] == 'R')) fDetectorR[atoi(glob.c_str()+1)] = atof(glob.c_str()+glob.find('=')+1);
+		vGlobs.push_back(in.substr(iCommas[0],iCommas[1]-iCommas[0])); // grabs input between commas
 		iCommas[0] = iCommas[1]+1; // shift forward to next substring
 		if (iCommas[1] >= in.length()) break;
+	}
+	for (auto it = vGlobs.begin(); it < vGlobs.end(); it++) {
+		if ((it->at(0) == 'z') || (it->at(0) == 'Z')) {
+			if (it->at(1) == '*') for (i = 0; i < iNchan; i++) fDetectorZ[iChan[i]] = atof(it->c_str()+it->find('=')+1);
+			else fDetectorZ[atoi(it->c_str()+1)] = atof(it->c_str()+it->find('=')+1);
+		} else if ((it->at(0) == 'r') || (it->at(0) == 'R')) {
+			if (it->at(1) == '*') for (i = 0; i < iNchan; i++) fDetectorZ[iChan[i]] = atof(it->c_str()+it->find('=')+1);
+			else fDetectorR[atoi(it->c_str()+1)] = atof(it->c_str()+it->find('=')+1);
+		}
 	}
 	bPositionsSet = true;
 }
