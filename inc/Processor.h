@@ -85,6 +85,7 @@ class Processor {
 		short sTrigger[8];
 		vector<vector<double>> sHWHM;
 		vector<vector<double>>* pHWHM;
+		short sSaturation[8]; // length of saturation in ns
 
 		double dBase[8]; // these values in samples
 		double dSigma[8];

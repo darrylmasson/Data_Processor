@@ -50,6 +50,7 @@ void Event::Analyze() {
 	sPeakX->clear();
 	*sTrigger		= 0;
 	sHWHM->clear();
+	*sSatDur		= 0;
 
 	*bSaturated		= false;
 	*bFullWaveform	= true;
@@ -82,6 +83,7 @@ void Event::Analyze() {
 		*bSaturated = true;
 		for (it = vPeaks.front().itPeak; it < itEnd; it++) if (*it != 0) break;
 		itSatEnd = it-1;
+		*sSatDur = (itSatEnd-vPeaks.front().itPeak)*dScaleT;
 	} else {
 		itSatEnd = vPeaks.front().itPeak;
 	}

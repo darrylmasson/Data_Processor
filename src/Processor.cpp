@@ -82,6 +82,7 @@ Processor::Processor() {
 	sHWHM.assign(MAX_CH,	vector<double>());
 	for (auto it = sHWHM.begin(); it < sHWHM.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
 	pHWHM = &sHWHM;
+	memset(sSaturation,		0, sizeof(sSaturation));
 //	memset(sHWHM,			0, sizeof(sHWHM)); //
 	memset(dBase,			0, sizeof(dBase));
 	memset(dSigma,			0, sizeof(dSigma));
@@ -216,6 +217,7 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&sPeakX[ch];
 		add[i++] = (void*)&sTrigger[ch];
 		add[i++] = (void*)&sHWHM[ch];
+		add[i++] = (void*)&sSaturation[ch];
 
 		add[i++] = (void*)&dBase[ch];
 		add[i++] = (void*)&dSigma[ch];
@@ -530,6 +532,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("Peakx",			"vector<vector<double>>", &pPeakX);
 	T0->Branch("Trigger",		sTrigger,	"trig[8]/S");
 	T0->Branch("HWHM",			"vector<vector<double>>", &pHWHM);
+	T0->Branch("SatDur",		sSaturation,"satdur[8]/S");
 
 	T0->Branch("Base",			dBase,		"base[8]/D");
 	T0->Branch("Sigma",			dSigma,		"sigma[8]/D");

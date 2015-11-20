@@ -80,6 +80,7 @@ class Event {
 		vector<double>* sPeakX;
 		short* sTrigger;
 		vector<double>* sHWHM;
+		short* sSatDur;
 
 		const int ciChan;
 
