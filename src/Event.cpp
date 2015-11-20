@@ -202,6 +202,7 @@ void Event::SetAddresses(vector<void*> add) {
 	sPeakX			= (vector<double>*)add[i++];
 	sTrigger		= (short*)add[i++];
 	sHWHM			= (vector<double>*)add[i++];
+	sSatDur			= (short*)add[i++];
 
 	dBaseline		= (double*)add[i++];
 	dBaseSigma		= (double*)add[i++];
