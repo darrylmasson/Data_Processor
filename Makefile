@@ -4,7 +4,7 @@ OBJDIR = obj
 SRCDIR = src
 CFLAGS = -g -Wall -Iinc -std=c++11
 DEFS = -DWORKING_DIR=\"$(shell pwd)\"
-#DEFS = $(DEFS) -DCCM_ONLY
+#DEFS = -DWORKING_DIR=\"$(shell pwd)\" -DCCM_ONLY
 OUTDIR = $(shell pwd)/../
 INSTALL = -o $(OUTDIR)NG_dp
 OPT = -O2
