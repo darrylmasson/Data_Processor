@@ -56,7 +56,6 @@ void Event::Analyze() {
 
 	itBasePkP = itBasePkN = itSatEnd = itBegin;
 
-	auto dTemp(0.);
 	for (it = itBegin, itt = itEnd-1; it-itBegin < iBaselength; it++, itt--) {
 		*dBaseline += *it; // baseline at start of event
 		*dBaseSigma += (*it)*(*it);
