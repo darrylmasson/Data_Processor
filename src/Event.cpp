@@ -59,23 +59,19 @@ void Event::Analyze() {
 	auto dTemp(0.);
 	for (it = itBegin, itt = itEnd-1; it-itBegin < iBaselength; it++, itt--) {
 		*dBaseline += *it; // baseline at start of event
+		*dBaseSigma += (*it)*(*it);
 		if (*itBasePkP < *it) itBasePkP = it;
 		if (*itBasePkN > *it) itBasePkN = it;
 		*dBasePost += *itt; // baseline at end of event
+		*dBasePostSigma += (*itt)*(*itt);
 	}
 	*dBaseline /= iBaselength;
 	*dBasePost /= iBaselength;
 	*dBasePeakN = (*dBaseline - *itBasePkN)*dScaleV;
 	*dBasePeakP = (*itBasePkP - *dBaseline)*dScaleV;
 
-	for (it = itBegin, itt = itEnd-1; it-itBegin < iBaselength; it++, itt--) { // RMS devations of baselines
-		dTemp = *it - *dBaseline;
-		*dBaseSigma += dTemp*dTemp;
-		dTemp = *itt - *dBasePost;
-		*dBasePostSigma += dTemp*dTemp;
-	}
-	*dBaseSigma = sqrt(*dBaseSigma/iBaselength);
-	*dBasePostSigma = sqrt(*dBasePostSigma/iBaselength);
+	*dBaseSigma = sqrt(*dBaseSigma/iBaselength-(*dBaseline)*(*dBaseline)); // sigma^2 = <x^2> - <x>^2
+	*dBasePostSigma = sqrt(*dBasePostSigma/iBaselength-(*dBasePost)*(*dBasePost));
 	Peakfinder();
 	if (vPeaks.size() == 0) {
 		sPeakX->push_back(0);
@@ -180,7 +176,7 @@ void Event::Peakfinder() {
 			} // choosing it or itMin
 		} // iter loop
 	}
-	for (unsigned i = 0; i < vPeaks.size(); i++) {
+	for (unsigned i = 0; i < vPeaks.size(); i++) { // sorts peaks by size, descending
 		auto BigPeak = vPeaks.begin() + i, temp = BigPeak;
 		for (auto iter = vPeaks.begin() + i; iter < vPeaks.end(); iter++) {
 			if (*iter > *BigPeak) BigPeak = iter;
@@ -193,32 +189,6 @@ void Event::Peakfinder() {
 		}
 	}
 	return;
-/*	if (vFoundPeaks.count == 0) { // no peaks // NOTE not used, kept if necessary for a few more versions
-		return ;
-	} else if (vFoundPeaks.count == 1) { // only one peak, probably the majority of cases
-		return;
-	} else { // two or more Peaks, primary is the tallest peak in the trigger region or the first
-		for (auto iter = vFoundPeaks.begin; iter < vFoundPeaks.end; iter++) { // gathers Peaks in the trigger region (first 110ns of waveform)
-			if ((*iter).itPeak-itBegin < iPrimaryTrigger) {
-				vPrimaryPeaks.Add(*iter);
-			}
-		}
-		if (vPrimaryPeaks.count == 0) { // no primaries, take first Peak
-			Peak = vFoundPeaks[0];
-		} else if (vPrimaryPeaks.count == 1) { // one primary
-			Peak = vPrimaryPeaks[0];
-		} else { // multiple primaries, pick tallest
-			Peak = vPrimaryPeaks[0];
-			for (auto iter = vPrimaryPeaks.begin; iter < vPrimaryPeaks.end; iter++) {
-				if (*iter > Peak) Peak = *iter;
-			}
-		}
-		PeakS = itBegin;
-		for (auto iter = vFoundPeaks.begin; iter < vFoundPeaks.end; iter++) {
-			if ((*iter > PeakS) && !(*iter == Peak)) PeakS = *iter;
-		}
-	}
-	return; */
 }
 
 void Event::SetAddresses(vector<void*> add) {
