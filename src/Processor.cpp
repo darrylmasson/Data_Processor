@@ -333,7 +333,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	else if ((iSpecial == -1) && (iAverage != 0)) sRootFile += "_a.root";
 	else if ((iSpecial != -1) && (iAverage == 0)) sRootFile += "_s.root";
 	else sRootFile += "_as.root";
-	fin.open(sRawDataFile.c_str(), ios::in | ios::binary);
+	fin.open(sRawDataFile, ios::in | ios::binary);
 	if (!fin.is_open()) {
 		cout << "Error: " << sRawDataFile << " not found\n";
 		cout << error_message[file_error];
@@ -409,8 +409,8 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	iNumEvents = (filesize - (in[1] >= '6' ? sizeof_f_header : sizeof_f_header-sizeof(long)))/iEventsize;
 
 	if (g_verbose) cout << "Parsing config file\n";
-	string sFilename = sWorkingDir + "/Data_Processor/config/" + sConfigFileName;
-	ifstream fconf(sFilename.c_str(),ios::in);
+	string sFilename = sConfigDir + "/config/" + sConfigFileName;
+	ifstream fconf(sFilename,ios::in);
 	if (!fconf.is_open()) {
 		cout << "Config file " << sFilename << " not found\n";
 		cout << error_message[file_error];

@@ -28,7 +28,7 @@ Discriminator::Discriminator() : gain{0.0093634,0.0115473,0.0092957} {
 
 	char cBand[16];
 
-	try{discrim_file.reset(new TFile((sWorkingDir+"/Data_Processor/config/discrimination_bands.root").c_str(), "READ"));}
+	try{discrim_file.reset(new TFile((sConfigDir+"/config/discrimination_bands.root").c_str(), "READ"));}
 	catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Bands\n";
 		iFailed = 1;

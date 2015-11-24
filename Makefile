@@ -2,29 +2,29 @@ CC = g++
 ROOT = $(shell root-config --cflags --libs)
 OBJDIR = obj
 SRCDIR = src
+INCDIR = inc
 CFLAGS = -g -Wall -Iinc -std=c++11
-DEFS = -DWORKING_DIR=\"$(shell pwd)\"
-#DEFS = -DWORKING_DIR=\"$(shell pwd)\" -DCCM_ONLY
-OUTDIR = $(shell pwd)/../
-INSTALL = -o $(OUTDIR)NG_dp
+DEFS = -DWORKING_DIR=\"$(WORKDIR)\" -DCONFIG_DIR=\"$(CONFDIR)\"
+#DEFS := $(DEFS) -DCCM_ONLY
+INSTALL = -o $(WORKDIR)/NG_dp
 OPT = -O2
 TEST = -o test_exe
-SRCS = Event.cpp \
-	Method.cpp \
-	Discriminator.cpp \
-	Processor.cpp \
-	NG_dp.cpp
-OBJS = $(SRCS:.cpp=.o)
+sources := $(wildcard src/*.cpp)
+objects := $(sources:.cpp=.o)
 VPATH = src
+include Paths.conf
 
 test :
-	$(CC) $(CFLAGS) $(DEFS) $(TEST) $(addprefix $(SRCDIR)/,$(SRCS)) $(ROOT)
+	$(CC) $(CFLAGS) $(DEFS) $(TEST) $(sources) $(ROOT)
 
-install : $(L)$(OBJS)
-	$(CC) $(CFLAGS) $(OPT) $(DEFS) $(INSTALL) $(addprefix $(OBJDIR)/,$(OBJS)) $(ROOT)
+install : $(objects)
+	$(CC) $(CFLAGS) $(OPT) $(DEFS) $(INSTALL) $(objects) $(ROOT)
 
-$(L)%.o : %.cpp
-	$(CC) $(CFLAGS) $(OPT) $(DEFS) -c $< -o $(OBJDIR)/$@ $(ROOT)
+%.o : %.cpp %.d
+	$(CC) $(CFLAGS) $(OPT) $(DEFS) -c $< -o $@ $(ROOT)
+
+%.d : %.cpp
+	$(CC) -MM $(CFLAGS) $(ROOT) $< -o $@
 
 .PHONY: clean
 

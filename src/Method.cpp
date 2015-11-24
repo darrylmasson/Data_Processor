@@ -88,7 +88,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		return;
 	}
 
-	try {std_file.reset(new TFile((sWorkingDir + "/Data_Processor/config/standard_events.root").c_str(), "READ"));}
+	try {std_file.reset(new TFile((sConfigDir + "/config/standard_events.root").c_str(), "READ"));}
 	catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Std Events file\n";
 		iFailed = 1;

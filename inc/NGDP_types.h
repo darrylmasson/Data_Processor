@@ -17,7 +17,8 @@
 using namespace std;
 
 const int MAX_CH = 8;
-const string sWorkingDir(WORKING_DIR, string(WORKING_DIR).find_last_of('/'));
+const string sWorkingDir(WORKING_DIR);//, string(WORKING_DIR).find_last_of('/'));
+const string sConfigDir(CONFIG_DIR);
 const int sizeof_f_header = 94; // 86 until 2016
 const int sizeof_ev_header = 16;
 

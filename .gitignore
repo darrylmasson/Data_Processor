@@ -1,7 +1,12 @@
-# no need to sync object files
+# no need to sync object or dependecy files
 *.o
+*.d
 
 # backups
 *~
 
+# directory settings
+Paths.conf
+
+#test executable
 test_exe
