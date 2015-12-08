@@ -14,7 +14,7 @@ sources := $(wildcard src/*.cpp)
 objects := $(sources:.cpp=.o)
 VPATH = src:inc
 include Paths.conf
-include $(sources:.cpp=.d)
+#include $(sources:.cpp=.d)
 
 test :
 	$(CC) $(CPPFLAGS) $(TEST) $(sources)
