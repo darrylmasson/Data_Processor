@@ -1,39 +1,20 @@
 Neutron Generator raw data processor
 
 TOC:
-1. Usage
-2. Description of functionality
-3. Code heirarchy
-4. Maintenance
+1. Installation
+2. Usage
+3. Description of functionality
 
 
-1. Usage
+1. Installation
 
-$ ./NG_dp -f rawdatafile [-s source -c config -x special -a average]
-Notes: the rawdatafile is only the timestamp supplied by wavedump: the rawdata/ and .dat are automatically added.  Source is the source used for acquisition.  Config is an alternate configuration file located in config/.  Special deals with simulating other digitizers samplerates and resolutions.
+Before calling make, create a file called Paths.conf in the same directory as the Makefile. In this file, you'll need to specify WORKDIR, which is where the raw- and prodata/ folders are (for instance, /data/NeutronGenerator/), and CONFDIR, which is where the config/ folder is (typically $(shell pwd)). Then, call make install.
 
+2. Usage
 
-2. Discription of functionality
+$ ./NG_dp -f rawdatafile [-s source -l level -c config -a moving_average -p detector_positions -v -e verbosity]
+Notes: the rawdatafile is only the timestamp supplied by wavedump: the rawdata/ and .dat are automatically added.  Source is the source used for acquisition (if NG or Cf-252 detector posotioning is required. Can be passed with -p arg as a string of format "r0=#,z0=#" etc in no required order. "r*=#" (or z*) will set all coordinates to a single value).  Config is an alternate configuration file located in config/.  -v prints installed versions and exits. -e # is for printing statements. Default 1, 0 is less, 2 is more. -l # selects the desired processing level - 0 is Event only, 1 is Event and Method (default), 2 is Event, Method, and Discriminator, 3 is Discrimimnator only (fails if level 1 has not been done).
 
-Processed raw data taken by wavedump.  The configuration file is located in config/ and contains values like fast and slow integration times for each valid digitizer, and also which processing methods are to be used.  The output of the processing is a root file with the same timestamp as the raw data file and is located in prodata/.
+3. Discription of functionality
 
-
-3. Code heirarchy
-
-The heirarchy of code is as follows:
-NGDP_types : contains fundamental types
-Digitizer : lowest level, contains information about digitizer characteristics.
-Event : one instance created per channel of data.  Contains baseline calculations and peakfinding algorithm.
-Event_ave : inherits from Event, does a moving average over the pulse
-Method : ABC for processing methods.  Mainly virtual functions for inheritance.
-CCM : integrator and pulse gradient.  Inherits from Method. Slow and fast integration times stored in config file. One instance per channel.
-DFT : fourier series. Inherits from Method. Once instance per channel.
-XSQ : fitting. Template waveforms stored in config/standard_events.root. Inherits from Method. One instance per channel.
-LAP : laplace transform. Runs for one value of s
-Processor : does most of the work for config file interfacing, memory allocs, version checking, all of that
-NG_dp : top level, doesn't do much interesting stuff.
-
-
-4. Maintenance
-
-To add additional processing methods, they must follow the same syntax as the existing methods, i.e. must inherit from Method, must have the TTree as a static member, etc.  If the method requires configuration settings that can change between uses then the configuration file may need to be updated, in which case the configuration file parsing function will also need modification.  Once ready for compilation into the project, add the relevant entry into the SRCS line in the Makefile.  Note that the Makefile will need the ROOTDIR changed if the processor is moved.
+Processed raw data taken by wavedump.  The configuration file is located in config/ and contains values like fast and slow integration times for each valid digitizer.  The output of the processing is a root file with the same timestamp as the raw data file and is located in prodata/.
