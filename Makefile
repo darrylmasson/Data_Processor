@@ -14,16 +14,16 @@ sources := $(wildcard src/*.cpp)
 objects := $(sources:.cpp=.o)
 VPATH = src:inc
 include Paths.conf
-#include $(sources:.cpp=.d)
+include $(sources:.cpp=.d)
 
 test :
-	$(CC) $(CPPFLAGS) $(DEFS) $(TEST) $(sources)
+	$(CC) $(CPPFLAGS) $(TEST) $(sources)
 
 install : $(objects)
-	$(CC) $(CPPFLAGS) $(OPT) $(DEFS) $(INSTALL) $(objects)
+	$(CC) $(CPPFLAGS) $(OPT) $(INSTALL) $(objects)
 
 $(L)%.o : %.cpp %.h %.d
-	$(CC) $(CPPFLAGS) $(OPT) $(DEFS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(OPT) -c $< -o $@
 
 $(L)%.d : %.cpp %.h
 	$(CC) -MM $(CPPFLAGS) $< -o $@
@@ -31,4 +31,4 @@ $(L)%.d : %.cpp %.h
 .PHONY: clean
 
 clean:
-	-rm -f $(objects) src/*.d
+	-rm -f $(objects)

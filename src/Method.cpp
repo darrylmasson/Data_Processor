@@ -1,10 +1,10 @@
 #include "Method.h"
 #include "TFile.h"
-#include "TVectorT.h"
+#include "TGraphErrors.h"
 
 const auto pi = acos(-1.0);
 
-float Method::sfVersion = 1.2;
+float Method::sfVersion = 1.25;
 
 Method::Method(int length, int fast, int slow, int samples, float gain[2], double scaleT, double scaleV, shared_ptr<Event> ev) : dSlow(0.01), dShigh(1.0) {
 	if (g_verbose > 1) cout << "Method c'tor\n";
@@ -22,7 +22,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	iLAPAverage = event->GetAverage() > 0 ? 0 : 4;
 
 	unique_ptr<TFile> std_file = nullptr;
-	TVectorT<double>* pWave = nullptr;
+	TGraphErrors* pWave = nullptr;
 
 	double omega;
 	for (auto n = 0; n < ciDFTOrder; n++) {
@@ -62,13 +62,13 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 
 	if (dScaleT == 1) { // ns/Sa
 		iStdLength	= 450;
-		iStdTrig	= 64;
+		iStdTrig	= 46;
 	} else if (dScaleT == 2) {
 		iStdLength	= 225;
-		iStdTrig	= 32;
+		iStdTrig	= 23;
 	} else if (dScaleT == 0.5) {
 		iStdLength		= 899;
-		iStdTrig		= 128;
+		iStdTrig		= 92;
 	} else {
 		cout << error_message[dig_error];
 		cout << error_message[method_error] << "Std Events\n";
@@ -76,10 +76,8 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		return;
 	}
 	if (dScaleV == 1./1024) { // volts/bin
-		iPeakCut = 4;
 		iResolutionScale = 1;
 	} else if (dScaleV == 2./(1 << 14)) { // TODO fix for simulated resolutions
-		iPeakCut = 32;
 		iResolutionScale = 1 << 3;
 	} else {
 		cout << error_message[dig_error];
@@ -94,7 +92,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		iFailed = 1;
 		return;
 	}
-	if (!std_file->IsOpen()) {
+	if (std_file->IsZombie()) {
 		cout << error_message[file_error] << "Std Events\n";
 		iFailed = 1;
 		return;
@@ -106,27 +104,27 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 			iFailed = 1;
 			return;
 		}
-		pWave = (TVectorT<double>*)std_file->Get((p ? "gamma_wave_inv" : "neutron_wave_inv"));
+		pWave = (TGraphErrors*)std_file->Get((p ? "wave_y" : "wave_n"));
 		if (pWave == nullptr) {
 			cout << error_message[root_error] << "Std Events\n";
 			iFailed = 1;
 			return;
 		}
-		dStdPeak[p] = 1000;
+		dStdPeak[p] = 0;
 		switch(iStdLength) {
 			case 225 : // 500 MSa/s
 				for (int i = 0; i < iStdLength; i++) { // averages
-					dStdWave[p][i] = ((*pWave)[2*i] + (*pWave)[2*i+1])/2.;
+					dStdWave[p][i] = (pWave->GetY()[2*i] + pWave->GetY()[2*i+1])/2.;
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 899 : // 2 GSa/s
 				for (int i = 0; i < iStdLength; i++) { // interpolates
-					dStdWave[p][i] = (i%2) ? ((*pWave)[(i+1)/2] + (*pWave)[(i-1)/2])/2. : (*pWave)[i/2]; // i%2==1 so i/2 = (i-1)/2
+					dStdWave[p][i] = (i%2) ? (pWave->GetY()[(i+1)/2] + pWave->GetY()[(i-1)/2])/2. : pWave->GetY()[i/2]; // i%2==1 so i/2 = (i-1)/2
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 450 : // 1 GSa/s
 				for (int i = 0; i < iStdLength; i++) {
-					dStdWave[p][i] = (*pWave)[i];
+					dStdWave[p][i] = pWave->GetY()[i];
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			default : cout << error_message[method_error];
