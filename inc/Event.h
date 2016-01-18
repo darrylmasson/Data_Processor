@@ -69,6 +69,7 @@ class Event {
 		double* dBasePostSigma;
 		double* dIntegral;
 		vector<double>* dPeak0;
+		vector<double>* dPeak2;
 		double* dBasePeakP;
 		double* dBasePeakN;
 

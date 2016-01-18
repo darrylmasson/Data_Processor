@@ -196,8 +196,6 @@ void Method::SetDefaultValues() {
 	*dBaseSigma		= *(event->dBaseSigma) * dScaleV;
 	*dBasePost		= (*(event->dBasePost)-dZero) * dScaleV;
 	*dBasePostSigma	= *(event->dBasePostSigma) * dScaleV;
-	*dPeak1			= event->dPeak0->front();
-	*dPeak2			= *dPeak1;
 	*dSlowInt		= 0;
 	*dFastInt		= 0;
 
@@ -248,7 +246,7 @@ void Method::SetDefaultValues() {
 
 void Method::Analyze() {
 	auto i(0);
-	auto dTemp(0.), dReal(0.), dImag(0.);
+	auto dReal(0.), dImag(0.);
 	auto m(0), t(0), iFast(0), iSlow(0);
 
 	SetDefaultValues();
@@ -256,13 +254,6 @@ void Method::Analyze() {
 	//CCM
 	iFast = (event->vPeaks.front().itStart + iFastTime - 1 < event->itEnd ? iFastTime : event->itEnd - event->vPeaks.front().itStart - 1);
 	iSlow = (event->vPeaks.front().itStart + iSlowTime - 1 < event->itEnd ? iSlowTime : event->itEnd - event->vPeaks.front().itStart - 1); // local integration limits
-
-	if (((event->vPeaks.front().itPeak + 2) < event->itEnd) && (event->vPeaks.front().itPeak - 1 > event->itBegin) && !*(event->bSaturated)) { // peak averaging
-		for (auto it = event->vPeaks.front().itPeak-1; it <= event->vPeaks.front().itPeak+1; it++) dTemp += *it;
-		*dPeak1 = (*(event->dBaseline) - (0.333*dTemp))*dScaleV; // averaged with adjacent samples
-		dTemp += *(event->vPeaks.front().itPeak-2) + *(event->vPeaks.front().itPeak + 2);
-		*dPeak2 = (*(event->dBaseline) - (0.2*dTemp))*dScaleV; // averaged with two adjacent samples
-	}
 
 	for (auto it = event->vPeaks.front().itStart; it <= event->vPeaks.front().itStart + iFast; it++) *dFastInt += *it;
 	*dSlowInt = *dFastInt;
@@ -397,8 +388,6 @@ void Method::SetAddresses(vector<void*> add) {
 	dBasePostSigma =	(double*)add[i++];
 	dFastInt =			(double*)add[i++];
 	dSlowInt =			(double*)add[i++];
-	dPeak1 =			(double*)add[i++];
-	dPeak2 =			(double*)add[i++];
 
 	//PGA
 	dSample =			(double*)add[i++];

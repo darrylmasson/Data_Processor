@@ -93,6 +93,8 @@ class Processor {
 		double dBasePS[8];
 		vector<vector<double>> dPeak0;
 		vector<vector<double>>* pPeak0;
+		vector<vector<double>> dPeak2;
+		vector<vector<double>>* pPeak2;
 		double dFullInt[8]; // except this
 		double dBasePeakP[8];
 		double dBasePeakN[8];
@@ -106,9 +108,6 @@ class Processor {
 		double dBasePostSigma[8]; // baseline stuff in volts
 		double dFastInt[8]; // integral values
 		double dSlowInt[8];
-
-		double dPeak1[8]; // peakheights
-		double dPeak2[8];
 
 		double dSample[8]; // sample used for PGA
 

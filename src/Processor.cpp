@@ -73,17 +73,14 @@ Processor::Processor() {
 	sRise.assign(MAX_CH,	vector<double>());
 	for (auto it = sRise.begin(); it < sRise.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
 	pRise = &sRise;
-//	memset(sRise,			0, sizeof(sRise));
 	sPeakX.assign(MAX_CH,	vector<double>());
 	for (auto it = sPeakX.begin(); it < sPeakX.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
 	pPeakX = &sPeakX;
-//	memset(sPeakX,			0, sizeof(sPeakX)); //
 	memset(sTrigger,		0, sizeof(sTrigger));
 	sHWHM.assign(MAX_CH,	vector<double>());
 	for (auto it = sHWHM.begin(); it < sHWHM.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
 	pHWHM = &sHWHM;
 	memset(sSaturation,		0, sizeof(sSaturation));
-//	memset(sHWHM,			0, sizeof(sHWHM)); //
 	memset(dBase,			0, sizeof(dBase));
 	memset(dSigma,			0, sizeof(dSigma));
 	memset(dBaseP,			0, sizeof(dBaseP));
@@ -91,7 +88,9 @@ Processor::Processor() {
 	dPeak0.assign(MAX_CH,	vector<double>());
 	for (auto it = dPeak0.begin(); it < dPeak0.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
 	pPeak0 = &dPeak0;
-//	memset(dPeak0,			0, sizeof(dPeak0)); //
+	dPeak2.assign(MAX_CH,	vector<double>());
+	for (auto it = dPeak2.begin(); it < dPeak2.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	pPeak2 = &dPeak2;
 	memset(dFullInt,		0, sizeof(dFullInt));
 	memset(dBasePeakP,		0, sizeof(dBasePeakP));
 	memset(dBasePeakN,		0, sizeof(dBasePeakN));
@@ -102,8 +101,6 @@ Processor::Processor() {
 	memset(dBasePostSigma,	0, sizeof(dBasePostSigma));
 	memset(dFastInt,		0, sizeof(dFastInt));
 	memset(dSlowInt,		0, sizeof(dSlowInt));
-	memset(dPeak1,			0, sizeof(dPeak1));
-	memset(dPeak2,			0, sizeof(dPeak2));
 	memset(dSample,			0, sizeof(dSample));
 	memset(dOdd,			0, sizeof(dOdd));
 	memset(dEven,			0, sizeof(dEven));
@@ -138,7 +135,7 @@ Processor::~Processor() {
 	buffer = nullptr;
 	if (fin.is_open()) fin.close();
 	pRise = pPeakX = pHWHM = nullptr;
-	pPeak0 = nullptr;
+	pPeak0 = pPeak2 = nullptr;
 }
 
 void Processor::BusinessTime() {
@@ -224,6 +221,7 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&dBaseP[ch];
 		add[i++] = (void*)&dBasePS[ch];
 		add[i++] = (void*)&dPeak0[ch];
+		add[i++] = (void*)&dPeak2[ch];
 		add[i++] = (void*)&dFullInt[ch];
 		add[i++] = (void*)&dBasePeakP[ch];
 		add[i++] = (void*)&dBasePeakN[ch];
@@ -236,9 +234,6 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&dBasePostSigma[ch];
 		add[i++] = (void*)&dFastInt[ch];
 		add[i++] = (void*)&dSlowInt[ch];
-
-		add[i++] = (void*)&dPeak1[ch];
-		add[i++] = (void*)&dPeak2[ch];
 
 		add[i++] = (void*)&dSample[ch];
 
@@ -330,9 +325,9 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	sRawDataFile = sWorkingDir + "/rawdata/" + in + ".dat";
 	sRootFile = sWorkingDir + "/prodata/" + in;
 	if ((iSpecial == -1) && (iAverage == 0)) sRootFile += ".root";
-	else if ((iSpecial == -1) && (iAverage != 0)) sRootFile += "_a.root";
+	else if ((iSpecial == -1) && (iAverage != 0)) sRootFile += "_a" + to_string(iAverage) + ".root";
 	else if ((iSpecial != -1) && (iAverage == 0)) sRootFile += "_s.root";
-	else sRootFile += "_as.root";
+	else sRootFile += "_sa" + to_string(iAverage) + ".root";
 	fin.open(sRawDataFile, ios::in | ios::binary);
 	if (!fin.is_open()) {
 		cout << "Error: " << sRawDataFile << " not found\n";
@@ -484,7 +479,6 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("UnixTS",			&lUnixTS,		"unixts/L");
 	T0->Branch("Level",				&iLevel,		"level/I");
 	T0->Branch("Chisquared_NDF",	&iXSQ_ndf,		"ndf/I");
-	T0->Branch("Fitter",			&iXSQ_ndf,		"fitter/I");
 	T0->Branch("Time",				cTime,			"time[12]/B");
 	T0->Branch("PGA_samples",		iPGASamples,	"pga[8]/I");
 	T0->Branch("Fast_window",		iFastTime,		"fast[8]/I");
@@ -494,7 +488,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	if ((strcmp(cSource, "NG") == 0) || (strstr(cSource, "252") != nullptr)) { // NG or Cf-252
 		if (!bPositionsSet) {
 			cout << "Enter detector positions:\n";
-			for (auto i = 0; i < 3; i++) {
+			for (auto i = 0; i < iNchan; i++) {
 				cout << "Detector " << i << " z: "; cin >> fDetectorZ[i];
 				cout << "Detector " << i << " r: "; cin >> fDetectorR[i];
 			}	}
@@ -541,6 +535,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("BasePkP",		dBasePeakP,	"basepkp[8]/D");
 	T0->Branch("BasePkN",		dBasePeakN,	"basepkn[8]/D");
 	T0->Branch("Peakheight0",	"vector<vector<double>>", &pPeak0);
+	T0->Branch("Peakheight2",	"vector<vector<double>>", &pPeak2);
 	T0->Branch("Integral",		dFullInt,	"integral[8]/D");
 
 	if (iLevel > 0) {
@@ -552,9 +547,6 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		T1->Branch("BasePostSigma",	dBasePostSigma, "basepostsigma[8]/D");
 		T1->Branch("FastInt",		dFastInt,		"fastint[8]/D");
 		T1->Branch("SlowInt",		dSlowInt,		"slowint[8]/D");
-
-		T1->Branch("Peakheight1",	dPeak1,			"peak1[8]/D");
-		T1->Branch("Peakheight2",	dPeak2,			"peak2[8]/D");
 
 		T1->Branch("Sample",		dSample,		"sample[8]/D");
 

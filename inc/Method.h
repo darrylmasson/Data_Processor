@@ -68,8 +68,6 @@ public:
 	double *dBasePostSigma;
 	double *dBasePeakN;
 	double *dBasePeakP;
-	double *dPeak1;
-	double *dPeak2;
 	double *dSlowInt;
 	double *dFastInt;
 
