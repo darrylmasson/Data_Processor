@@ -1,7 +1,7 @@
 #include "Discriminator.h"
 #include "TGraph.h"
 
-float Discriminator::sfVersion = 1.05;
+float Discriminator::sfVersion = 1.07;
 
 Discriminator::Discriminator() : gain{0.0093634,0.0115473,0.0092957} {
 
@@ -45,7 +45,7 @@ Discriminator::Discriminator() : gain{0.0093634,0.0115473,0.0092957} {
 				sprintf(cBand, "%s_%d_%s", cDiscrimNames[d], ch ,cBandNames[b]);
 				gDiscrimCut = (TGraph*)discrim_file->Get(cBand);
 				if (gDiscrimCut == nullptr) {
-					cout << error_message[root_error] << "Bands\n";
+					cout << error_message[root_error] << "Band " << cBand << "\n";
 					iFailed = 1;
 					return;
 				}
@@ -62,14 +62,17 @@ Discriminator::Discriminator() : gain{0.0093634,0.0115473,0.0092957} {
 
 Discriminator::~Discriminator(){
 	if (g_verbose > 1) cout << "Discriminator c'tor\n";
+	pPeak2 = nullptr;
 	T0.reset();
-	T1.reset();
 	T2.reset();
+	if (f) f->Close();
 	f.reset();
 }
 
 void Discriminator::Setup(string filein) {
 	unsigned short mask;
+	bNewPeak2 = false;
+	pPeak2 = &vPeak2;
 	f.reset(new TFile((sWorkingDir + "/prodata/" + filein + ".root").c_str(), "UPDATE"));
 	if (f->IsZombie()) {
 		cout << error_message[root_error] << "TFile\n";
@@ -99,47 +102,43 @@ void Discriminator::Setup(string filein) {
 		return;
 	} else {
 		T0->SetBranchStatus("*",0);
-		T0->SetBranchStatus("Integral",1);
-		T0->SetBranchAddress("Integral", integral);
+		T0->SetBranchStatus("Integral",			1);
+		T0->SetBranchStatus("FastInt",			1);
+		T0->SetBranchStatus("SlowInt",			1);
+		T0->SetBranchStatus("Sample",			1);
+		T0->SetBranchStatus("Peakheight2",		1);
+		T0->SetBranchStatus("Xsq_n_f",			1);
+		T0->SetBranchStatus("Xsq_y_f",			1);
+		T0->SetBranchStatus("Peakscale_n_f",	1);
+		T0->SetBranchStatus("Peakscale_y_f",	1);
+		T0->SetBranchStatus("Base_shift_n",		1);
+		T0->SetBranchStatus("Base_shift_y",		1);
+		T0->SetBranchStatus("Even",				1);
+		T0->SetBranchStatus("Odd",				1);
+		T0->SetBranchStatus("LapHi",			1);
+		T0->SetBranchStatus("LapLow",			1);
+
+		T0->SetBranchAddress("Integral",		integral);
+		T0->SetBranchAddress("FastInt",			fastint);
+		T0->SetBranchAddress("SlowInt",			slowint);
+		T0->SetBranchAddress("Sample",			sample);
+		T0->SetBranchAddress("Xsq_n_f",			xsq_n);
+		T0->SetBranchAddress("Xsq_y_f",			xsq_y);
+		T0->SetBranchAddress("Peakscale_n_f",	peakscale_n);
+		T0->SetBranchAddress("Peakscale_y_f",	peakscale_y);
+		T0->SetBranchAddress("Base_shift_n",	baseshift_n);
+		T0->SetBranchAddress("Base_shift_y",	baseshift_y);
+		T0->SetBranchAddress("Even",			dft_even);
+		T0->SetBranchAddress("Odd",				dft_odd);
+		T0->SetBranchAddress("LapHi",			lap_high);
+		T0->SetBranchAddress("LapLow",			lap_low);
+
+		if (T0->SetBranchAddress("Peakheight2",		dPeak2)) {
+			bNewPeak2 = true;
+			T0->SetBranchAddress("Peakheight2",		&pPeak2);
+		}
+
 		lNumEvents = T0->GetEntries();
-	}
-
-	T1 = unique_ptr<TTree>((TTree*)f->Get("T1"));
-	if (!T1) {
-		cout << error_message[root_error] << "T1\n";
-		iFailed = 1;
-		return;
-	} else {
-		T1->SetBranchStatus("*",0);
-		T1->SetBranchStatus("FastInt",		1);
-		T1->SetBranchStatus("SlowInt",		1);
-		T1->SetBranchStatus("Sample",		1);
-		T1->SetBranchStatus("Peakheight2",	1);
-		T1->SetBranchStatus("Xsq_n",		1);
-		T1->SetBranchStatus("Xsq_y",		1);
-		T1->SetBranchStatus("Peakscale_n",	1);
-		T1->SetBranchStatus("Peakscale_y",	1);
-		T1->SetBranchStatus("Base_shift_n",	1);
-		T1->SetBranchStatus("Base_shift_y",	1);
-		T1->SetBranchStatus("Even",			1);
-		T1->SetBranchStatus("Odd",			1);
-		T1->SetBranchStatus("LapHi",		1);
-		T1->SetBranchStatus("LapLow",		1);
-
-		T1->SetBranchAddress("FastInt",			fastint);
-		T1->SetBranchAddress("SlowInt",			slowint);
-		T1->SetBranchAddress("Sample",			sample);
-		T1->SetBranchAddress("Peakheight2",		peakheight2);
-		T1->SetBranchAddress("Xsq_n",			xsq_n);
-		T1->SetBranchAddress("Xsq_y",			xsq_y);
-		T1->SetBranchAddress("Peakscale_n",		peakscale_n);
-		T1->SetBranchAddress("Peakscale_y",		peakscale_y);
-		T1->SetBranchAddress("Base_shift_n",	baseshift_n);
-		T1->SetBranchAddress("Base_shift_y",	baseshift_y);
-		T1->SetBranchAddress("Even",			dft_even);
-		T1->SetBranchAddress("Odd",				dft_odd);
-		T1->SetBranchAddress("LapHi",			lap_high);
-		T1->SetBranchAddress("LapLow",			lap_low);
 	}
 
 	try {T2 = unique_ptr<TTree>(new TTree("T2","Distriminator"));}
@@ -167,13 +166,13 @@ void Discriminator::Discriminate() {
 	int iBinNumber(0);
 	for (long e = 0; e < lNumEvents; e++) {
 		T0->GetEntry(e);
-		T1->GetEntry(e);
 		for (int ch = 0; ch < iNChan; ch++) {
 			dDiscrim[d_CCM_t][iChan[ch]] = fastint[iChan[ch]] == 0 ?									-1 : slowint[iChan[ch]]/fastint[iChan[ch]];
 			dDiscrim[d_DFT_t][iChan[ch]] = dft_odd[iChan[ch]] == 0 ?									-1 : dft_even[iChan[ch]]/dft_odd[iChan[ch]];
 			dDiscrim[d_NGM_t][iChan[ch]] = peakscale_y[iChan[ch]] == 0 || peakscale_n[iChan[ch]] == 0 ?	-1 : xsq_y[iChan[ch]]/peakscale_y[iChan[ch]]-xsq_n[iChan[ch]]/peakscale_n[iChan[ch]];
 			dDiscrim[d_LAP_t][iChan[ch]] = lap_low[iChan[ch]] == 0 ?									-1 : lap_high[iChan[ch]]/lap_low[iChan[ch]];
-			dDiscrim[d_PGA_t][iChan[ch]] = peakheight2[iChan[ch]] == 0 ?								-1 : sample[iChan[ch]]/peakheight2[iChan[ch]];
+			if (bNewPeak2) dDiscrim[d_PGA_t][iChan[ch]] = pPeak2->at(iChan[ch])[0] == 0 ?				-1 : sample[iChan[ch]]/pPeak2->at(iChan[ch])[0];
+			else dDiscrim[d_PGA_t][iChan[ch]] = dPeak2[iChan[ch]] == 0 ?								-1 : sample[iChan[ch]]/dPeak2[iChan[ch]];
 			dDiscrim[d_WBS_t][iChan[ch]] = baseshift_n[iChan[ch]]+baseshift_y[iChan[ch]];
 			iBinNumber = integral[iChan[ch]]/(gain[ch]*iDiscrimBins); // gain isn't handled the same way as the stuff from the tree
 			for (int d = 0; d < NUM_DISCRIMS; d++) {
@@ -182,22 +181,24 @@ void Discriminator::Discriminate() {
 					if ((d == d_WBS_t) || (d == d_DFT_t)) {
 						if (dDiscrim[d][iChan[ch]] < dDiscrimBand[d][iChan[ch]][b][iBinNumber]) sbCutPass[d][iChan[ch]][b] = true;
 					} else if (dDiscrim[d][iChan[ch]] > dDiscrimBand[d][iChan[ch]][b][iBinNumber]) sbCutPass[d][iChan[ch]][b] = true;
-				}
-			}
-		}
+				} // b
+			} // d
+		} // ch
 		T2->Fill();
-	}
+	} // e
 	if (g_verbose) cout << "Discriminated\nMaking friends";
 	T2->AddFriend("TS");
 	T2->AddFriend("T0");
 	T2->AddFriend("T1");
 	T0->AddFriend("T2");
-	T1->AddFriend("T2");
-	T0->Write("", TObject::kOverwrite);
-	T1->Write("", TObject::kOverwrite);
-	T2->Write("", TObject::kOverwrite);
+	T0->Write("T0", TObject::kOverwrite);
+	T2->Write("T2", TObject::kOverwrite);
+	T0.reset((TTree*)f->Get("T1"));
+	if (T0) {
+		T0->AddFriend("T2");
+		T0->Write("T1", TObject::kOverwrite);
+	}
 	T0.reset();
-	T1.reset();
 	T2.reset();
 	f->Close();
 	f.reset();

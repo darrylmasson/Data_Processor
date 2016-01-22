@@ -175,9 +175,8 @@ void Processor::BusinessTime() {
 			iRate = t_elapsed.count() == 0 ? 9001 : iProgCheck/t_elapsed.count(); // it's OVER 9000!
 			cout << iRate << "\t\t";
 			iTimeleft = (iNumEvents - ev)/iRate;
-			if (iTimeleft > (1 << 12)) cout << iTimeleft/3600 << "h" << (iTimeleft%3600)/60 << "m\n";
-			else if (iTimeleft > (1 << 7)) cout << iTimeleft/60 << "m" << iTimeleft%60 << "s\n";
-			else cout << iTimeleft << "s\n";
+			cout << iTimeleft/3600 << "h" << (iTimeleft%3600)/60 << "m" << iTimeleft%60 << "s\t\t\r";
+			cout.flush();
 		}
 	}
 	if (g_verbose) cout << "Processing completed\n";
