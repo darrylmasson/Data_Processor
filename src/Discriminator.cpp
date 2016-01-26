@@ -2,8 +2,8 @@
 #include "TGraph.h"
 
 float Discriminator::sfVersion = 1.07;
-
-Discriminator::Discriminator() : gain{0.0093634,0.0115473,0.0092957} {
+// 0.0093634,0.0115473,0.0092957 before 160125
+Discriminator::Discriminator() : gain{0.0098938,0.011679,0.010655} {
 
 	strcpy(cDiscrimNames[d_CCM_t], "CCM");
 	strcpy(cDiscrimNames[d_DFT_t], "DFT");

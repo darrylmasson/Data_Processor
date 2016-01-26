@@ -3,9 +3,12 @@
 
 #include <fstream>
 #include <unistd.h>
+#include <sqlite3.h>
+
 #ifndef METHOD_H
 #include "Method.h"
 #endif
+
 #include "TFile.h"
 #include "TTree.h"
 
@@ -18,6 +21,7 @@ class ProcessorException : public exception { // simpler than checking Failed() 
 
 class Processor {
 	private:
+		void Database(); // adds entry into the database
 		struct {
 			char		cName[12];
 			double		dSamplerate;
@@ -39,6 +43,8 @@ class Processor {
 		string sConfigFileName;
 		string sRawDataFile;
 		string sRootFile;
+		string sName;
+		string sPositions;
 
 		unique_ptr<double[]> dTrace[MAX_CH];
 		shared_ptr<Event> event[MAX_CH];
@@ -72,6 +78,12 @@ class Processor {
 		float			fGain[MAX_CH][2]; // for fitter
 		float			fDetectorZ[3];
 		float			fDetectorR[3];
+		float			fHV;
+		float			fCurrent;
+
+		unsigned long	ulRuntime;
+
+		sqlite3*		database;
 
 		// These in T0
 		bool bFullWave[8]; // waveform decays before end of event
@@ -141,6 +153,7 @@ class Processor {
 		vector<void*> SetAddresses(int ch, int level);
 		void SetConfigFile(string in)				{sConfigFileName = in;}
 		void SetDetectorPositions(string in);
+		void SetNGSetpoint(float HV, float Current) {fHV = HV; fCurrent = Current;}
 		void SetSource(string in)					{strcpy(cSource,in.c_str());}
 		void SetParams(int average, int level)	{iAverage = average; iLevel = level;}
 		void Setup(string in); // opens files, parses header and config file, does trees and alloc'ing

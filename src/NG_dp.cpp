@@ -14,7 +14,7 @@
 
 using namespace std::chrono;
 
-int g_verbose(1);
+int g_verbose(0);
 
 void PrintVersions() {
 	cout << "Versions installed:\n";
@@ -23,35 +23,56 @@ void PrintVersions() {
 	cout << "Discriminator: " << Discriminator::sfVersion << '\n';
 }
 
+void Help() {
+	cout << "Arguments:\n";
+	cout << "-f file\t\tSpecifies which file for processor to use. Required\n";
+	cout << "-s source\t\tSpecifies what source was used for file. Required\n";
+	cout << "-a moving_average\t\tSpecifies how many samples on each side of a given point to average. Optional\n";
+	cout << "-c config\t\tSpecifies a non-default configuration file to use. Must be in same directory as default. Optional\n";
+	cout << "-e error_level\t\tSpecifies level of output during processing. Default 0, 1 = more, 2 = lots. Optional\n";
+	cout << "-h\t\t\tPrints this message\n";
+	cout << "-I current\t\tCurrent setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "-l level\t\tSpecifies processing level to be done. Default 1 (Method and Event), 0 = Event, 2 = Event, Method, and Discriminator, 3 = Discriminator. Optional\n";
+	cout << "-p Detector_position\t\tSets positions of detectors. Required for NG or Cf-252 runs, optional otherwise\n";
+	cout << "-v\t\t\tPrints installed versions and exits\n";
+	cout << "\V voltage\t\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	return;
+}
+
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v4\n";
-	int i(0), iElapsed(0), iAverage(0), iLevel(0);
+	int i(0), iElapsed(0), iAverage(0), iLevel(1);
 	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
-	const string sArgs = "Arguments: -f file [-s source -l level -c config -a moving_average -p detector_positions -v -e]";
+	const string sArgs = "Arguments: -f file -s source [-a moving_average -c config -e error_level -h -I current -l level -p detector_positions -v -V voltage]";
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
+	float fHV(0), fCurrent(0);
 	Processor processor;
 	Discriminator discriminator;
 	if (argc < 2) {
 		cout << sArgs << '\n';
 		return 0;
 	}
-	while ((i = getopt(argc, argv, "a:c:e:f:l:s:p:vx:")) != -1) { // command line options
+	while ((i = getopt(argc, argv, "a:c:e:f:hI:l:s:p:vV:x:")) != -1) { // command line options
 		switch(i) {
 			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;
 			case 'e': g_verbose = atoi(optarg);	break;
 			case 'f': sFileset = optarg;		break;
+			case 'h': Help();					return 0;
+			case 'I': fCurrent = atof(optarg);	break;
 			case 'l': iLevel = atoi(optarg);	break;
 			case 'p': sDetectorPos = optarg;	break;
 			case 's': sSource = optarg;			break;
 			case 'v': PrintVersions();			return 0;
-//			case 'x': iSpecial = atoi(optarg);	break;
-			default: cout << sArgs << '\n';
-				return -1;
+			case 'v': fHV = atof(optarg);		break;
+			default: Help();					return 0;
 	}	}
 	if (sFileset == "\0") {
 		cout << "No file specified\n";
+		return 0;
+	} else if (sSource == "\0") {
+		cout << "No source specified\n";
 		return 0;
 	}
 /*	switch(iSpecial) {
@@ -70,6 +91,7 @@ int main(int argc, char **argv) {
 			processor.SetConfigFile(sConfigFile);
 			processor.SetSource(sSource);
 			processor.SetDetectorPositions(sDetectorPos);
+			processor.SetNGSetpoint(fHV, fCurrent);
 			processor.Setup(sFileset);
 		} catch (ProcessorException& e) {
 			cout << e.what();

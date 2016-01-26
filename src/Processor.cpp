@@ -40,7 +40,9 @@ Processor::Processor() {
 	sConfigFileName = "\0";
 	sRawDataFile = "\0";
 	sRootFile = "\0";
+	sName = "\0";
 	cSource[0] = '\0';
+	database = nullptr;
 
 	memset(&digitizer, 0, sizeof(digitizer));
 
@@ -59,6 +61,9 @@ Processor::Processor() {
 	iTrigPost = 0;
 	iXSQ_ndf = 0;
 
+	fHV = 0;
+	fCurrent = 0;
+
 	memset(uiDCOffset,		0, sizeof(uiDCOffset));
 	memset(uiThreshold,		0, sizeof(uiThreshold));
 
@@ -70,27 +75,12 @@ Processor::Processor() {
 	memset(bFullWave,		0, sizeof(bFullWave));
 	memset(bSaturated,		0, sizeof(bSaturated));
 	memset(sDecay,			0, sizeof(sDecay));
-	sRise.assign(MAX_CH,	vector<double>());
-	for (auto it = sRise.begin(); it < sRise.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
-	pRise = &sRise;
-	sPeakX.assign(MAX_CH,	vector<double>());
-	for (auto it = sPeakX.begin(); it < sPeakX.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
-	pPeakX = &sPeakX;
 	memset(sTrigger,		0, sizeof(sTrigger));
-	sHWHM.assign(MAX_CH,	vector<double>());
-	for (auto it = sHWHM.begin(); it < sHWHM.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
-	pHWHM = &sHWHM;
 	memset(sSaturation,		0, sizeof(sSaturation));
 	memset(dBase,			0, sizeof(dBase));
 	memset(dSigma,			0, sizeof(dSigma));
 	memset(dBaseP,			0, sizeof(dBaseP));
 	memset(dBasePS,			0, sizeof(dBasePS));
-	dPeak0.assign(MAX_CH,	vector<double>());
-	for (auto it = dPeak0.begin(); it < dPeak0.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
-	pPeak0 = &dPeak0;
-	dPeak2.assign(MAX_CH,	vector<double>());
-	for (auto it = dPeak2.begin(); it < dPeak2.end(); it++) {try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
-	pPeak2 = &dPeak2;
 	memset(dFullInt,		0, sizeof(dFullInt));
 	memset(dBasePeakP,		0, sizeof(dBasePeakP));
 	memset(dBasePeakN,		0, sizeof(dBasePeakN));
@@ -118,6 +108,21 @@ Processor::Processor() {
 	memset(dBase_err,		0, sizeof(dBase_err));
 	memset(dOff_err,		0, sizeof(dOff_err));
 	memset(dOff_err_f,		0, sizeof(dOff_err_f));
+	sRise.assign(MAX_CH,	vector<double>());
+	sPeakX.assign(MAX_CH,	vector<double>());
+	dPeak0.assign(MAX_CH,	vector<double>());
+	dPeak2.assign(MAX_CH,	vector<double>());
+	sHWHM.assign(MAX_CH,	vector<double>());
+	for (auto it = sRise.begin(); it < sRise.end(); it++)	{try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	for (auto it = sPeakX.begin(); it < sPeakX.end(); it++)	{try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	for (auto it = dPeak0.begin(); it < dPeak0.end(); it++)	{try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	for (auto it = dPeak2.begin(); it < dPeak2.end(); it++)	{try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	for (auto it = sHWHM.begin(); it < sHWHM.end(); it++)	{try {it->reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	pRise = &sRise;
+	pPeakX = &sPeakX;
+	pPeak0 = &dPeak0;
+	pPeak2 = &dPeak2;
+	pHWHM = &sHWHM;
 }
 
 Processor::~Processor() {
@@ -189,9 +194,13 @@ void Processor::BusinessTime() {
 	}
 	T0->Write("",TObject::kOverwrite);
 	TS->Write("",TObject::kOverwrite);
+	ulRuntime = *ulpTimestamp;
+	T0->GetEntry(0);
+	ulRuntime = (ulRuntime - *ulpTimestamp)*8e-9;
 	if (g_verbose) cout << "Beginning cleanup: ";
 	fin.close();
 	buffer.reset();
+	Database();
 	TS.reset();
 	T0.reset();
 	T1.reset();
@@ -290,8 +299,10 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r2=#" or some permutation. Accepts z*=# or r*=#
 	if (in == "\0") {
 		bPositionsSet = false;
+		sPositions = "-";
 		return;
 	}
+	sPositions = in;
 	if (g_verbose > 1) cout << "Setting detector positions\n";
 	int i(0);
 	unsigned iCommas[2] = {0,1};
@@ -319,7 +330,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	long filesize;
 	int ch(-1);
 	long lUnixTS(0);
-
+	sName = in;
 	if (g_verbose > 1) cout << "Opening files\n";
 	sRawDataFile = sWorkingDir + "/rawdata/" + in + ".dat";
 	sRootFile = sWorkingDir + "/prodata/" + in;
@@ -486,13 +497,30 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	if (iAverage != 0) T0->Branch("Moving_average", &iAverage, "average/I");
 	if ((strcmp(cSource, "NG") == 0) || (strstr(cSource, "252") != nullptr)) { // NG or Cf-252
 		if (!bPositionsSet) {
+			if (g_verbose == 0) { // assumed running in batch mode
+				cout << "No detector positions specified\n";
+				throw ProcessorException();
+			}
 			cout << "Enter detector positions:\n";
 			for (auto i = 0; i < iNchan; i++) {
-				cout << "Detector " << i << " z: "; cin >> fDetectorZ[i];
-				cout << "Detector " << i << " r: "; cin >> fDetectorR[i];
+				cout << "Detector " << iChan[i] << " z: "; cin >> fDetectorZ[i];
+				cout << "Detector " << iChan[i] << " r: "; cin >> fDetectorR[i];
 			}	}
 			T0->Branch("Detector_position_z", fDetectorZ, "z_pos[3]/F");
 			T0->Branch("Detector_position_r", fDetectorR, "r_pos[3]/F");
+	}
+	if (strcmp(cSource, "NG") == 0) {
+		if ((fHV == 0) || (fCurrent == 0)) {
+			if (g_verbose == 0) {
+				cout << "No NG setpoint values\n";
+				throw ProcessorException();
+			}
+			cout << "Enter NG setpoints\n";
+			cout << "HV: "; cin >> fHV;
+			cout << "Current: "; cin >> fCurrent;
+		}
+		T0->Branch("NG_HV_setpoint", &fHV, "hv/F");
+		T0->Branch("NG_Current_setpoint", &fCurrent, "current/F");
 	}
 
 	T0->Fill();
@@ -613,4 +641,64 @@ void Processor::Setup(string in) { // also opens raw and processed files
 			method[ch]->SetDCOffset(digitizer.sResolution, uiDCOffset[iChan[ch]]);
 		}
 	} // ch loop
+}
+
+static int callback(void* NotUsed, int argc, char** argv, char** azColName) { // used for sqlite3
+	for (auto i = 0; i < argc; i++) cout << azColName[i] << " = " << (argv[i] ? argv[i] : "NULL") << '\n';
+	return 0;
+}
+
+void Processor::Database() {
+	auto rc = sqlite3_open(DATABASE, &database);
+	if (rc) {
+		cerr << "Can't open " << sqlite3_errmsg(database) << '\n';
+		iFailed = 1;
+		return;
+	}
+	string command = "INSERT INTO table_data (Name,Date,Time,Year,Month,Day,Hour,Minute,Source,Digitizer,Runtime,NumberOfEvents,RawSize,ProcessedSize,NG_HV,NG_Current,Detector_Posititions) VALUES ('";
+	command += sName; // text, YYMMdd_hhmm
+	command += "',";
+	command += sName.substr(0,6); // integer, YYMMdd
+	command += ",";
+	command += sName.substr(7,4); // integer, hhmm
+	command += ",";
+	command += sName.substr(0,2); // integer, YY
+	command += ",";
+	command += sName.substr(2,2); // integer, MM
+	command += ",";
+	command += sName.substr(4,2); // integer, dd
+	command += ",";
+	command += sName.substr(7,2); // integer, hh
+	command += ",";
+	command += sName.sbustr(9,2); // integer, mm
+	command += ",'";
+	command += cSource; // text, Source
+	command += "','";
+	command += digitizer.cName; // text, Digitizer
+	command += "',";
+	command += to_string(ulRuntime); // integer, runtime
+	command += ",";
+	command += to_string(iNumEvents); // integer, NumberOfEvents
+	command += ",";
+	command += to_string((1l*iNumEvents*iEventsize + sizeof_f_header)/1e6); // integer, RawSize
+	command += ",";
+	fin.open(sRootFile, ios::in);
+	fin.seekg(0, fin.end);
+	command += to_string(fin.tellg()/1e6); // integer, ProcessedSize
+	fin.close();
+	command += ",";
+	command += to_string(fHV); // real, NG_HV
+	command += ",";
+	command += to_string(fCurrent); // real, NG_Current
+	command += ",'";
+	command += sPositions;
+	command += "');";
+	char* zErrMsg = nullptr;
+	rc = sqlite3_exed(database, command.c_str(), callback, 0, &zErrMsg);
+	if (rc != SQLITE_OK) {
+		cerr << "SQL error: " << zErrMsg << '\n';
+		sqlite3_free(zErrMsg);
+	}
+	sqlite3_close(database);
+	return;
 }

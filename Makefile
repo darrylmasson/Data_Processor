@@ -4,16 +4,18 @@ OBJDIR = obj
 SRCDIR = src
 INCDIR = inc
 CFLAGS = -g -Wall -Iinc -std=c++11 -O2
-CPPFLAGS = $(CFLAGS) $(ROOT) $(DEFS)
-DEFS = -DWORKING_DIR=\"$(WORKDIR)\" -DCONFIG_DIR=\"$(CONFDIR)\"
+CPPFLAGS = $(CFLAGS) $(ROOT) $(DEFS) $(SQLITE)
+DEFS = -DWORKING_DIR=\"$(WORKDIR)\" -DCONFIG_DIR=\"$(CONFDIR)\" -DDATABASE=\"$(DB)\"
 #DEFS := $(DEFS) -DCCM_ONLY
 INSTALL = -o $(WORKDIR)/NG_dp
+SQLITE = -lsqlite
 TEST = -o test_exe
 sources := $(wildcard src/*.cpp)
 objects := $(sources:.cpp=.o)
 VPATH = src:inc
 include Paths.conf
 #include $(sources:.cpp=.d)
+
 
 test :
 	$(CC) $(CPPFLAGS) $(TEST) $(sources)
