@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <ratio>
 #include <chrono>
+#include "sqlite3.h"
 
 using namespace std::chrono;
 
@@ -42,7 +43,6 @@ Processor::Processor() {
 	sRootFile = "\0";
 	sName = "\0";
 	cSource[0] = '\0';
-	database = nullptr;
 
 	memset(&digitizer, 0, sizeof(digitizer));
 
@@ -649,6 +649,7 @@ static int callback(void* NotUsed, int argc, char** argv, char** azColName) { //
 }
 
 void Processor::Database() {
+	sqlite3* database = nullptr;
 	auto rc = sqlite3_open(DATABASE, &database);
 	if (rc) {
 		cerr << "Can't open " << sqlite3_errmsg(database) << '\n';
@@ -670,7 +671,7 @@ void Processor::Database() {
 	command += ",";
 	command += sName.substr(7,2); // integer, hh
 	command += ",";
-	command += sName.sbustr(9,2); // integer, mm
+	command += sName.substr(9,2); // integer, mm
 	command += ",'";
 	command += cSource; // text, Source
 	command += "','";
@@ -694,7 +695,7 @@ void Processor::Database() {
 	command += sPositions;
 	command += "');";
 	char* zErrMsg = nullptr;
-	rc = sqlite3_exed(database, command.c_str(), callback, 0, &zErrMsg);
+	rc = sqlite3_exec(database, command.c_str(), callback, 0, &zErrMsg);
 	if (rc != SQLITE_OK) {
 		cerr << "SQL error: " << zErrMsg << '\n';
 		sqlite3_free(zErrMsg);

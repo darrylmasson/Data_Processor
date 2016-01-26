@@ -2,8 +2,6 @@
 #define PROCESSOR_H
 
 #include <fstream>
-#include <unistd.h>
-#include <sqlite3.h>
 
 #ifndef METHOD_H
 #include "Method.h"
@@ -82,8 +80,6 @@ class Processor {
 		float			fCurrent;
 
 		unsigned long	ulRuntime;
-
-		sqlite3*		database;
 
 		// These in T0
 		bool bFullWave[8]; // waveform decays before end of event

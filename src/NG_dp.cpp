@@ -35,7 +35,7 @@ void Help() {
 	cout << "-l level\t\tSpecifies processing level to be done. Default 1 (Method and Event), 0 = Event, 2 = Event, Method, and Discriminator, 3 = Discriminator. Optional\n";
 	cout << "-p Detector_position\t\tSets positions of detectors. Required for NG or Cf-252 runs, optional otherwise\n";
 	cout << "-v\t\t\tPrints installed versions and exits\n";
-	cout << "\V voltage\t\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "-V voltage\t\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
 	return;
 }
 
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
 			case 'p': sDetectorPos = optarg;	break;
 			case 's': sSource = optarg;			break;
 			case 'v': PrintVersions();			return 0;
-			case 'v': fHV = atof(optarg);		break;
+			case 'V': fHV = atof(optarg);		break;
 			default: Help();					return 0;
 	}	}
 	if (sFileset == "\0") {

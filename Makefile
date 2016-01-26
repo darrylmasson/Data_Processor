@@ -8,7 +8,7 @@ CPPFLAGS = $(CFLAGS) $(ROOT) $(DEFS) $(SQLITE)
 DEFS = -DWORKING_DIR=\"$(WORKDIR)\" -DCONFIG_DIR=\"$(CONFDIR)\" -DDATABASE=\"$(DB)\"
 #DEFS := $(DEFS) -DCCM_ONLY
 INSTALL = -o $(WORKDIR)/NG_dp
-SQLITE = -lsqlite
+SQLITE = -lsqlite3
 TEST = -o test_exe
 sources := $(wildcard src/*.cpp)
 objects := $(sources:.cpp=.o)
