@@ -650,6 +650,11 @@ static int callback(void* NotUsed, int argc, char** argv, char** azColName) { //
 
 void Processor::Database() {
 	sqlite3* database = nullptr;
+	string sSync = "/home/dmasson/./dbsync.sh&";
+	if (system(nullptr)) {
+		system(sSync.c_str()); // syncs the database with the remote versions (darkmatters and zinc)
+		sleep(5); // waits for transfer to happen
+	}
 	auto rc = sqlite3_open(DATABASE, &database);
 	if (rc) {
 		cerr << "Can't open " << sqlite3_errmsg(database) << '\n';
@@ -701,5 +706,6 @@ void Processor::Database() {
 		sqlite3_free(zErrMsg);
 	}
 	sqlite3_close(database);
+	if (system(nullptr)) system(sSync.c_str()); // updates database after adding entry
 	return;
 }
