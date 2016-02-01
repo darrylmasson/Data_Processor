@@ -61,14 +61,14 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	}
 
 	if (dScaleT == 1) { // ns/Sa
-		iStdLength	= 450;
-		iStdTrig	= 46;
+		iStdLength	= 600;
+		iStdTrig	= 50;
 	} else if (dScaleT == 2) {
-		iStdLength	= 225;
-		iStdTrig	= 23;
+		iStdLength	= 300;
+		iStdTrig	= 25;
 	} else if (dScaleT == 0.5) {
-		iStdLength		= 899;
-		iStdTrig		= 92;
+		iStdLength		= 1199;
+		iStdTrig		= 100;
 	} else {
 		cout << error_message[dig_error];
 		cout << error_message[method_error] << "Std Events\n";
@@ -104,7 +104,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 			iFailed = 1;
 			return;
 		}
-		pWave = (TGraphErrors*)std_file->Get((p ? "wave_y" : "wave_n"));
+		pWave = (TGraphErrors*)std_file->Get((p ? "gamma_low" : "neutron_low"));
 		if (pWave == nullptr) {
 			cout << error_message[root_error] << "Std Events\n";
 			iFailed = 1;
@@ -112,17 +112,17 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		}
 		dStdPeak[p] = 0;
 		switch(iStdLength) {
-			case 225 : // 500 MSa/s
+			case 300 : // 500 MSa/s
 				for (int i = 0; i < iStdLength; i++) { // averages
 					dStdWave[p][i] = (pWave->GetY()[2*i] + pWave->GetY()[2*i+1])/2.;
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
-			case 899 : // 2 GSa/s
+			case 1199 : // 2 GSa/s
 				for (int i = 0; i < iStdLength; i++) { // interpolates
 					dStdWave[p][i] = (i%2) ? (pWave->GetY()[(i+1)/2] + pWave->GetY()[(i-1)/2])/2. : pWave->GetY()[i/2]; // i%2==1 so i/2 = (i-1)/2
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
-			case 450 : // 1 GSa/s
+			case 600 : // 1 GSa/s
 				for (int i = 0; i < iStdLength; i++) {
 					dStdWave[p][i] = pWave->GetY()[i];
 					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
