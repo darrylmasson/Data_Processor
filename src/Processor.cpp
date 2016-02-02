@@ -200,7 +200,7 @@ void Processor::BusinessTime() {
 	if (g_verbose) cout << "Beginning cleanup: ";
 	fin.close();
 	buffer.reset();
-	Database();
+//	Database();
 	TS.reset();
 	T0.reset();
 	T1.reset();
@@ -478,6 +478,29 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		cout << error_message[alloc_error];
 		throw ProcessorException();
 	}
+	if ((strcmp(cSource, "NG") == 0) || (strstr(cSource, "252") != nullptr)) { // NG or Cf-252
+		if (!bPositionsSet) {
+			if (g_verbose == 0) { // assumed running in batch mode
+				cout << "No detector positions specified\n";
+				throw ProcessorException();
+			}
+			cout << "Enter detector positions:\n";
+			for (auto i = 0; i < iNchan; i++) {
+				cout << "Detector " << iChan[i] << " z: "; cin >> fDetectorZ[i];
+				cout << "Detector " << iChan[i] << " r: "; cin >> fDetectorR[i];
+			}	}
+	}
+	if (strcmp(cSource, "NG") == 0) {
+		if ((fHV == 0) || (fCurrent == 0)) {
+			if (g_verbose == 0) {
+				cout << "No NG setpoint values\n";
+				throw ProcessorException();
+			}
+			cout << "Enter NG setpoints\n";
+			cout << "HV: "; cin >> fHV;
+			cout << "Current: "; cin >> fCurrent;
+		}
+	}
 
 	T0->Branch("Digitizer",			digitizer.cName,"name[12]/B");
 	T0->Branch("Source",			cSource,		"source[12]/B");
@@ -493,35 +516,12 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	T0->Branch("PGA_samples",		iPGASamples,	"pga[8]/I");
 	T0->Branch("Fast_window",		iFastTime,		"fast[8]/I");
 	T0->Branch("Slow_window",		iSlowTime,		"slow[8]/I");
+	T0->Branch("Detector_pos_z",	fDetectorZ,		"z_pos[3]/F");
+	T0->Branch("Detector_pos_r",	fDetectorR,		"r_pos[3]/F");
+	T0->Branch("NG_HV_setpoint",	&fHV,			"hv/F");
+	T0->Branch("NG_Current_setpoint",&fCurrent,		"current/F");
 	if (iSpecial != -1) T0->Branch("Special", &iSpecial, "special/I");
 	if (iAverage != 0) T0->Branch("Moving_average", &iAverage, "average/I");
-	if ((strcmp(cSource, "NG") == 0) || (strstr(cSource, "252") != nullptr)) { // NG or Cf-252
-		if (!bPositionsSet) {
-			if (g_verbose == 0) { // assumed running in batch mode
-				cout << "No detector positions specified\n";
-				throw ProcessorException();
-			}
-			cout << "Enter detector positions:\n";
-			for (auto i = 0; i < iNchan; i++) {
-				cout << "Detector " << iChan[i] << " z: "; cin >> fDetectorZ[i];
-				cout << "Detector " << iChan[i] << " r: "; cin >> fDetectorR[i];
-			}	}
-			T0->Branch("Detector_position_z", fDetectorZ, "z_pos[3]/F");
-			T0->Branch("Detector_position_r", fDetectorR, "r_pos[3]/F");
-	}
-	if (strcmp(cSource, "NG") == 0) {
-		if ((fHV == 0) || (fCurrent == 0)) {
-			if (g_verbose == 0) {
-				cout << "No NG setpoint values\n";
-				throw ProcessorException();
-			}
-			cout << "Enter NG setpoints\n";
-			cout << "HV: "; cin >> fHV;
-			cout << "Current: "; cin >> fCurrent;
-		}
-		T0->Branch("NG_HV_setpoint", &fHV, "hv/F");
-		T0->Branch("NG_Current_setpoint", &fCurrent, "current/F");
-	}
 
 	T0->Fill();
 	T0->Write();
