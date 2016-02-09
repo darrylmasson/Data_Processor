@@ -3,7 +3,6 @@
 #include <pthread.h>
 #include <ratio>
 #include <chrono>
-#include "sqlite3.h"
 
 using namespace std::chrono;
 
@@ -641,71 +640,4 @@ void Processor::Setup(string in) { // also opens raw and processed files
 			method[ch]->SetDCOffset(digitizer.sResolution, uiDCOffset[iChan[ch]]);
 		}
 	} // ch loop
-}
-
-static int callback(void* NotUsed, int argc, char** argv, char** azColName) { // used for sqlite3
-	for (auto i = 0; i < argc; i++) cout << azColName[i] << " = " << (argv[i] ? argv[i] : "NULL") << '\n';
-	return 0;
-}
-
-void Processor::Database() {
-	sqlite3* database = nullptr;
-	string sSync = "/home/dmasson/./dbsync.sh&";
-	if (system(nullptr)) {
-		system(sSync.c_str()); // syncs the database with the remote versions (darkmatters and zinc)
-		sleep(5); // waits for transfer to happen
-	}
-	auto rc = sqlite3_open(DATABASE, &database);
-	if (rc) {
-		cerr << "Can't open " << sqlite3_errmsg(database) << '\n';
-		iFailed = 1;
-		return;
-	}
-	string command = "INSERT INTO table_data (Name,Date,Time,Year,Month,Day,Hour,Minute,Source,Digitizer,Runtime,NumberOfEvents,RawSize,ProcessedSize,NG_HV,NG_Current,Detector_Posititions) VALUES ('";
-	command += sName; // text, YYMMdd_hhmm
-	command += "',";
-	command += sName.substr(0,6); // integer, YYMMdd
-	command += ",";
-	command += sName.substr(7,4); // integer, hhmm
-	command += ",";
-	command += sName.substr(0,2); // integer, YY
-	command += ",";
-	command += sName.substr(2,2); // integer, MM
-	command += ",";
-	command += sName.substr(4,2); // integer, dd
-	command += ",";
-	command += sName.substr(7,2); // integer, hh
-	command += ",";
-	command += sName.substr(9,2); // integer, mm
-	command += ",'";
-	command += cSource; // text, Source
-	command += "','";
-	command += digitizer.cName; // text, Digitizer
-	command += "',";
-	command += to_string(ulRuntime); // integer, runtime
-	command += ",";
-	command += to_string(iNumEvents); // integer, NumberOfEvents
-	command += ",";
-	command += to_string((1l*iNumEvents*iEventsize + sizeof_f_header)/1e6); // integer, RawSize
-	command += ",";
-	fin.open(sRootFile, ios::in);
-	fin.seekg(0, fin.end);
-	command += to_string(fin.tellg()/1e6); // integer, ProcessedSize
-	fin.close();
-	command += ",";
-	command += to_string(fHV); // real, NG_HV
-	command += ",";
-	command += to_string(fCurrent); // real, NG_Current
-	command += ",'";
-	command += sPositions;
-	command += "');";
-	char* zErrMsg = nullptr;
-	rc = sqlite3_exec(database, command.c_str(), callback, 0, &zErrMsg);
-	if (rc != SQLITE_OK) {
-		cerr << "SQL error: " << zErrMsg << '\n';
-		sqlite3_free(zErrMsg);
-	}
-	sqlite3_close(database);
-	if (system(nullptr)) system(sSync.c_str()); // updates database after adding entry
-	return;
 }

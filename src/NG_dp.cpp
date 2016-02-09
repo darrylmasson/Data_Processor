@@ -4,6 +4,7 @@
 #include <ctime>
 #include <chrono>
 #include <ratio>
+#include <getopt.h> // getopt_long
 
 #ifndef PROCESSOR_H
 #include "Processor.h"
@@ -25,35 +26,50 @@ void PrintVersions() {
 
 void Help() {
 	cout << "Arguments:\n";
-	cout << "-f file\t\tSpecifies which file for processor to use. Required\n";
-	cout << "-s source\t\tSpecifies what source was used for file. Required\n";
-	cout << "-a moving_average\t\tSpecifies how many samples on each side of a given point to average. Optional\n";
-	cout << "-c config\t\tSpecifies a non-default configuration file to use. Must be in same directory as default. Optional\n";
-	cout << "-e error_level\t\tSpecifies level of output during processing. Default 0, 1 = more, 2 = lots. Optional\n";
-	cout << "-h\t\t\tPrints this message\n";
-	cout << "-I current\t\tCurrent setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
-	cout << "-l level\t\tSpecifies processing level to be done. Default 1 (Method and Event), 0 = Event, 2 = Event, Method, and Discriminator, 3 = Discriminator. Optional\n";
-	cout << "-p Detector_position\t\tSets positions of detectors. Required for NG or Cf-252 runs, optional otherwise\n";
-	cout << "-v\t\t\tPrints installed versions and exits\n";
-	cout << "-V voltage\t\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "-f, --file\t\tSpecifies which file for processor to use. Required\n";
+	cout << "-s, --source\t\tSpecifies what source was used for file. Required\n";
+	cout << "-a, --moving_average\t\tSpecifies how many samples on each side of a given point to average. Optional\n";
+	cout << "-c, --config\t\tSpecifies a non-default configuration file to use. Must be in same directory as default. Optional\n";
+	cout << "--verbose\t\tSets level of output during processing to 1 (default 0). Optional\n";
+	cout << "--very_verbose\t\tSets level of output during processing to 2 (default 0). Optional\n";
+	cout << "-h, --help\t\t\tPrints this message\n";
+	cout << "-I, --NG_current\t\tCurrent setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "-l, --level\t\tSpecifies processing level to be done. Default 1 (Method and Event), 0 = Event, 2 = Event, Method, and Discriminator, 3 = Discriminator. Optional\n";
+	cout << "-p, --position\t\tSets positions of detectors. Required for NG or Cf-252 runs, optional otherwise\n";
+	cout << "-v, --version\t\t\tPrints installed versions and exits\n";
+	cout << "-V, --NG_voltage\t\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
 	return;
 }
 
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v4\n";
-	int i(0), iElapsed(0), iAverage(0), iLevel(1);
+	int i(0), iElapsed(0), iAverage(0), iLevel(1), option_index(0);
 	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
-	const string sArgs = "Arguments: -f file -s source [-a moving_average -c config -e error_level -h -I current -l level -p detector_positions -v -V voltage]";
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
 	float fHV(0), fCurrent(0);
 	Processor processor;
 	Discriminator discriminator;
+	option long_options[] = {
+		{"very_verbose", no_argument, &g_verbose, 2},
+		{"verbose", no_argument, &g_verbose, 1},
+		{"help", no_argument, 0, 'h'},
+		{"file", required_argument, 0, 'f'},
+		{"source", required_argument, 0, 's'},
+		{"moving_average", required_argument, 0, 'a'},
+		{"config", required_argument, 0, 'c'},
+		{"NG_current", required_argument, 0, 'I'},
+		{"level", required_argument, 0, 'l'},
+		{"position", required_argument, 0, 'p'},
+		{"version", no_argument, 0, 'v'},
+		{"NG_voltage", required_argument, 0, 'V'},
+		{0,0,0,0}
+	};
 	if (argc < 2) {
-		cout << sArgs << '\n';
+		Help();
 		return 0;
 	}
-	while ((i = getopt(argc, argv, "a:c:e:f:hI:l:s:p:vV:x:")) != -1) { // command line options
+	while ((i = getopt_long(argc, argv, "a:c:e:f:hI:l:s:p:vV:", long_options, &option_index)) != -1) { // command line options
 		switch(i) {
 			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;

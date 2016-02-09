@@ -71,7 +71,6 @@ Discriminator::~Discriminator(){
 
 void Discriminator::Setup(string filein) {
 	unsigned short mask;
-	bNewPeak2 = false;
 	pPeak2 = &vPeak2;
 	f.reset(new TFile((sWorkingDir + "/prodata/" + filein + ".root").c_str(), "UPDATE"));
 	if (f->IsZombie()) {
@@ -132,11 +131,7 @@ void Discriminator::Setup(string filein) {
 		T0->SetBranchAddress("Odd",				dft_odd);
 		T0->SetBranchAddress("LapHi",			lap_high);
 		T0->SetBranchAddress("LapLow",			lap_low);
-
-		if (T0->SetBranchAddress("Peakheight2",		dPeak2)) {
-			bNewPeak2 = true;
-			T0->SetBranchAddress("Peakheight2",		&pPeak2);
-		}
+		T0->SetBranchAddress("Peakheight2",		&pPeak2);
 
 		lNumEvents = T0->GetEntries();
 	}
@@ -171,8 +166,7 @@ void Discriminator::Discriminate() {
 			dDiscrim[d_DFT_t][iChan[ch]] = dft_odd[iChan[ch]] == 0 ?									-1 : dft_even[iChan[ch]]/dft_odd[iChan[ch]];
 			dDiscrim[d_NGM_t][iChan[ch]] = peakscale_y[iChan[ch]] == 0 || peakscale_n[iChan[ch]] == 0 ?	-1 : xsq_y[iChan[ch]]/peakscale_y[iChan[ch]]-xsq_n[iChan[ch]]/peakscale_n[iChan[ch]];
 			dDiscrim[d_LAP_t][iChan[ch]] = lap_low[iChan[ch]] == 0 ?									-1 : lap_high[iChan[ch]]/lap_low[iChan[ch]];
-			if (bNewPeak2) dDiscrim[d_PGA_t][iChan[ch]] = pPeak2->at(iChan[ch])[0] == 0 ?				-1 : sample[iChan[ch]]/pPeak2->at(iChan[ch])[0];
-			else dDiscrim[d_PGA_t][iChan[ch]] = dPeak2[iChan[ch]] == 0 ?								-1 : sample[iChan[ch]]/dPeak2[iChan[ch]];
+			dDiscrim[d_PGA_t][iChan[ch]] = pPeak2->at(iChan[ch])[0] == 0 ?								-1 : sample[iChan[ch]]/pPeak2->at(iChan[ch])[0];
 			dDiscrim[d_WBS_t][iChan[ch]] = baseshift_n[iChan[ch]]+baseshift_y[iChan[ch]];
 			iBinNumber = integral[iChan[ch]]/(gain[ch]*iDiscrimBins); // gain isn't handled the same way as the stuff from the tree
 			for (int d = 0; d < NUM_DISCRIMS; d++) {

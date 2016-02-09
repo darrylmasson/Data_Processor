@@ -10,7 +10,8 @@
 
 class Discriminator {
 	private:
-		enum { mean = 0, sig1, sig3, NUM_BANDS, NUM_CHANS = 4, iDiscrimBins = 500};
+		enum { mean = 0, sig1, sig3, NUM_BANDS};
+		enum {NUM_CHANS = 3, iDiscrimBins = 500};
 
 		const double gain[3];
 
@@ -24,7 +25,6 @@ class Discriminator {
 		unique_ptr<TFile> f;
 
 		bool sbCutPass[NUM_DISCRIMS][NUM_CHANS][NUM_BANDS];
-		bool bNewPeak2;
 
 		int			iChan[NUM_CHANS];
 		int			iNChan;
@@ -36,7 +36,6 @@ class Discriminator {
 		double sample[8];
 		vector<vector<double>> vPeak2;
 		vector<vector<double>>* pPeak2;
-		double dPeak2[8]; // for backwards compatibility
 		double xsq_n[4];
 		double xsq_y[4];
 		double peakscale_n[4];
