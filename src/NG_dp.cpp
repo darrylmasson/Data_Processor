@@ -28,16 +28,16 @@ void Help() {
 	cout << "Arguments:\n";
 	cout << "-f, --file\t\tSpecifies which file for processor to use. Required\n";
 	cout << "-s, --source\t\tSpecifies what source was used for file. Required\n";
-	cout << "-a, --moving_average\t\tSpecifies how many samples on each side of a given point to average. Optional\n";
+	cout << "-a, --moving_average\tSpecifies how many samples on each side of a given point to average. Optional\n";
 	cout << "-c, --config\t\tSpecifies a non-default configuration file to use. Must be in same directory as default. Optional\n";
 	cout << "--verbose\t\tSets level of output during processing to 1 (default 0). Optional\n";
 	cout << "--very_verbose\t\tSets level of output during processing to 2 (default 0). Optional\n";
-	cout << "-h, --help\t\t\tPrints this message\n";
-	cout << "-I, --NG_current\t\tCurrent setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "-h, --help\t\tPrints this message\n";
+	cout << "-I, --NG_current\tCurrent setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
 	cout << "-l, --level\t\tSpecifies processing level to be done. Default 1 (Method and Event), 0 = Event, 2 = Event, Method, and Discriminator, 3 = Discriminator. Optional\n";
 	cout << "-p, --position\t\tSets positions of detectors. Required for NG or Cf-252 runs, optional otherwise\n";
-	cout << "-v, --version\t\t\tPrints installed versions and exits\n";
-	cout << "-V, --NG_voltage\t\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "-v, --version\t\tPrints installed versions and exits\n";
+	cout << "-V, --NG_voltage\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
 	return;
 }
 
@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
 	}
 	while ((i = getopt_long(argc, argv, "a:c:e:f:hI:l:s:p:vV:", long_options, &option_index)) != -1) { // command line options
 		switch(i) {
+			case 0: break;
 			case 'a': iAverage = atoi(optarg);	break;
 			case 'c': sConfigFile = optarg;		break;
 			case 'e': g_verbose = atoi(optarg);	break;
