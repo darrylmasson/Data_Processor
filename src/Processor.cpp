@@ -317,7 +317,7 @@ void Processor::SetDetectorPositions(string in) { // "z0=#,z1=#,z2=#,r0=#,r1=#,r
 			if (it->at(1) == '*') for (i = 0; i < iNchan; i++) fDetectorZ[iChan[i]] = atof(it->c_str()+it->find('=')+1);
 			else fDetectorZ[atoi(it->c_str()+1)] = atof(it->c_str()+it->find('=')+1);
 		} else if ((it->at(0) == 'r') || (it->at(0) == 'R')) {
-			if (it->at(1) == '*') for (i = 0; i < iNchan; i++) fDetectorZ[iChan[i]] = atof(it->c_str()+it->find('=')+1);
+			if (it->at(1) == '*') for (i = 0; i < iNchan; i++) fDetectorR[iChan[i]] = atof(it->c_str()+it->find('=')+1);
 			else fDetectorR[atoi(it->c_str()+1)] = atof(it->c_str()+it->find('=')+1);
 		}
 	}
