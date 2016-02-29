@@ -92,15 +92,6 @@ int main(int argc, char **argv) {
 		cout << "No source specified\n";
 		return 0;
 	}
-/*	switch(iSpecial) {
-		case -1: break; //cout << "No special options\n"; break; // default
-		case 0: cout << "Special samplerate\n"; break; // 500 MSa/s samplerate
-		case 1: cout << "Special resolution: 13-bit\n"; break; // 13-bit simulation
-		case 2: cout << "Special resolution: 12-bit\n"; break; // 12-bit simulation
-		case 3: cout << "Special resolution: 11-bit\n"; break; // 11-bit simulation
-		case 4: cout << "Special resolution: 10-bit\n"; break; // 10-bit simulation
-		default : cout << "Error: invalid special option specified\n"; return 0;
-	} */
 
 	if (iLevel <= 2) {
 		try { // general setup and preparatory steps
