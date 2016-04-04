@@ -139,10 +139,10 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 
 	try {
 		dX.reset(new double[iEventlength]);
-		fit_n	= unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
-		fit_y	= unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
-		fit_n_f	= unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
-		fit_y_f	= unique_ptr<TF1>(new TF1("fit",this,&Method::TF1_fit_func,0,iEventlength,4));
+		fit_n	= unique_ptr<TF1>(new TF1("fitn",this,&Method::TF1_fit_func,0,iEventlength,4));
+		fit_y	= unique_ptr<TF1>(new TF1("fity",this,&Method::TF1_fit_func,0,iEventlength,4));
+		fit_n_f	= unique_ptr<TF1>(new TF1("fitnf",this,&Method::TF1_fit_func,0,iEventlength,4));
+		fit_y_f	= unique_ptr<TF1>(new TF1("fityf",this,&Method::TF1_fit_func,0,iEventlength,4));
 	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Fitter\n";
 		iFailed = 1;
