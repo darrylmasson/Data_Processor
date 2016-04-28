@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
 	};
 	if (argc < 2) {
 		Help();
-		return 0;
+		return 1;
 	}
 	while ((i = getopt_long(argc, argv, "a:c:e:f:hI:l:s:p:vV:", long_options, &option_index)) != -1) { // command line options
 		switch(i) {
@@ -76,21 +76,21 @@ int main(int argc, char **argv) {
 			case 'c': sConfigFile = optarg;		break;
 			case 'e': g_verbose = atoi(optarg);	break;
 			case 'f': sFileset = optarg;		break;
-			case 'h': Help();					return 0;
+			case 'h': Help();					return 1;
 			case 'I': fCurrent = atof(optarg);	break;
 			case 'l': iLevel = atoi(optarg);	break;
 			case 'p': sDetectorPos = optarg;	break;
 			case 's': sSource = optarg;			break;
-			case 'v': PrintVersions();			return 0;
+			case 'v': PrintVersions();			return 1;
 			case 'V': fHV = atof(optarg);		break;
-			default: Help();					return 0;
+			default: Help();					return 1;
 	}	}
 	if (sFileset == "\0") {
 		cout << "No file specified\n";
-		return 0;
+		return 1;
 	} else if (sSource == "\0") {
 		cout << "No source specified\n";
-		return 0;
+		return 1;
 	}
 
 	if (iLevel <= 2) {
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
 		} catch (ProcessorException& e) {
 			cout << e.what();
 			cout << "Setup failed, exiting\n";
-			return 0;
+			return 1;
 	}	}
 	if (iLevel >= 2) {
 		discriminator.Setup(sFileset);
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
 			cout << "Discriminator setup failed\n";
 			if (iLevel > 2) {
 				cout << "Returning\n";
-				return 0;
+				return 1;
 			} else {
 				cout << "Continuing\n";
 				iLevel = 1;
