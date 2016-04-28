@@ -1,6 +1,6 @@
 #include "Event.h"
 
-float Event::sfVersion = 1.3;
+float Event::sfVersion = 1.31;
 
 Event::Event() : usTrace(nullptr), itBegin(nullptr), itEnd(nullptr), ciChan(-1) {
 	if (g_verbose > 1) cout << "Event c'tor\n";
@@ -52,6 +52,7 @@ void Event::Analyze() {
 	*sTrigger		= 0;
 	sHWHM->clear();
 	*sSatDur		= 0;
+	*sNumPeaks		= 0;
 
 	*bSaturated		= false;
 	*bFullWaveform	= true;
@@ -106,23 +107,24 @@ void Event::Analyze() {
 	for (it = vPeaks.front().itPeak; it < itEnd; it++) if (*it > *dBaseline-3*(*dBaseSigma)) break;
 	*bFullWaveform = (it != itEnd);
 	vPeaks.front().itEnd = (it == itEnd ? itEnd-1 : it);
-	for (auto it = vPeaks.begin(); it < vPeaks.end(); it++) {
-		sPeakX->push_back((it->itPeak-itBegin)*dScaleT);
-		sRise->push_back((it->itPeak-it->itStart)*dScaleT);
-		sHWHM->push_back((it->HWHM())*dScaleT);
-		dPeak0->push_back((*(it->itStart)-*(it->itPeak))*dScaleV);
+	for (auto& p : vPeaks) { //(auto it = vPeaks.begin(); it < vPeaks.end(); it++) {
+		sPeakX->push_back((p.itPeak-itBegin)*dScaleT);
+		sRise->push_back((p.itPeak-p.itStart)*dScaleT);
+		sHWHM->push_back(p.HWHM()*dScaleT);
+		dPeak0->push_back((*(p.itStart)-*(p.itPeak))*dScaleV);
 		if (iAverage) dPeak2->push_back(dPeak0->back()); // if the waveform is averaged there's no need to do peak averaging
 		else {
 			dPeak2->push_back(0);
-			if ((it->itPeak - itBegin > 1) && (itEnd - it->itPeak > 2)) {
-				for (itt = it->itPeak - 2; itt <= it->itPeak + 2; itt++) dPeak2->back() += *itt;
-				dPeak2->back() = (*(it->itStart) - 0.2*dPeak2->back())*dScaleV;
+			if ((p.itPeak - itBegin > 1) && (itEnd - p.itPeak > 2)) {
+				for (itt = p.itPeak - 2; itt <= p.itPeak + 2; itt++) dPeak2->back() += *itt;
+				dPeak2->back() = (*(p.itStart) - 0.2*dPeak2->back())*dScaleV;
 			} else {
 				dPeak2->back() = dPeak0->back();
 			}
 		}
 	}
 
+	*sNumPeaks = vPeaks.size();
 	*sDecay = (vPeaks.front().itEnd - vPeaks.front().itPeak)*dScaleT;
 	for (it = vPeaks.front().itStart; it <= vPeaks.front().itEnd; it++) *dIntegral += *it; // integrator
 	*dIntegral = (*dIntegral)*2 - (*vPeaks.front().itStart + *vPeaks.front().itEnd);
@@ -171,26 +173,28 @@ void Event::Peakfinder() {
 		return;
 	} else { // peaks found, select candidates of sufficient height
 		auto itPrev = itBegin, itMin = itBegin;
-		for (auto iter = vPeakCandidates.begin(); iter < vPeakCandidates.end(); iter++) { // evaluates heights of peak candidates
-			itMin = iter->itPeak;
-			for (it = iter->itPeak; it > itPrev; it--) { // looks for start of peak or minimum value
+		for (auto& p : vPeakCandidates) { // evaluates heights of peak candidates
+			itMin = p.itPeak;
+			for (it = p.itPeak; it > itPrev; it--) { // looks for start of peak or minimum value
 				if (*itMin < *it) itMin = it;
 				if (*it > (*dBaseline)-3*(*dBaseSigma)) break;
 			}
 			if (it == itPrev) { // didn't reach baseline
-				if ((*itMin - *(iter->itPeak) > iPeakCutMin)){
-					iter->itStart = itMin;
-					vPeaks.push_back(*iter);
+				if ((*itMin - *(p.itPeak) > iPeakCutMin)){
+					p.itStart = itMin;
+					vPeaks.push_back(p);
 				}
 			} else { // did reach baseline
-				if (((*dBaseline) - *(iter->itPeak) > iPeakCutBL)) {
-					iter->itStart = it;
-					vPeaks.push_back(*iter);
+				if (((*dBaseline) - *(p.itPeak) > iPeakCutBL)) {
+					p.itStart = it;
+					vPeaks.push_back(p);
 				}
 			} // choosing it or itMin
 		} // iter loop
 	}
-	for (unsigned i = 0; i < vPeaks.size(); i++) { // sorts peaks by descending size
+	stable_sort(vPeaks.begin(), vPeaks.end(), [&] (const Peak_t& lhs, const Peak_t& rhs){return (*lhs.itStart-*lhs.itPeak) > (*rhs.itStart-*rhs.itPeak);}); // sorts descending via lambda
+
+/*	for (unsigned i = 0; i < vPeaks.size(); i++) { // sorts peaks by descending size
 		auto BigPeak = vPeaks.begin() + i;
 		Peak_t temp = nullptr;
 		for (auto iter = vPeaks.begin() + i; iter < vPeaks.end(); iter++) {
@@ -202,7 +206,7 @@ void Event::Peakfinder() {
 			*(vPeaks.begin() + i) = *BigPeak;
 			*BigPeak = temp;
 		}
-	}
+	} */
 	return;
 }
 
@@ -217,6 +221,7 @@ void Event::SetAddresses(vector<void*> add) {
 	sTrigger		= (short*)add[i++];
 	sHWHM			= (vector<double>*)add[i++];
 	sSatDur			= (short*)add[i++];
+	sNumPeaks		= (short*)add[i++];
 
 	dBaseline		= (double*)add[i++];
 	dBaseSigma		= (double*)add[i++];

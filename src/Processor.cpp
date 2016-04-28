@@ -76,6 +76,7 @@ Processor::Processor() {
 	memset(sDecay,			0, sizeof(sDecay));
 	memset(sTrigger,		0, sizeof(sTrigger));
 	memset(sSaturation,		0, sizeof(sSaturation));
+	memset(sNumPeaks,		0, sizeof(sNumPeaks));
 	memset(dBase,			0, sizeof(dBase));
 	memset(dSigma,			0, sizeof(dSigma));
 	memset(dBaseP,			0, sizeof(dBaseP));
@@ -179,7 +180,7 @@ void Processor::BusinessTime() {
 			iRate = t_elapsed.count() == 0 ? 9001 : iProgCheck/t_elapsed.count(); // it's OVER 9000!
 			cout << iRate << "\t\t";
 			iTimeleft = (iNumEvents - ev)/iRate;
-			cout << iTimeleft/3600 << "h" << (iTimeleft%3600)/60 << "m" << iTimeleft%60 << "s\t\t\r";
+			cout << iTimeleft/3600 << "h" << (iTimeleft%3600)/60 << "m" << iTimeleft%60 << "s          \r";
 			cout.flush();
 		}
 	}
@@ -222,6 +223,7 @@ vector<void*> Processor::SetAddresses(int ch, int level) {
 		add[i++] = (void*)&sTrigger[ch];
 		add[i++] = (void*)&sHWHM[ch];
 		add[i++] = (void*)&sSaturation[ch];
+		add[i++] = (void*)&sNumPeaks[ch];
 
 		add[i++] = (void*)&dBase[ch];
 		add[i++] = (void*)&dSigma[ch];

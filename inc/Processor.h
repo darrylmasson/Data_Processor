@@ -94,6 +94,7 @@ class Processor {
 		vector<vector<double>> sHWHM;
 		vector<vector<double>>* pHWHM;
 		short sSaturation[8]; // length of saturation in ns
+		short sNumPeaks[8];
 
 		double dBase[8]; // these values in samples
 		double dSigma[8];

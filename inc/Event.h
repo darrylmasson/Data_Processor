@@ -82,6 +82,7 @@ class Event {
 		short* sTrigger;
 		vector<double>* sHWHM;
 		short* sSatDur;
+		short* sNumPeaks;
 
 		const int ciChan;
 
