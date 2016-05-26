@@ -26,18 +26,19 @@ void PrintVersions() {
 
 void Help() {
 	cout << "Arguments:\n";
-	cout << "-f, --file\t\tSpecifies which file for processor to use. Required\n";
-	cout << "-s, --source\t\tSpecifies what source was used for file. Required\n";
-	cout << "-a, --moving_average\tSpecifies how many samples on each side of a given point to average. Optional\n";
-	cout << "-c, --config\t\tSpecifies a non-default configuration file to use. Must be in same directory as default. Optional\n";
+	cout << "--file\t\tSpecifies which file for processor to use. Required\n";
+	cout << "--source\t\tSpecifies what source was used for file. Required\n";
+	cout << "--moving_average\tSpecifies how many samples on each side of a given point to average. Optional\n";
+	cout << "--config\t\tSpecifies a non-default configuration file to use. Must be in same directory as default. Optional\n";
 	cout << "--verbose\t\tSets level of output during processing to 1 (default 0). Optional\n";
 	cout << "--very_verbose\t\tSets level of output during processing to 2 (default 0). Optional\n";
 	cout << "-h, --help\t\tPrints this message\n";
-	cout << "-I, --NG_current\tCurrent setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
-	cout << "-l, --level\t\tSpecifies processing level to be done. Default 1 (Method and Event), 0 = Event, 2 = Event, Method, and Discriminator, 3 = Discriminator. Optional\n";
-	cout << "-p, --position\t\tSets positions of detectors. Required for NG or Cf-252 runs, optional otherwise\n";
-	cout << "-v, --version\t\tPrints installed versions and exits\n";
-	cout << "-V, --NG_voltage\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "--NG_current\tCurrent setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "--level\t\tSpecifies processing level to be done. Default 1 (Method and Event), 0 = Event, 2 = Event, Method, and Discriminator, 3 = Discriminator. Optional\n";
+	cout << "--old\t\tForces old-format file header\n";
+	cout << "--position\t\tSets positions of detectors. Required for Cf-252 runs, optional otherwise\n";
+	cout << "--version\t\tPrints installed versions and exits\n";
+	cout << "--NG_voltage\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
 	return;
 }
 
@@ -63,13 +64,14 @@ int main(int argc, char **argv) {
 		{"position", required_argument, 0, 'p'},
 		{"version", no_argument, 0, 'v'},
 		{"NG_voltage", required_argument, 0, 'V'},
+		{"old", no_argument, 0, 'o'},
 		{0,0,0,0}
 	};
 	if (argc < 2) {
 		Help();
 		return 1;
 	}
-	while ((i = getopt_long(argc, argv, "a:c:e:f:hI:l:s:p:vV:", long_options, &option_index)) != -1) { // command line options
+	while ((i = getopt_long(argc, argv, "a:c:e:f:hI:l:os:p:vV:", long_options, &option_index)) != -1) { // command line options
 		switch(i) {
 			case 0: break;
 			case 'a': iAverage = atoi(optarg);	break;
@@ -79,6 +81,7 @@ int main(int argc, char **argv) {
 			case 'h': Help();					return 1;
 			case 'I': fCurrent = atof(optarg);	break;
 			case 'l': iLevel = atoi(optarg);	break;
+			case 'o': processor.ForceOld();		break;
 			case 'p': sDetectorPos = optarg;	break;
 			case 's': sSource = optarg;			break;
 			case 'v': PrintVersions();			return 1;

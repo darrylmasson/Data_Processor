@@ -49,6 +49,7 @@ class Processor {
 		shared_ptr<Method> method[MAX_CH];
 
 		bool			bPositionsSet;
+		bool			bForceOldFormat;
 
 		char			cBuildID[21];
 		char			cSource[12];
@@ -146,6 +147,7 @@ class Processor {
 		~Processor();
 		void BusinessTime(); // it's business, it's business time!
 		int Failed()								{return iFailed;}
+		void ForceOld() {bForceOldFormat = true;}
 		unsigned short GetMask() {return usMask;}
 		vector<void*> SetAddresses(int ch, int level);
 		void SetConfigFile(string in)				{sConfigFileName = in;}

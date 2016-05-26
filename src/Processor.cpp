@@ -43,6 +43,8 @@ Processor::Processor() {
 	sName = "\0";
 	cSource[0] = '\0';
 
+	bForceOldFormat = false;
+
 	memset(&digitizer, 0, sizeof(digitizer));
 
 	usMask = 0;
@@ -162,6 +164,7 @@ void Processor::BusinessTime() {
 		cout << "Completed\tRate (ev/s)\tTime left\n";
 	}
 	f->cd();
+	if (bForceOldFormat) fin.seekg(sizeof_f_header-sizeof(long));
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.get(), iEventsize);
 		for (ch = 0; ch < iNchan; ch++) {
@@ -365,7 +368,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	memcpy(&iTrigPost, cBuffer + 18, sizeof(iTrigPost)); // post-trigger
 	memcpy(uiDCOffset, cBuffer + 22, sizeof(uiDCOffset)); // dc offsets
 	memcpy(uiThreshold, cBuffer + 54, sizeof(uiThreshold)); // trigger thresholds
-	if (in[1] >= '6') memcpy(&lUnixTS, cBuffer + 86, sizeof(lUnixTS)); // unix timestamp
+	if (in[1] >= '6' && !bForceOldFormat) memcpy(&lUnixTS, cBuffer + 86, sizeof(lUnixTS)); // unix timestamp
 
 	if (strcmp(digitizer.cName, "DT5730") == 0) {
 		digitizer.dSamplerate = 5E8;
@@ -412,7 +415,11 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	iNchan = 0;
 	for (auto i = 0; i < MAX_CH; i++) if (usMask & (1<<i)) iChan[iNchan++] = i;
 	iEventsize = sizeof_ev_header + iNchan*iEventlength*sizeof(short); // each sample is size 2
-	iNumEvents = (filesize - (in[1] >= '6' ? sizeof_f_header : sizeof_f_header-sizeof(long)))/iEventsize;
+	if (!bForceOldFormat) {
+		iNumEvents = (filesize - (in[1] >= '6' ? sizeof_f_header : sizeof_f_header-sizeof(long)))/iEventsize;
+	} else {
+		iNumEvents = (filesize - sizeof_f_header - sizeof(long))/iEventsize;
+	}
 
 	if (g_verbose) cout << "Parsing config file\n";
 	string sFilename = sConfigDir + "/config/" + sConfigFileName;
@@ -452,7 +459,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 	iTimeNow = (t_today->tm_hour)*100 + t_today->tm_min; // hhmm
 	iDateNow = (t_today->tm_year-100)*10000 + (t_today->tm_mon+1)*100 + t_today->tm_mday; // yymmdd
 	sprintf(cTime, "%i_%i",iDateNow,iTimeNow);
-	lUnixTS = in[1] >= '6' ? lUnixTS : UnixConverter(in);
+	lUnixTS = in[1] >= '6' && !bForceOldFormat ? lUnixTS : UnixConverter(in);
 
 	switch (digitizer.id) {
 		case dt5751 :
@@ -479,7 +486,7 @@ void Processor::Setup(string in) { // also opens raw and processed files
 		cout << error_message[alloc_error];
 		throw ProcessorException();
 	}
-	if ((strcmp(cSource, "NG") == 0) || (strstr(cSource, "252") != nullptr)) { // NG or Cf-252
+	if ((strstr(cSource, "252") != nullptr)) { // Cf-252 (NG requirement relaxed)
 		if (!bPositionsSet) {
 			if (g_verbose == 0) { // assumed running in batch mode
 				cout << "No detector positions specified\n";
