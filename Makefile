@@ -16,6 +16,9 @@ VPATH = src:inc
 include Paths.conf
 #include $(sources:.cpp=.d)
 
+# if there are ROOT errors in the linking phase, use this shell command:
+# $ g++ -std=c++11 -g -Wall -Iinc -O2 -DWORKING_DIR=\"(working dir)\" -DCONFIG_DIR=\"(config dir)\" src/*.cpp `root-config --cflags --libs`
+
 
 test :
 	$(CC) $(CPPFLAGS) $(TEST) $(sources)
