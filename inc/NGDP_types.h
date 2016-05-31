@@ -9,16 +9,14 @@
 #include <cmath>
 #include <algorithm>
 #include <vector>
+#include <array>
 
 // note on variable names:
 // most variables have their type as a one or two character prefix
 // using normal names, ie u = unsigned, s = static/short, d = double, etc
 
-using namespace std;
 
 const int MAX_CH = 8;
-const string sWorkingDir(WORKING_DIR);//, string(WORKING_DIR).find_last_of('/'));
-const string sConfigDir(CONFIG_DIR);
 const int sizeof_f_header = 94; // 86 until 2016
 const int sizeof_ev_header = 16;
 
@@ -36,7 +34,7 @@ enum ret_codes_t {
 	err_dummy_last
 };
 
-const string error_message[err_dummy_last] = {
+const std::array<std::string,err_dummy_last> error_message{{
 	"No error\n",
 	"Error in method constructor\n",
 	"Invalid digitizer\n",
@@ -44,7 +42,7 @@ const string error_message[err_dummy_last] = {
 	"File not found\n",
 	"Allocation error\n",
 	"Bad value in file\n"
-};
+}};
 
 enum dig_id_t { // easy way for internal identification of digitizer
 	dt5751 = 0,

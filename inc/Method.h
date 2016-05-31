@@ -7,12 +7,17 @@
 #include "TGraph.h"
 #include "TF1.h"
 
+using std::unique_ptr;
+using std::shared_ptr;
+using std::array;
+using std::vector;
+
 class Method {
 protected:
 	int iFailed;
 	int iEventlength;
-	double dScaleT; // scale factors from Digitizer class
-	double dScaleV;
+	double dNsPerSample; // scale factors from Digitizer class
+	double dVoltsPerBin;
 	double dZero;
 
 	enum {n = 0, y = 1, P = 2, ciDFTOrder = 17, ciLAPNpts = 50};
@@ -24,38 +29,40 @@ protected:
 	int iPGASamples; // PGA method
 	int iPGAAverage;
 
-	unique_ptr<double[]> dCos[ciDFTOrder];
-	unique_ptr<double[]> dSin[ciDFTOrder];
+	array<vector<double>,ciDFTOrder> dCos;
+	array<vector<double>,ciDFTOrder> dSin;
 
-	unique_ptr<double[]> dExp[ciLAPNpts];
-	unique_ptr<double[]> dTrace; // averaged
-	double dS[ciLAPNpts];
-	double dXform[ciLAPNpts];
+	array<vector<double>,ciLAPNpts> dExp;
+	vector<double> dTrace; // averaged
+	array<double,ciLAPNpts> dS;
+	array<double,ciLAPNpts> dXform;
 	int iLAPAverage;
 
-	float fGain[P];
+	array<float,P> fGain;
 	int iPeakCut; // 4mV in bins
 	int iResolutionScale;
 	int iStdLength; // 450ns
 	int iStdTrig; // 64ns
-	unique_ptr<double[]> dStdWave[P];
-	unique_ptr<double[]> dX;
-	double dStdNorm[P];
-	double dStdPeak[P];
+	array<vector<double>,P> dStdWave;
+	vector<double> dX;
+	array<double,P> dStdNorm;
+	array<double,P> dStdPeak;
 	unique_ptr<TF1> fit_n;
 	unique_ptr<TF1> fit_y;
 	unique_ptr<TF1> fit_n_f;
 	unique_ptr<TF1> fit_y_f;
 	unique_ptr<TGraph> graph;
+	std::string sConfigDir;
 
 public:
 	Method();
-	Method(int length, int fast, int slow, int samples, float gain[2], double scaleT, double scaleV, shared_ptr<Event> ev);
+	Method(const int length, const int fast, const int slow, const int samples, const array<float,2>& gain, const double scaleT, const double scaleV, shared_ptr<Event> ev);
 	~Method();
 	void Analyze();
-	void SetDCOffset(short sResolution, int dc_offset)	{dZero = sResolution*(1.-(double)dc_offset/65535.);} // conversion from wavedump code
+	void SetDCOffset(const short sResolution, const int dc_offset)	{dZero = sResolution*(1.-(double)dc_offset/65535.);} // conversion from wavedump code
 	void SetDefaultValues();
-	void SetAddresses(vector<void*> add);
+	void SetAddresses(const vector<void*>& add);
+	void SetConfigDir(const std::string& in) {sConfigDir = in;}
 	int Failed() {return iFailed;}
 	double TF1_fit_func(double* x, double* par);
 	shared_ptr<Event> event;
@@ -75,7 +82,7 @@ public:
 	double *dSample;
 
 	//DFT
-	double dMagnitude[ciDFTOrder];
+	array<double,ciDFTOrder> dMagnitude;
 	double *dOdd;
 	double *dEven;
 

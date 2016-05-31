@@ -9,11 +9,13 @@
 #ifndef PROCESSOR_H
 #include "Processor.h"
 #endif
-#ifndef DISCRIMINATOR_H
+/*#ifndef DISCRIMINATOR_H
 #include "Discriminator.h"
-#endif
+#endif*/
 
 using namespace std::chrono;
+using std::string;
+using std::cout;
 
 int g_verbose(0);
 
@@ -21,7 +23,7 @@ void PrintVersions() {
 	cout << "Versions installed:\n";
 	cout << "Event: " << Event::sfVersion << '\n';
 	cout << "Method: " << Method::sfVersion << '\n';
-	cout << "Discriminator: " << Discriminator::sfVersion << '\n';
+//	cout << "Discriminator: " << Discriminator::sfVersion << '\n';
 }
 
 void Help() {
@@ -39,18 +41,20 @@ void Help() {
 	cout << "--position\t\tSets positions of detectors. Required for Cf-252 runs, optional otherwise\n";
 	cout << "--version\t\tPrints installed versions and exits\n";
 	cout << "--NG_voltage\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "--io_dir\t\tDirectory for raw and processed data directories\n";
+	cout << "--config_dir\tDirectory for config files\n";
 	return;
 }
 
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v4\n";
 	int i(0), iElapsed(0), iAverage(0), iLevel(1), option_index(0);
-	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0";
+	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0", sConfigDir = "\0", sIODir = "\0";
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
 	float fHV(0), fCurrent(0);
 	Processor processor;
-	Discriminator discriminator;
+//	Discriminator discriminator;
 	option long_options[] = {
 		{"very_verbose", no_argument, &g_verbose, 2},
 		{"verbose", no_argument, &g_verbose, 1},
@@ -64,14 +68,16 @@ int main(int argc, char **argv) {
 		{"position", required_argument, 0, 'p'},
 		{"version", no_argument, 0, 'v'},
 		{"NG_voltage", required_argument, 0, 'V'},
-		{"old", no_argument, 0, 'o'},
+		{"old", no_argument, 0, 'O'},
+		{"io_dir", required_argument, 0, 'i'},
+		{"conf_dir", required_argument, 0, 'o'},
 		{0,0,0,0}
 	};
 	if (argc < 2) {
 		Help();
 		return 1;
 	}
-	while ((i = getopt_long(argc, argv, "a:c:e:f:hI:l:os:p:vV:", long_options, &option_index)) != -1) { // command line options
+	while ((i = getopt_long(argc, argv, "a:c:e:f:hI:l:Os:p:vV:", long_options, &option_index)) != -1) { // command line options
 		switch(i) {
 			case 0: break;
 			case 'a': iAverage = atoi(optarg);	break;
@@ -81,11 +87,13 @@ int main(int argc, char **argv) {
 			case 'h': Help();					return 1;
 			case 'I': fCurrent = atof(optarg);	break;
 			case 'l': iLevel = atoi(optarg);	break;
-			case 'o': processor.ForceOld();		break;
+			case 'O': processor.ForceOld();		break;
 			case 'p': sDetectorPos = optarg;	break;
 			case 's': sSource = optarg;			break;
 			case 'v': PrintVersions();			return 1;
 			case 'V': fHV = atof(optarg);		break;
+			case 'i': processor.SetIODir(optarg); break;
+			case 'o': processor.SetConfigDir(optarg); break;
 			default: Help();					return 1;
 	}	}
 	if (sFileset == "\0") {
@@ -109,7 +117,7 @@ int main(int argc, char **argv) {
 			cout << "Setup failed, exiting\n";
 			return 1;
 	}	}
-	if (iLevel >= 2) {
+/*	if (iLevel >= 2) {
 		discriminator.Setup(sFileset);
 		if (discriminator.Failed()) {
 			cout << "Discriminator setup failed\n";
@@ -119,11 +127,11 @@ int main(int argc, char **argv) {
 			} else {
 				cout << "Continuing\n";
 				iLevel = 1;
-	}	}	}
+	}	}	}*/
 
 	t_start = steady_clock::now();
 	if (iLevel <= 2) processor.BusinessTime();
-	if (iLevel >= 2) discriminator.Discriminate();
+//	if (iLevel >= 2) discriminator.Discriminate();
 	t_end = steady_clock::now();
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
 	iElapsed = t_elapsed.count();

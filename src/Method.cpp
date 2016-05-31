@@ -2,11 +2,13 @@
 #include "TFile.h"
 #include "TGraphErrors.h"
 
+using std::cout;
+
 const auto pi = acos(-1.0);
 
-float Method::sfVersion = 1.25;
+float Method::sfVersion = 1.28;
 
-Method::Method(int length, int fast, int slow, int samples, float gain[2], double scaleT, double scaleV, shared_ptr<Event> ev) : dSlow(0.01), dShigh(1.0) {
+Method::Method(const int length, const int fast, const int slow, const int samples, const array<float,2>& gain, const double scaleT, const double scaleV, shared_ptr<Event> ev) : dSlow(0.01), dShigh(1.0) {
 	if (g_verbose > 1) cout << "Method c'tor\n";
 	iFailed = 0;
 	iEventlength = length;
@@ -15,8 +17,8 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	iPGASamples = samples;
 	fGain[n] = gain[n];
 	fGain[y] = gain[y];
-	dScaleT = scaleT;
-	dScaleV = scaleV;
+	dNsPerSample = scaleT;
+	dVoltsPerBin = scaleV;
 	event = ev;
 	iPGAAverage = event->GetAverage() > 0 ? 0 : 5; // no sense averaging averages
 	iLAPAverage = event->GetAverage() > 0 ? 0 : 4;
@@ -25,48 +27,38 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	TGraphErrors* pWave = nullptr;
 
 	double omega;
+	try {
+		dCos.fill(vector<double>(iEventlength));
+		dSin.fill(vector<double>(iEventlength));
+		dTrace.reserve(iEventlength);
+		dExp.fill(vector<double>(iEventlength));
+		dX.reserve(iEventlength);
+	} catch (std::bad_alloc& ba) {
+		cout << error_message[alloc_error] << "Method\n";
+		iFailed = 1;
+		return;
+	}
 	for (auto n = 0; n < ciDFTOrder; n++) {
-		try {
-			dCos[n].reset(new double[iEventlength]);
-			dSin[n].reset(new double[iEventlength]);
-		} catch (bad_alloc& ba) {
-			cout << error_message[alloc_error] << "DFT lookup " << n << "\n";
-			iFailed = 1;
-			return;
-		}
-		omega = 2.*n*pi/(iEventlength*dScaleT); // GHz
+		omega = 2.*n*pi/(iEventlength*dNsPerSample); // GHz
 		for (auto t = 0; t < iEventlength; t++) {
 			dCos[n][t] = cos(omega*t);
 			dSin[n][t] = sin(omega*t); // simpler than using one table and sin(x) = cos(x-pi/2)
 	}	}
 
 	double dScale(log(dShigh/dSlow)/ciLAPNpts);
-	try {
-		dTrace.reset(new double[iEventlength]);
-	} catch (bad_alloc& ba) {
-		cout << error_message[alloc_error] << "LAP lookup\n";
-		iFailed = 1;
-		return;
-	}
+
 	for (auto n = 0; n < ciLAPNpts; n++) {
-		try {
-			dExp[n].reset(new double[iEventlength]);
-		} catch (bad_alloc& ba) {
-			cout << error_message[alloc_error] << "LAP lookup " << n << "\n";
-			iFailed = 1;
-			return;
-		}
 		dS[n] = dSlow*exp(dScale*n);
-		for (auto i = 0; i < iEventlength; i++) dExp[n][i] = exp(-dS[n]*i*dScaleT);
+		for (auto i = 0; i < iEventlength; i++) dExp[n][i] = exp(-dS[n]*i*dNsPerSample);
 	}
 
-	if (dScaleT == 1) { // ns/Sa
+	if (dNsPerSample == 1) { // ns/Sa
 		iStdLength	= 600;
 		iStdTrig	= 50;
-	} else if (dScaleT == 2) {
+	} else if (dNsPerSample == 2) {
 		iStdLength	= 300;
 		iStdTrig	= 25;
-	} else if (dScaleT == 0.5) {
+	} else if (dNsPerSample == 0.5) {
 		iStdLength		= 1199;
 		iStdTrig		= 100;
 	} else {
@@ -75,9 +67,9 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		iFailed = 1;
 		return;
 	}
-	if (dScaleV == 1./1024) { // volts/bin
+	if (dVoltsPerBin == 1./1024) { // volts/bin
 		iResolutionScale = 1;
-	} else if (dScaleV == 2./(1 << 14)) { // TODO fix for simulated resolutions
+	} else if (dVoltsPerBin == 2./(1 << 14)) { // TODO fix for simulated resolutions
 		iResolutionScale = 1 << 3;
 	} else {
 		cout << error_message[dig_error];
@@ -87,7 +79,7 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	}
 
 	try {std_file.reset(new TFile((sConfigDir + "/config/standard_events.root").c_str(), "READ"));}
-	catch (bad_alloc& ba) {
+	catch (std::bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Std Events file\n";
 		iFailed = 1;
 		return;
@@ -98,8 +90,8 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 		return;
 	}
 	for (int p = 0; p < P; p++) {
-		try {dStdWave[p].reset(new double[iStdLength]);}
-		catch (bad_alloc& ba) {
+		try {dStdWave[p].reserve(iStdLength);}
+		catch (std::bad_alloc& ba) {
 			cout << error_message[alloc_error] << "Std Events\n";
 			iFailed = 1;
 			return;
@@ -115,17 +107,17 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 			case 300 : // 500 MSa/s
 				for (int i = 0; i < iStdLength; i++) { // averages
 					dStdWave[p][i] = (pWave->GetY()[2*i] + pWave->GetY()[2*i+1])/2.;
-					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
+					dStdPeak[p] = std::min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 1199 : // 2 GSa/s
 				for (int i = 0; i < iStdLength; i++) { // interpolates
 					dStdWave[p][i] = (i%2) ? (pWave->GetY()[(i+1)/2] + pWave->GetY()[(i-1)/2])/2. : pWave->GetY()[i/2]; // i%2==1 so i/2 = (i-1)/2
-					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
+					dStdPeak[p] = std::min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 600 : // 1 GSa/s
 				for (int i = 0; i < iStdLength; i++) {
 					dStdWave[p][i] = pWave->GetY()[i];
-					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
+					dStdPeak[p] = std::min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			default : cout << error_message[method_error];
 			return;
@@ -138,12 +130,11 @@ Method::Method(int length, int fast, int slow, int samples, float gain[2], doubl
 	graph = nullptr;
 
 	try {
-		dX.reset(new double[iEventlength]);
 		fit_n	= unique_ptr<TF1>(new TF1("fitn",this,&Method::TF1_fit_func,0,iEventlength,4));
 		fit_y	= unique_ptr<TF1>(new TF1("fity",this,&Method::TF1_fit_func,0,iEventlength,4));
 		fit_n_f	= unique_ptr<TF1>(new TF1("fitnf",this,&Method::TF1_fit_func,0,iEventlength,4));
 		fit_y_f	= unique_ptr<TF1>(new TF1("fityf",this,&Method::TF1_fit_func,0,iEventlength,4));
-	} catch (bad_alloc& ba) {
+	} catch (std::bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Fitter\n";
 		iFailed = 1;
 		return;
@@ -169,14 +160,6 @@ Method::~Method() {
 	fit_y_f.reset();
 	graph.reset();
 	event.reset();
-	for (auto i = 0; i < ciDFTOrder; i++) {
-		dCos[i].reset();
-		dSin[i].reset();
-	}
-	for (auto i = 0; i < ciLAPNpts; i++) dExp[i].reset();
-	dTrace.reset();
-	for (auto p = 0; p < P; p++) dStdWave[p].reset();
-	dX.reset();
 }
 
 double Method::TF1_fit_func(double* x, double* par) {
@@ -192,10 +175,10 @@ void Method::SetDefaultValues() {
 	*bTruncated = (event->vPeaks.size() > 0) && ((event->vPeaks.front().itStart + iSlowTime) >= event->itEnd);
 
 	//CCM
-	*dBaseline		= (*(event->dBaseline)-dZero) * dScaleV;
-	*dBaseSigma		= *(event->dBaseSigma) * dScaleV;
-	*dBasePost		= (*(event->dBasePost)-dZero) * dScaleV;
-	*dBasePostSigma	= *(event->dBasePostSigma) * dScaleV;
+	*dBaseline		= (*(event->dBaseline)-dZero) * dVoltsPerBin;
+	*dBaseSigma		= *(event->dBaseSigma) * dVoltsPerBin;
+	*dBasePost		= (*(event->dBasePost)-dZero) * dVoltsPerBin;
+	*dBasePostSigma	= *(event->dBasePostSigma) * dVoltsPerBin;
 	*dSlowInt		= 0;
 	*dFastInt		= 0;
 
@@ -212,12 +195,12 @@ void Method::SetDefaultValues() {
 
 	//TF1
 	*dXsq_n			= -1;
-	*dPeakheight_n	= (event->dPeak0->front()/dScaleV)*dStdNorm[n]*fGain[n];
+	*dPeakheight_n	= (event->dPeak0->front()/dVoltsPerBin)*dStdNorm[n]*fGain[n];
 	*dBaseline_n	= *(event->dBaseline);
 	*dOffset_n		= *(event->sTrigger) - iStdTrig;
 
 	*dXsq_y			= -1;
-	*dPeakheight_y	= (event->dPeak0->front()/dScaleV)*dStdNorm[y]*fGain[y];
+	*dPeakheight_y	= (event->dPeak0->front()/dVoltsPerBin)*dStdNorm[y]*fGain[y];
 	*dBaseline_y	= *(event->dBaseline);
 	*dOffset_y		= *(event->sTrigger) - iStdTrig;
 
@@ -229,11 +212,11 @@ void Method::SetDefaultValues() {
 	*dOff_err_y		= -1;
 
 	*dXsq_n_f		= -1;
-	*dPeakheight_n_f= (event->dPeak0->front()/dScaleV)*dStdNorm[n]*fGain[n];
+	*dPeakheight_n_f= (event->dPeak0->front()/dVoltsPerBin)*dStdNorm[n]*fGain[n];
 	*dOffset_n_f	= *(event->sTrigger) - iStdTrig;
 
 	*dXsq_y_f		= -1;
-	*dPeakheight_y_f= (event->dPeak0->front()/dScaleV)*dStdNorm[y]*fGain[y];
+	*dPeakheight_y_f= (event->dPeak0->front()/dVoltsPerBin)*dStdNorm[y]*fGain[y];
 	*dOffset_y_f	= *(event->sTrigger) - iStdTrig;
 
 	*dPeak_err_n_f	= -1;
@@ -264,8 +247,8 @@ void Method::Analyze() {
 	*dFastInt -= (*event->vPeaks.front().itStart + *(event->vPeaks.front().itStart + iFast));
 	*dSlowInt -= (*event->vPeaks.front().itStart + *(event->vPeaks.front().itStart + iSlow));
 
-	*dSlowInt = ((*event->dBaseline * (iSlow)) - 0.5 * (*dSlowInt)) * dScaleV * dScaleT; // baseline subtraction
-	*dFastInt = ((*event->dBaseline * (iFast)) - 0.5 * (*dFastInt)) * dScaleV * dScaleT;
+	*dSlowInt = ((*event->dBaseline * (iSlow)) - 0.5 * (*dSlowInt)) * dVoltsPerBin * dNsPerSample; // baseline subtraction
+	*dFastInt = ((*event->dBaseline * (iFast)) - 0.5 * (*dFastInt)) * dVoltsPerBin * dNsPerSample;
 
 #ifndef CCM_ONLY
 
@@ -309,18 +292,18 @@ void Method::Analyze() {
 	for (m = 0; m < ciLAPNpts; m++) {
 		dXform[m] = 0;
 		t = 0;
-		for (auto it = dTrace.get(); it < dTrace.get()+iEventlength; it++, t++) dXform[m] += (*it)*dExp[m][t];
+		for (auto it = dTrace.data(); it < dTrace.data()+iEventlength; it++, t++) dXform[m] += (*it)*dExp[m][t];
 	}
 	for (m = 0; m < ciLAPNpts-1; m++) {
 		(m < (ciLAPNpts >> 1) ? *dLaplaceLow : *dLaplaceHigh) += (dS[m+1]-dS[m])*(dXform[m+1]+dXform[m]);
 	}
-	*dLaplaceHigh *= 0.5*dScaleV;
-	*dLaplaceLow *= 0.5*dScaleV;
+	*dLaplaceHigh *= 0.5*dVoltsPerBin;
+	*dLaplaceLow *= 0.5*dVoltsPerBin;
 
 	//NGM
 	try {
-		graph.reset(new TGraph(event->Length(), dX.get(), event->itBegin));
-	} catch (bad_alloc& ba) {
+		graph.reset(new TGraph(event->Length(), dX.data(), event->itBegin));
+	} catch (std::bad_alloc& ba) {
 		return;
 	}
 	fit_n->SetParameter(0, *dPeakheight_n);
@@ -378,7 +361,7 @@ void Method::Analyze() {
 #endif
 }
 
-void Method::SetAddresses(vector<void*> add) {
+void Method::SetAddresses(const vector<void*>& add) {
 	int i(0);
 	bTruncated =		(bool*)add[i++];
 

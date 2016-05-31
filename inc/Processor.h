@@ -10,7 +10,13 @@
 #include "TFile.h"
 #include "TTree.h"
 
-class ProcessorException : public exception { // simpler than checking Failed() after every step in setup
+using std::array;
+using std::vector;
+using std::unique_ptr;
+using std::shared_ptr;
+using std::string;
+
+class ProcessorException : public std::exception { // simpler than checking Failed() after every step in setup
 	public:
 	const char* what() const throw () {
 		return "Setup error: ";
@@ -19,68 +25,65 @@ class ProcessorException : public exception { // simpler than checking Failed() 
 
 class Processor {
 	private:
-		void Database(); // adds entry into the database
 		struct {
-			char		cName[12];
-			double		dSamplerate;
-			short		sResolution;
-			double		dVpp;
-			double		dScaleT;
-			double		dScaleV;
-			int			iBaselength;
-			int			iSpecial;
-			dig_id_t	id;
+			char			cName[12];
+			double			dSamplerate;
+			short			sResolution;
+			double			dVpp;
+			double			dVoltsPerBin;
+			double			dNsPerSample;
+			int				iBaselength;
+			int				iSpecial;
+			dig_id_t		id;
 		} digitizer;
 		unique_ptr<TFile> f;
 		unique_ptr<TTree> T0;
 		unique_ptr<TTree> T1;
 		unique_ptr<TTree> TS; // discriminator handles its own tree
-		unique_ptr<char[]> buffer;
-		ifstream fin;
+		vector<char> buffer;
+		std::ifstream fin;
 
 		string sConfigFileName;
 		string sRawDataFile;
 		string sRootFile;
 		string sName;
 		string sPositions;
+		string sIODir;
+		string sConfigDir;
 
-		unique_ptr<double[]> dTrace[MAX_CH];
-		shared_ptr<Event> event[MAX_CH];
-		shared_ptr<Method> method[MAX_CH];
+		vector<vector<double> > dTrace;
+		vector<shared_ptr<Event> > event;
+		vector<shared_ptr<Method> > method;
 
 		bool			bPositionsSet;
 		bool			bForceOldFormat;
 
-		char			cBuildID[21];
 		char			cSource[12];
 
 		unsigned short	usMask; // mask of enabled channels
 
-		int				iAverage; // moving average
-		int				iChan[MAX_CH]; // only the first iNchan entries used
-		int				iEventlength; // samples
-		int				iEventsize; // bytes, incl event header
-		int				iFailed;
-		int				iFastTime[MAX_CH];
-		int				iLevel; // level of processing to be done
-		int				iNchan; // number of enabled channels
-		int				iNumEvents;
-		int				iPGASamples[MAX_CH];
-		int				iSlowTime[MAX_CH];
-		int				iSpecial; // special processing options
-		int				iTrigPost; // percentage of event after trigger
-		int				iXSQ_ndf;
+		int					iAverage; // moving average
+		vector<int>			iChan; // size == iNchan
+		int					iEventlength; // samples
+		int					iEventsize; // bytes, incl event header
+		int					iFailed;
+		int					iFastTime[MAX_CH];
+		int					iLevel; // level of processing to be done
+		int					iNchan; // number of enabled channels
+		int					iNumEvents;
+		int					iPGASamples[MAX_CH];
+		int					iSlowTime[MAX_CH];
+		int					iTrigPost; // percentage of event after trigger
+		int					iXSQ_ndf;
 
-		unsigned int	uiDCOffset[MAX_CH]; // DC offset for each channel
-		unsigned int	uiThreshold[MAX_CH]; // trigger thresholds
+		unsigned int		uiDCOffset[MAX_CH]; // DC offset for each channel
+		unsigned int		uiThreshold[MAX_CH]; // trigger thresholds
 
-		float			fGain[MAX_CH][2]; // for fitter
-		float			fDetectorZ[3];
-		float			fDetectorR[3];
-		float			fHV;
-		float			fCurrent;
-
-		unsigned long	ulRuntime;
+		array<array<float,2>,MAX_CH>	fGain; // for fitter
+		float							fDetectorZ[3];
+		float							fDetectorR[3];
+		float							fHV;
+		float							fCurrent;
 
 		// These in T0
 		bool bFullWave[8]; // waveform decays before end of event
@@ -127,19 +130,31 @@ class Processor {
 		double dLaplaceLow[8];
 		double dLaplaceHigh[8];
 
-		double dXsq[2][4]; // chisquared
-		double dXsq_f[2][4]; // with fixed baseline
-		double dPeak_scale[2][4]; // peak scale factor
-		double dPeak_scale_f[2][4];
-		double dBase_shift[2][4]; // baseline
-		double dOffset[2][4]; // trigger shift
-		double dOffset_f[2][4];
+		double dXsq_n[4]; // chisquared
+		double dXsq_y[4];
+		double dXsq_f_n[4]; // with fixed baseline
+		double dXsq_f_y[4];
+		double dPeak_scale_n[4]; // peak scale factor
+		double dPeak_scale_y[4];
+		double dPeak_scale_f_n[4];
+		double dPeak_scale_f_y[4];
+		double dBase_shift_n[4]; // baseline
+		double dBase_shift_y[4];
+		double dOffset_n[4]; // trigger shift
+		double dOffset_y[4];
+		double dOffset_f_n[4];
+		double dOffset_f_y[4];
 
-		double dPeak_err[2][4]; // errors
-		double dPeak_err_f[2][4];
-		double dBase_err[2][4];
-		double dOff_err[2][4];
-		double dOff_err_f[2][4];
+		double dPeak_err_n[4]; // errors
+		double dPeak_err_y[4];
+		double dPeak_err_f_n[4];
+		double dPeak_err_f_y[4];
+		double dBase_err_n[4];
+		double dBase_err_y[4];
+		double dOff_err_n[4];
+		double dOff_err_y[4];
+		double dOff_err_f_n[4];
+		double dOff_err_f_y[4];
 
 
 	public:
@@ -149,13 +164,15 @@ class Processor {
 		int Failed()								{return iFailed;}
 		void ForceOld() {bForceOldFormat = true;}
 		unsigned short GetMask() {return usMask;}
-		vector<void*> SetAddresses(int ch, int level);
-		void SetConfigFile(string in)				{sConfigFileName = in;}
-		void SetDetectorPositions(string in);
-		void SetNGSetpoint(float HV, float Current) {fHV = HV; fCurrent = Current;}
-		void SetSource(string in)					{strcpy(cSource,in.c_str());}
-		void SetParams(int average, int level)	{iAverage = average; iLevel = level;}
-		void Setup(string in); // opens files, parses header and config file, does trees and alloc'ing
+		vector<void*> GetAddresses(const int ch, const int level);
+		void SetConfigFile(const string& in)				{sConfigFileName = in;}
+		void SetDetectorPositions(const string& in);
+		void SetNGSetpoint(const float HV, const float Current) {fHV = HV; fCurrent = Current;}
+		void SetSource(const string& in)					{strcpy(cSource,in.c_str());}
+		void SetParams(const int average, const int level)	{iAverage = average; iLevel = level;}
+		void SetIODir(const string& in)						{sIODir = in;}
+		void SetConfigDir(const string& in)					{sConfigDir = in;}
+		void Setup(const string& in); // opens files, parses header and config file, does trees and alloc'ing
 };
 
 #endif // PROCESSOR_H

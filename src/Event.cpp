@@ -1,12 +1,15 @@
 #include "Event.h"
 
-float Event::sfVersion = 1.31;
+using std::cout;
+using std::exception;
+
+float Event::sfVersion = 1.32;
 
 Event::Event() : usTrace(nullptr), itBegin(nullptr), itEnd(nullptr), ciChan(-1) {
 	if (g_verbose > 1) cout << "Event c'tor\n";
 }
 
-Event::Event(int eventlength, int baselength, int average, int threshold, int chan, unsigned short* usStart, double* dStart) : usTrace(usStart), itBegin(dStart), itEnd(dStart+eventlength-average), ciChan(chan) {
+Event::Event(const int eventlength, const int baselength, const int average, const int threshold, const int chan, unsigned short* usStart, double* dStart) : usTrace(usStart), itBegin(dStart), itEnd(dStart+eventlength-average), ciChan(chan) {
 	if (g_verbose > 1) cout << "Event " << chan << " c'tor\n";
 	if ((ciChan >= MAX_CH) || (ciChan < 0)) {
 		cout << error_message[method_error] << "Channel\n";
@@ -22,7 +25,7 @@ Event::Event(int eventlength, int baselength, int average, int threshold, int ch
 		vPeakCandidates.reserve(16);
 		vPeaks.reserve(16);
 	}
-	catch (exception& e) {
+	catch (std::exception& e) {
 		cout << error_message[alloc_error] << "Vector\n";
 		iFailed = 1;
 		return;
@@ -69,8 +72,8 @@ void Event::Analyze() {
 	}
 	*dBaseline /= iBaselength;
 	*dBasePost /= iBaselength;
-	*dBasePeakN = (*dBaseline - *itBasePkN)*dScaleV;
-	*dBasePeakP = (*itBasePkP - *dBaseline)*dScaleV;
+	*dBasePeakN = (*dBaseline - *itBasePkN)*dVoltsPerBin;
+	*dBasePeakP = (*itBasePkP - *dBaseline)*dVoltsPerBin;
 
 	*dBaseSigma = sqrt(*dBaseSigma/iBaselength-(*dBaseline)*(*dBaseline)); // sigma^2 = <x^2> - <x>^2
 	*dBasePostSigma = sqrt(*dBasePostSigma/iBaselength-(*dBasePost)*(*dBasePost));
@@ -86,7 +89,7 @@ void Event::Analyze() {
 		*bSaturated = true;
 		for (it = vPeaks.front().itPeak; it < itEnd; it++) if (*it != 0) break;
 		itSatEnd = it-1;
-		*sSatDur = (itSatEnd-vPeaks.front().itPeak)*dScaleT;
+		*sSatDur = (itSatEnd-vPeaks.front().itPeak)*dNsPerSample;
 	} else {
 		itSatEnd = vPeaks.front().itPeak;
 	}
@@ -103,21 +106,21 @@ void Event::Analyze() {
 		return;
 	}
 	for (it = vPeaks.front().itPeak; it > itBegin; it--) if ((*it < iThreshold) && (*(it-1) >= iThreshold)) break;
-	*sTrigger = (it - itBegin)*dScaleT;
+	*sTrigger = (it - itBegin)*dNsPerSample;
 	for (it = vPeaks.front().itPeak; it < itEnd; it++) if (*it > *dBaseline-3*(*dBaseSigma)) break;
 	*bFullWaveform = (it != itEnd);
 	vPeaks.front().itEnd = (it == itEnd ? itEnd-1 : it);
-	for (auto& p : vPeaks) { //(auto it = vPeaks.begin(); it < vPeaks.end(); it++) {
-		sPeakX->push_back((p.itPeak-itBegin)*dScaleT);
-		sRise->push_back((p.itPeak-p.itStart)*dScaleT);
-		sHWHM->push_back(p.HWHM()*dScaleT);
-		dPeak0->push_back((*(p.itStart)-*(p.itPeak))*dScaleV);
+	for (auto& p : vPeaks) {
+		sPeakX->push_back((p.itPeak-itBegin)*dNsPerSample);
+		sRise->push_back((p.itPeak-p.itStart)*dNsPerSample);
+		sHWHM->push_back(p.HWHM()*dNsPerSample);
+		dPeak0->push_back((*(p.itStart)-*(p.itPeak))*dVoltsPerBin);
 		if (iAverage) dPeak2->push_back(dPeak0->back()); // if the waveform is averaged there's no need to do peak averaging
 		else {
 			dPeak2->push_back(0);
 			if ((p.itPeak - itBegin > 1) && (itEnd - p.itPeak > 2)) {
 				for (itt = p.itPeak - 2; itt <= p.itPeak + 2; itt++) dPeak2->back() += *itt;
-				dPeak2->back() = (*(p.itStart) - 0.2*dPeak2->back())*dScaleV;
+				dPeak2->back() = (*(p.itStart) - 0.2*dPeak2->back())*dVoltsPerBin;
 			} else {
 				dPeak2->back() = dPeak0->back();
 			}
@@ -125,10 +128,10 @@ void Event::Analyze() {
 	}
 
 	*sNumPeaks = vPeaks.size();
-	*sDecay = (vPeaks.front().itEnd - vPeaks.front().itPeak)*dScaleT;
+	*sDecay = (vPeaks.front().itEnd - vPeaks.front().itPeak)*dNsPerSample;
 	for (it = vPeaks.front().itStart; it <= vPeaks.front().itEnd; it++) *dIntegral += *it; // integrator
 	*dIntegral = (*dIntegral)*2 - (*vPeaks.front().itStart + *vPeaks.front().itEnd);
-	*dIntegral = ((*dBaseline)*(vPeaks.front().itEnd-vPeaks.front().itStart) - 0.5*(*dIntegral))*dScaleT*dScaleV;
+	*dIntegral = ((*dBaseline)*(vPeaks.front().itEnd-vPeaks.front().itStart) - 0.5*(*dIntegral))*dNsPerSample*dVoltsPerBin;
 }
 
 inline void Event::Average() {
@@ -141,7 +144,7 @@ inline void Event::Average() {
 }
 
 void Event::Peakfinder() {
-	int iPeakCutBL(8/(1000.*dScaleV)), iPeakCutMin(16/(1000.*dScaleV)); // ignores Peaks less than 8 or 16 mV depending on if the pulse reaches baseline or not
+	int iPeakCutBL(8/(1000.*dVoltsPerBin)), iPeakCutMin(16/(1000.*dVoltsPerBin)); // ignores Peaks less than 8 or 16 mV depending on if the pulse reaches baseline or not
 	vPeakCandidates.clear();
 	vPeaks.clear();
 	Peak_t peak(itBegin);
@@ -194,23 +197,10 @@ void Event::Peakfinder() {
 	}
 	stable_sort(vPeaks.begin(), vPeaks.end(), [&] (const Peak_t& lhs, const Peak_t& rhs){return (*lhs.itStart-*lhs.itPeak) > (*rhs.itStart-*rhs.itPeak);}); // sorts descending via lambda
 
-/*	for (unsigned i = 0; i < vPeaks.size(); i++) { // sorts peaks by descending size
-		auto BigPeak = vPeaks.begin() + i;
-		Peak_t temp = nullptr;
-		for (auto iter = vPeaks.begin() + i; iter < vPeaks.end(); iter++) {
-			if (*iter > *BigPeak) BigPeak = iter;
-		}
-		if (BigPeak == vPeaks.begin() + i) continue;
-		else {
-			temp = *(vPeaks.begin() + i);
-			*(vPeaks.begin() + i) = *BigPeak;
-			*BigPeak = temp;
-		}
-	} */
 	return;
 }
 
-void Event::SetAddresses(vector<void*> add) {
+void Event::SetAddresses(const vector<void*>& add) {
 	int i(0);
 	bFullWaveform	= (bool*)add[i++];
 	bSaturated		= (bool*)add[i++];

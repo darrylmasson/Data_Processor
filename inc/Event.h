@@ -5,6 +5,8 @@
 #include "NGDP_types.h"
 #endif
 
+using std::vector;
+
 class Event {
 	private:
 		inline void Average();
@@ -18,8 +20,8 @@ class Event {
 		int iAverage; // 2*x+1 total samples averaged
 		int iScale; // scales
 		unsigned short* const usTrace;
-		double dScaleV; // V/bin
-		double dScaleT; // ns/Sa
+		double dVoltsPerBin; // formerly dScaleV
+		double dNsPerSample; // formerly dScaleT
 		struct Peak_t {
 			Peak_t() : itPeak(nullptr), itStart(nullptr), itEnd(nullptr) {};
 			Peak_t(double* ptr) {itPeak = ptr; itStart = ptr; itEnd = ptr;}
@@ -47,14 +49,14 @@ class Event {
 
 	public:
 		Event();
-		Event(int eventlength, int baselength, int average, int threshold, int chan, unsigned short* usStart, double* dStart);
+		Event(const int eventlength, const int baselength, const int average, const int threshold, const int chan, unsigned short* usStart, double* dStart);
 		~Event();
 		void Analyze();
 		int& GetAverage()					{return iAverage;}
 		const int Length()					{return itEnd-itBegin;}
 		int Failed()						{return iFailed;}
-		void SetAddresses(vector<void*> add);
-		void SetScales(double dV, double dT)		{dScaleV = dV; dScaleT = dT;}
+		void SetAddresses(const vector<void*>& add);
+		void SetScales(const double dV, const double dT)		{dVoltsPerBin = dV; dNsPerSample = dT;}
 		vector<Peak_t> vPeaks; // pulse peaks
 
 		double* itBasePkP; // positive peak in baseline samples
