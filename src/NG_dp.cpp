@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 		Help();
 		return 1;
 	}
-	while ((i = getopt_long(argc, argv, "a:c:e:f:hi:I:l:o:s:p:vV:", long_options, &option_index)) != -1) { // command line options
+	while ((i = getopt_long(argc, argv, "a:c:e:f:h:I:l:Oo:s:p:vV:", long_options, &option_index)) != -1) { // command line options
 		switch(i) {
 			case 0: break;
 			case 'a': iAverage = atoi(optarg);	break;
@@ -87,7 +87,6 @@ int main(int argc, char **argv) {
 			case 's': sSource = optarg;			break;
 			case 'v': PrintVersions();			return 1;
 			case 'V': fHV = atof(optarg);		break;
-			case 'i': sIODir = optarg;			break;
 			case 'o': sConfigDir = optarg;		break;
 			default: Help();					return 1;
 	}	}
