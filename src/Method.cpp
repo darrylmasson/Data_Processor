@@ -8,7 +8,7 @@ const auto pi = acos(-1.0);
 
 float Method::sfVersion = 1.28;
 
-Method::Method(const int length, const int fast, const int slow, const int samples, const array<float,2>& gain, const double scaleT, const double scaleV, shared_ptr<Event> ev) : dSlow(0.01), dShigh(1.0) {
+Method::Method(const int length, const int fast, const int slow, const int samples, const array<float,2>& gain, const double scaleT, const double scaleV, shared_ptr<Event> ev, std::string sConfDir) : dSlow(0.01), dShigh(1.0) , sConfigDir(sConfDir) {
 	if (g_verbose > 1) cout << "Method c'tor\n";
 	iFailed = 0;
 	iEventlength = length;

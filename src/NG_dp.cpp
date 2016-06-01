@@ -42,7 +42,7 @@ void Help() {
 	cout << "--version\t\tPrints installed versions and exits\n";
 	cout << "--NG_voltage\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
 	cout << "--io_dir\t\tDirectory for raw and processed data directories\n";
-//	cout << "--config_dir\tDirectory for config files\n";
+	cout << "--config_dir\tDirectory for config files\n";
 	return;
 }
 
@@ -70,14 +70,14 @@ int main(int argc, char **argv) {
 		{"NG_voltage", required_argument, 0, 'V'},
 		{"old", no_argument, 0, 'O'},
 		{"io_dir", required_argument, 0, 'i'},
-//		{"conf_dir", required_argument, 0, 'o'},
+		{"conf_dir", required_argument, 0, 'o'},
 		{0,0,0,0}
 	};
 	if (argc < 2) {
 		Help();
 		return 1;
 	}
-	while ((i = getopt_long(argc, argv, "a:c:e:f:hi:I:l:Os:p:vV:", long_options, &option_index)) != -1) { // command line options
+	while ((i = getopt_long(argc, argv, "a:c:e:f:hi:I:l:Oo:s:p:vV:", long_options, &option_index)) != -1) { // command line options
 		switch(i) {
 			case 0: break;
 			case 'a': iAverage = atoi(optarg);	break;

@@ -658,7 +658,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 		event.back()->SetAddresses(GetAddresses(ch,0));
 		if (iLevel > 0) {
 			try {
-				method.push_back(unique_ptr<Method>(new Method(event.back()->Length(), iFastTime[ch], iSlowTime[ch], iPGASamples[ch], fGain[ch], digitizer.dNsPerSample, digitizer.dVoltsPerBin, event.back())));
+				method.push_back(unique_ptr<Method>(new Method(event.back()->Length(), iFastTime[ch], iSlowTime[ch], iPGASamples[ch], fGain[ch], digitizer.dNsPerSample, digitizer.dVoltsPerBin, event.back(), sConfigDir)));
 			} catch (std::bad_alloc& ba) {
 				cout << error_message[alloc_error] << "Method\n";
 				throw ProcessorException();

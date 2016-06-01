@@ -56,7 +56,7 @@ protected:
 
 public:
 	Method();
-	Method(const int length, const int fast, const int slow, const int samples, const array<float,2>& gain, const double scaleT, const double scaleV, shared_ptr<Event> ev);
+	Method(const int length, const int fast, const int slow, const int samples, const array<float,2>& gain, const double scaleT, const double scaleV, shared_ptr<Event> ev, std::string sConfDir);
 	~Method();
 	void Analyze();
 	void SetDCOffset(const short sResolution, const int dc_offset)	{dZero = sResolution*(1.-(double)dc_offset/65535.);} // conversion from wavedump code
