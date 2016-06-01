@@ -629,12 +629,12 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 		T1->Branch("Off_err_y_f",	dOff_err_f_y ,	"oferryf[4]/D");
 	}
 	cout << "Processing level " << iLevel << '\n';
-
+	auto i = 0;
 	for (auto& ch : iChan) { // initializing all classes needed
 		if (g_verbose > 1) cout << "CH" << ch << '\n';
 		try {
 			dTrace.push_back(vector<double>(iEventlength-iAverage));
-			event.push_back(unique_ptr<Event>(new Event(iEventlength, digitizer.iBaselength, iAverage, uiThreshold[ch], ch, uspTrace + ch*iEventlength, dTrace.back().data())));
+			event.push_back(unique_ptr<Event>(new Event(iEventlength, digitizer.iBaselength, iAverage, uiThreshold[ch], ch, uspTrace + (i++)*iEventlength, dTrace.back().data())));
 		} catch (std::bad_alloc& ba) {
 			cout << error_message[alloc_error] << "Event\n";
 			throw ProcessorException();
