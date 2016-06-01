@@ -25,30 +25,19 @@ static void s_catch_signals() {
 long UnixConverter(const string& in) {
 	//Read in file time
 	tm timeinfo;
-	timeinfo.tm_year = stoi(in.substr(0,2)) + 100; // counts from 1900
-	timeinfo.tm_mon = stoi(in.substr(2,2)) - 1; // jan == 0
-	timeinfo.tm_mday = stoi(in.substr(4,2));
-	timeinfo.tm_hour = stoi(in.substr(7,2));
-	timeinfo.tm_min = stoi(in.substr(9.2));
-	timeinfo.tm_sec = 0;
+	try {
+		timeinfo.tm_year = stoi(in.substr(0,2)) + 100; // counts from 1900
+		timeinfo.tm_mon = stoi(in.substr(2,2)) - 1; // jan == 0
+		timeinfo.tm_mday = stoi(in.substr(4,2));
+		timeinfo.tm_hour = stoi(in.substr(7,2));
+		timeinfo.tm_min = stoi(in.substr(9.2));
+		timeinfo.tm_sec = 0;
+	} catch (std::exception& e) {
+		cout << e.what() << '\n';
+		return -1;
+	}
 
 	return mktime(&timeinfo);
-
-	//Number of Days since 1 Jan 1970
-/*	long nDays = 365*(nYY-1970);
-	//Add leap days
-	for(int i = 1970; i < nYY; i++) if((i%4 == 0) && (i%200 != 0)) nDays++;
-	int MonthArr[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
-	if (nYY%4 == 0)	MonthArr[1] = 29;
-	for(int i = 0; i < nMM - 1 ; i++) nDays += MonthArr[i];
-	nDays += nDD;
-
-	//Convert to Unix Timestamp
-	long nFiletime = ((nDays*24 + nHH)*60l + nMinutes)*60l;
-	if ((nYY == 14) && ((nMM == 3 && nDD >= 9) || (3 < nMM && nMM < 11) || (nMM == 11 && nDD < 2))) nFiletime += 4l*60l*60l; // daylight savings
-	else if ((nYY == 15) && ((nMM == 3 && nDD >= 8) || (3 < nMM && nMM < 11))) nFiletime += 4l*60l*60l;
-	else nFiletime += 5l*60l*60l;
-	return nFiletime;*/
 
 }
 
@@ -482,7 +471,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 	iDateNow = (t_today->tm_year-100)*10000 + (t_today->tm_mon+1)*100 + t_today->tm_mday; // yymmdd
 	//sprintf(cTime.data(), "%i_%i",iDateNow,iTimeNow);
 	sTime = std::to_string(iDateNow) + "_" + std::to_string(iTimeNow);
-	lUnixTS = in[1] >= '6' && !bForceOldFormat ? lUnixTS : UnixConverter(in);
+	lUnixTS = in[1] >= '6' && !bForceOldFormat ? lUnixTS : UnixConverter(in.substr(in.find(".dat")-11,11));
 
 	switch (digitizer.id) {
 		case dt5751 :
