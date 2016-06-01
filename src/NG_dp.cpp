@@ -42,14 +42,14 @@ void Help() {
 	cout << "--version\t\tPrints installed versions and exits\n";
 	cout << "--NG_voltage\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
 	cout << "--io_dir\t\tDirectory for raw and processed data directories\n";
-	cout << "--config_dir\tDirectory for config files\n";
+//	cout << "--config_dir\tDirectory for config files\n";
 	return;
 }
 
 int main(int argc, char **argv) {
 	cout << "Neutron generator raw data processor v4\n";
 	int i(0), iElapsed(0), iAverage(0), iLevel(1), option_index(0);
-	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0", sConfigDir = "\0", sIODir = "\0";
+	string sConfigFile = "NG_dp_config.cfg", sFileset = "\0", sSource = "\0", sDetectorPos = "\0", sIODir = "\0", sConfigDir = CONFIGDIR;
 	steady_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
 	float fHV(0), fCurrent(0);
@@ -70,14 +70,14 @@ int main(int argc, char **argv) {
 		{"NG_voltage", required_argument, 0, 'V'},
 		{"old", no_argument, 0, 'O'},
 		{"io_dir", required_argument, 0, 'i'},
-		{"conf_dir", required_argument, 0, 'o'},
+//		{"conf_dir", required_argument, 0, 'o'},
 		{0,0,0,0}
 	};
 	if (argc < 2) {
 		Help();
 		return 1;
 	}
-	while ((i = getopt_long(argc, argv, "a:c:e:f:hI:l:Os:p:vV:", long_options, &option_index)) != -1) { // command line options
+	while ((i = getopt_long(argc, argv, "a:c:e:f:hi:I:l:Os:p:vV:", long_options, &option_index)) != -1) { // command line options
 		switch(i) {
 			case 0: break;
 			case 'a': iAverage = atoi(optarg);	break;
@@ -92,8 +92,8 @@ int main(int argc, char **argv) {
 			case 's': sSource = optarg;			break;
 			case 'v': PrintVersions();			return 1;
 			case 'V': fHV = atof(optarg);		break;
-			case 'i': processor.SetIODir(optarg); break;
-			case 'o': processor.SetConfigDir(optarg); break;
+			case 'i': sIODir = optarg;			break;
+			case 'o': sConfigDir = optarg;		break;
 			default: Help();					return 1;
 	}	}
 	if (sFileset == "\0") {
@@ -106,6 +106,8 @@ int main(int argc, char **argv) {
 
 	if (iLevel <= 2) {
 		try { // general setup and preparatory steps
+			processor.SetIODir(sIODir);
+			processor.SetConfigDir(sConfigDir);
 			processor.SetParams(iAverage, iLevel);
 			processor.SetConfigFile(sConfigFile);
 			processor.SetSource(sSource);
