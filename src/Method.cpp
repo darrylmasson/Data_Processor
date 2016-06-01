@@ -39,7 +39,7 @@ Method::Method(const int length, const int fast, const int slow, const int sampl
 		return;
 	}
 	for (auto n = 0; n < ciDFTOrder; n++) {
-		omega = 2.*n*pi/(iEventlength*dNsPerSample); // GHz
+		omega = 2.*n*pi/(iEventlength*dNsPerSample); // GHz or /ns
 		for (auto t = 0; t < iEventlength; t++) {
 			dCos[n][t] = cos(omega*t);
 			dSin[n][t] = sin(omega*t); // simpler than using one table and sin(x) = cos(x-pi/2)
@@ -69,7 +69,7 @@ Method::Method(const int length, const int fast, const int slow, const int sampl
 	}
 	if (dVoltsPerBin == 1./1024) { // volts/bin
 		iResolutionScale = 1;
-	} else if (dVoltsPerBin == 2./(1 << 14)) { // TODO fix for simulated resolutions
+	} else if (dVoltsPerBin == 2./(1 << 14)) {
 		iResolutionScale = 1 << 3;
 	} else {
 		cout << error_message[dig_error];
@@ -292,7 +292,8 @@ void Method::Analyze() {
 	for (m = 0; m < ciLAPNpts; m++) {
 		dXform[m] = 0;
 		t = 0;
-		for (auto it = dTrace.data(); it < dTrace.data()+iEventlength; it++, t++) dXform[m] += (*it)*dExp[m][t];
+	//	for (auto it = dTrace.data(); it < dTrace.data()+iEventlength; it++, t++) dXform[m] += (*it)*dExp[m][t];
+		for (auto& it : dTrace) dXform[m] += it*dExp[m][t++];
 	}
 	for (m = 0; m < ciLAPNpts-1; m++) {
 		(m < (ciLAPNpts >> 1) ? *dLaplaceLow : *dLaplaceHigh) += (dS[m+1]-dS[m])*(dXform[m+1]+dXform[m]);

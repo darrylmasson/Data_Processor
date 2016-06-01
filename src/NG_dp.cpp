@@ -103,7 +103,12 @@ int main(int argc, char **argv) {
 		cout << "No source specified\n";
 		return 1;
 	}
-
+	if (sConfigDir.back() == '/') {
+		sConfigDir.pop_back();
+	}
+	if (sIODir.back() == '/') {
+		sIODir.pop_back();
+	}
 	if (iLevel <= 2) {
 		try { // general setup and preparatory steps
 			processor.SetIODir(sIODir);
