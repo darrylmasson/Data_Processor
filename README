@@ -12,8 +12,8 @@ Before calling make, create a file called Paths.conf in the same directory as th
 
 2. Usage
 
-$ ./NG_dp --file yymmdd_hhmm --source source --io_dir /path/to/rawdata/folder [--level L] [--config configfile] [--moving_average npts] [--position detectorpositions] [--verbose] [--very_verbose] [--help] [--NG_current I --NG_voltage HV] [--version]
-Notes: the rawdatafile is only the timestamp supplied by wavedump: the rawdata/ and .dat are automatically added.  Source is the source used for acquisition (if Cf-252 detector posotioning is required. Can be passed with as arg as a string of format "r0=#,z0=#" etc in no required order. "r*=#" (or z*) will set all coordinates to a single value).  io_dir specifies the location of the rawdata and prodata folders. Config is an alternate configuration file located in config/.  --versions prints installed versions and exits. --level # selects the desired processing level - 0 is Event only, 1 is Event and Method (default), 2 is Event, Method, and Discriminator, 3 is Discrimimnator only (fails if level 1 has not been done).
+$ ./NG_dp --file full/path/to/raw/file --source source [--level L] [--config configfile] [--moving_average npts] [--position detectorpositions] [--verbose] [--very_verbose] [--help] [--NG_current I --NG_voltage HV] [--version] [--config_dir config-dir]
+file is the raw data file to be processed. source is the source used for acquisition (if Cf-252 detector posotioning is required. Can be passed with as arg as a string of format "r0=#,z0=#" etc in no required order. "r*=#" (or z*) will set all coordinates to a single value).  io_dir specifies the location of the rawdata and prodata folders. Config is an alternate configuration file located in config/.  --versions prints installed versions and exits. --level # selects the desired processing level - 0 is Event only, 1 is Event and Method (default), 2 is Event, Method, and Discriminator, 3 is Discrimimnator only (fails if level 1 has not been done). config_dir is an alternate location for configuration files.
 
 3. Discription of functionality
 
