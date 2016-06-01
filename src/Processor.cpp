@@ -361,10 +361,10 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 	long lUnixTS(0);
 	sName = in;
 	if (g_verbose > 1) cout << "Opening files\n";
-	sRawDataFile = sIODir + "/rawdata/" + in + ".dat";
-	sRootFile = sIODir + "/prodata/" + in;
-	if ((iAverage == 0)) sRootFile += ".root";
-	else if ((iAverage != 0)) sRootFile += "_a" + std::to_string(iAverage) + ".root";
+	sRawDataFile = in;
+	sRootFile = in;
+	sRootFile.replace(sRootFile.find(".dat"),4,".root");
+	sRootFile.replace(sRootFile.find("rawdata"),3,"pro");
 	fin.open(sRawDataFile, std::ios::in | std::ios::binary);
 	if (!fin.is_open()) {
 		cout << "Error: " << sRawDataFile << " not found\n";
