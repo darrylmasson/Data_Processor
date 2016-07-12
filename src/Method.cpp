@@ -283,11 +283,11 @@ void Method::Analyze() {
 			for (auto tt = -iLAPAverage; tt <= iLAPAverage; tt++) dTrace.back() += *(itD+tt);
 			dTrace.back() /= (2.*iLAPAverage + 1.);
 		}
-		for (; t < iEventlength; t++) dTrace[t] = *(event->dBasePost);
+		for (; t < iEventlength; t++) dTrace.push_back(t) = *(event->dBasePost);
 	} else {
 		t = 0;
-		for (auto itD = event->itSatEnd; itD < event->itEnd; itD++, t++) dTrace[t] = *itD;
-		for (; t < iEventlength; t++) dTrace[t] = *(event->dBasePost);
+		for (auto itD = event->itSatEnd; itD < event->itEnd; itD++, t++) dTrace.push_back(t) = *itD;
+		for (; t < iEventlength; t++) dTrace.push_back(t) = *(event->dBasePost);
 	}
 	for (m = 0; m < ciLAPNpts; m++) {
 		dXform[m] = 0;
