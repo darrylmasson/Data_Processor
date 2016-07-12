@@ -222,6 +222,8 @@ void Method::SetDefaultValues() {
 	*dOff_err_n_f	= -1;
 	*dOff_err_y_f	= -1;
 
+	dTrace.clear();
+
 	return;
 }
 
@@ -277,9 +279,9 @@ void Method::Analyze() {
 	if (iLAPAverage) {
 		t = 0;
 		for (auto itD = event->itSatEnd; itD < event->itEnd-iLAPAverage; itD++, t++) { // performs the 9pt moving average over the trailing edge
-			dTrace[t] = 0;
-			for (auto tt = -iLAPAverage; tt <= iLAPAverage; tt++) dTrace[t] += *(itD+tt);
-			dTrace[t] /= (2.*iLAPAverage + 1.);
+			dTrace.push_back(0);
+			for (auto tt = -iLAPAverage; tt <= iLAPAverage; tt++) dTrace.back() += *(itD+tt);
+			dTrace.back() /= (2.*iLAPAverage + 1.);
 		}
 		for (; t < iEventlength; t++) dTrace[t] = *(event->dBasePost);
 	} else {
