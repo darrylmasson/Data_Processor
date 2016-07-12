@@ -1,7 +1,5 @@
 #include "Event.h"
 
-using std::cout;
-using std::exception;
 
 float Event::sfVersion = 1.32;
 
@@ -25,7 +23,7 @@ Event::Event(const int eventlength, const int baselength, const int average, con
 		vPeakCandidates.reserve(16);
 		vPeaks.reserve(16);
 	}
-	catch (std::exception& e) {
+	catch (exception& e) {
 		cout << error_message[alloc_error] << "Vector\n";
 		iFailed = 1;
 		return;

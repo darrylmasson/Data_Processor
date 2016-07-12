@@ -2,13 +2,11 @@
 #include "TFile.h"
 #include "TGraphErrors.h"
 
-using std::cout;
-
 const auto pi = acos(-1.0);
 
 float Method::sfVersion = 1.28;
 
-Method::Method(const int length, const int fast, const int slow, const int samples, const array<float,2>& gain, const double scaleT, const double scaleV, shared_ptr<Event> ev, std::string sConfDir) : dSlow(0.01), dShigh(1.0) , sConfigDir(sConfDir) {
+Method::Method(const int length, const int fast, const int slow, const int samples, const array<float,2>& gain, const double scaleT, const double scaleV, shared_ptr<Event>& ev, string& sConfDir) : dSlow(0.01), dShigh(1.0) , sConfigDir(sConfDir) {
 	if (g_verbose > 1) cout << "Method c'tor\n";
 	iFailed = 0;
 	iEventlength = length;
@@ -33,7 +31,7 @@ Method::Method(const int length, const int fast, const int slow, const int sampl
 		dTrace.reserve(iEventlength);
 		dExp.fill(vector<double>(iEventlength));
 		dX.reserve(iEventlength);
-	} catch (std::bad_alloc& ba) {
+	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Method\n";
 		iFailed = 1;
 		return;
@@ -79,7 +77,7 @@ Method::Method(const int length, const int fast, const int slow, const int sampl
 	}
 
 	try {std_file.reset(new TFile((sConfigDir + "/config/standard_events.root").c_str(), "READ"));}
-	catch (std::bad_alloc& ba) {
+	catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Std Events file\n";
 		iFailed = 1;
 		return;
@@ -91,7 +89,7 @@ Method::Method(const int length, const int fast, const int slow, const int sampl
 	}
 	for (int p = 0; p < P; p++) {
 		try {dStdWave[p].reserve(iStdLength);}
-		catch (std::bad_alloc& ba) {
+		catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "Std Events\n";
 			iFailed = 1;
 			return;
@@ -107,17 +105,17 @@ Method::Method(const int length, const int fast, const int slow, const int sampl
 			case 300 : // 500 MSa/s
 				for (int i = 0; i < iStdLength; i++) { // averages
 					dStdWave[p][i] = (pWave->GetY()[2*i] + pWave->GetY()[2*i+1])/2.;
-					dStdPeak[p] = std::min(dStdPeak[p], dStdWave[p][i]);
+					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 1199 : // 2 GSa/s
 				for (int i = 0; i < iStdLength; i++) { // interpolates
 					dStdWave[p][i] = (i%2) ? (pWave->GetY()[(i+1)/2] + pWave->GetY()[(i-1)/2])/2. : pWave->GetY()[i/2]; // i%2==1 so i/2 = (i-1)/2
-					dStdPeak[p] = std::min(dStdPeak[p], dStdWave[p][i]);
+					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			case 600 : // 1 GSa/s
 				for (int i = 0; i < iStdLength; i++) {
 					dStdWave[p][i] = pWave->GetY()[i];
-					dStdPeak[p] = std::min(dStdPeak[p], dStdWave[p][i]);
+					dStdPeak[p] = min(dStdPeak[p], dStdWave[p][i]);
 				} break;
 			default : cout << error_message[method_error];
 			return;
@@ -134,7 +132,7 @@ Method::Method(const int length, const int fast, const int slow, const int sampl
 		fit_y	= unique_ptr<TF1>(new TF1("fity",this,&Method::TF1_fit_func,0,iEventlength,4));
 		fit_n_f	= unique_ptr<TF1>(new TF1("fitnf",this,&Method::TF1_fit_func,0,iEventlength,4));
 		fit_y_f	= unique_ptr<TF1>(new TF1("fityf",this,&Method::TF1_fit_func,0,iEventlength,4));
-	} catch (std::bad_alloc& ba) {
+	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Fitter\n";
 		iFailed = 1;
 		return;
@@ -270,7 +268,7 @@ void Method::Analyze() {
 		dMagnitude[m] = sqrt(dReal*dReal + dImag*dImag);
 	}
 	*dEven = *dOdd = 0;
-	for (t = 2; t < ciDFTOrder; t++) (t%2 ? *dOdd : *dEven) += (dMagnitude[t]-dMagnitude[(t%2?1:0)])/dMagnitude[(t%2?1:0)];
+	for (t = 2; t < ciDFTOrder; t++) (t%2 ? *dOdd : *dEven) += (dMagnitude[t]-dMagnitude[t%2])/dMagnitude[t%2];
 
 	//LAP
 	*dLaplaceLow = 0;
@@ -304,7 +302,7 @@ void Method::Analyze() {
 	//NGM
 	try {
 		graph.reset(new TGraph(event->Length(), dX.data(), event->itBegin));
-	} catch (std::bad_alloc& ba) {
+	} catch (bad_alloc& ba) {
 		return;
 	}
 	fit_n->SetParameter(0, *dPeakheight_n);

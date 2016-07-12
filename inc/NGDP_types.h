@@ -22,6 +22,8 @@ const int sizeof_ev_header = 16;
 
 extern int g_verbose; // for debugging purposes
 
+using namespace std;
+
 enum ret_codes_t {
 	no_error = 0,
 	method_error,
@@ -34,7 +36,7 @@ enum ret_codes_t {
 	err_dummy_last
 };
 
-const std::array<std::string,err_dummy_last> error_message{{
+const array<string,err_dummy_last> error_message{{
 	"No error\n",
 	"Error in method constructor\n",
 	"Invalid digitizer\n",

@@ -6,7 +6,6 @@
 #include <csignal>
 
 using namespace std::chrono;
-using std::cout;
 
 static int s_interrupted = 0;
 static void s_signal_handler(int signal_value) {
@@ -32,7 +31,7 @@ long UnixConverter(const string& in) {
 		timeinfo.tm_hour = stoi(in.substr(7,2));
 		timeinfo.tm_min = stoi(in.substr(9.2));
 		timeinfo.tm_sec = 0;
-	} catch (std::exception& e) {
+	} catch (exception& e) {
 		cout << e.what() << '\n';
 		return -1;
 	}
@@ -137,11 +136,11 @@ Processor::Processor() {
 	dPeak0.assign(MAX_CH,	vector<double>());
 	dPeak2.assign(MAX_CH,	vector<double>());
 	sHWHM.assign(MAX_CH,	vector<double>());
-	for (auto& it : sRise)	{try {it.reserve(16);} catch (std::exception& e) {throw ProcessorException();}}
-	for (auto& it : sPeakX)	{try {it.reserve(16);} catch (std::exception& e) {throw ProcessorException();}}
-	for (auto& it : dPeak0)	{try {it.reserve(16);} catch (std::exception& e) {throw ProcessorException();}}
-	for (auto& it : dPeak2)	{try {it.reserve(16);} catch (std::exception& e) {throw ProcessorException();}}
-	for (auto& it : sHWHM)	{try {it.reserve(16);} catch (std::exception& e) {throw ProcessorException();}}
+	for (auto& it : sRise)	{try {it.reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	for (auto& it : sPeakX)	{try {it.reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	for (auto& it : dPeak0)	{try {it.reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	for (auto& it : dPeak2)	{try {it.reserve(16);} catch (exception& e) {throw ProcessorException();}}
+	for (auto& it : sHWHM)	{try {it.reserve(16);} catch (exception& e) {throw ProcessorException();}}
 	pRise = &sRise;
 	pPeakX = &sPeakX;
 	pPeak0 = &dPeak0;
@@ -174,7 +173,7 @@ void Processor::BusinessTime() {
 
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
-	iProgCheck = std::max(iNumEvents/(iLevel ? 100 : 10) + 1, (iLevel ? 1000 : 10000)); // too many print statements slows the process
+	iProgCheck = max(iNumEvents/(iLevel ? 100 : 10) + 1, (iLevel ? 1000 : 10000)); // too many print statements slows the process
 
 	t_that = steady_clock::now();
 	if (g_verbose) {
@@ -354,7 +353,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 	sRootFile = in;
 	sRootFile.replace(sRootFile.find(".dat"),4,".root");
 	sRootFile.replace(sRootFile.find("rawdata"),3,"pro");
-	fin.open(sRawDataFile, std::ios::in | std::ios::binary);
+	fin.open(sRawDataFile, ios::in | ios::binary);
 	if (!fin.is_open()) {
 		cout << "Error: " << sRawDataFile << " not found\n";
 		cout << error_message[file_error];
@@ -435,7 +434,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 
 	if (g_verbose) cout << "Parsing config file\n";
 	string sFilename = sConfigDir + "/config/" + sConfigFileName;
-	std::ifstream fconf(sFilename,std::ios::in);
+	ifstream fconf(sFilename,ios::in);
 	if (!fconf.is_open()) {
 		cout << "Config file " << sFilename << " not found\n";
 		cout << error_message[file_error];
@@ -470,18 +469,18 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 	iTimeNow = (t_today->tm_hour)*100 + t_today->tm_min; // hhmm
 	iDateNow = (t_today->tm_year-100)*10000 + (t_today->tm_mon+1)*100 + t_today->tm_mday; // yymmdd
 	//sprintf(cTime.data(), "%i_%i",iDateNow,iTimeNow);
-	sTime = std::to_string(iDateNow) + "_" + std::to_string(iTimeNow);
+	sTime = to_string(iDateNow) + "_" + to_string(iTimeNow);
 	lUnixTS = in[1] >= '6' && !bForceOldFormat ? lUnixTS : UnixConverter(in.substr(in.find(".dat")-11,11));
 
 	switch (digitizer.id) {
 		case dt5751 :
-			iXSQ_ndf = std::min(iEventlength, 450)-3;
+			iXSQ_ndf = min(iEventlength, 450)-3;
 			break;
 		case dt5751des :
-			iXSQ_ndf = std::min(iEventlength, 899)-3;
+			iXSQ_ndf = min(iEventlength, 899)-3;
 			break;
 		case dt5730 :
-			iXSQ_ndf = std::min(iEventlength, 225)-3;
+			iXSQ_ndf = min(iEventlength, 225)-3;
 			break;
 		case v1724 :
 		case invalid_dig :
@@ -492,7 +491,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 
 	cout << "Creating config trees\n";
 	try {T0.reset(new TTree("TI","Info"));}
-	catch (std::bad_alloc& ba) {
+	catch (bad_alloc& ba) {
 		cout << "Could not create info tree\n";
 		cout << error_message[alloc_error];
 		throw ProcessorException();
@@ -505,8 +504,8 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 			}
 			cout << "Enter detector positions:\n";
 			for (auto i = 0; i < iNchan; i++) {
-				cout << "Detector " << iChan[i] << " z: "; std::cin >> fDetectorZ[i];
-				cout << "Detector " << iChan[i] << " r: "; std::cin >> fDetectorR[i];
+				cout << "Detector " << iChan[i] << " z: "; cin >> fDetectorZ[i];
+				cout << "Detector " << iChan[i] << " r: "; cin >> fDetectorR[i];
 			}	}
 	}
 	if (string(cSource).find("NG") != string::npos) {
@@ -516,29 +515,28 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 				throw ProcessorException();
 			}
 			cout << "Enter NG setpoints\n";
-			cout << "HV: "; std::cin >> fHV;
-			cout << "Current: "; std::cin >> fCurrent;
+			cout << "HV: "; cin >> fHV;
+			cout << "Current: "; cin >> fCurrent;
 		}
 	}
 
-	T0->Branch("Digitizer",			digitizer.cName,		"name[12]/B");
+	T0->Branch("Digitizer",			digitizer.cName,	"name[12]/B");
 	T0->Branch("Source",			cSource ,			"source[12]/B");
-	T0->Branch("ChannelMask",		&usMask,				"mask/s"); // general info on data run
+	T0->Branch("ChannelMask",		&usMask,			"mask/s"); // general info on data run
 	T0->Branch("TriggerThreshold",	uiThreshold ,		"threshold[8]/i");
 	T0->Branch("DC_offset",			uiDCOffset ,		"dc_off[8]/i");
-	T0->Branch("Posttrigger",		&iTrigPost,				"tri_post/I");
-	T0->Branch("Eventlength",		&iEventlength,			"ev_len/I");
-	T0->Branch("UnixTS",			&lUnixTS,				"unixts/L");
-	T0->Branch("Level",				&iLevel,				"level/I");
-	T0->Branch("Chisquared_NDF",	&iXSQ_ndf,				"ndf/I");
-//	T0->Branch("Time",				sTime ,			"time[12]/B");
+	T0->Branch("Posttrigger",		&iTrigPost,			"tri_post/I");
+	T0->Branch("Eventlength",		&iEventlength,		"ev_len/I");
+	T0->Branch("UnixTS",			&lUnixTS,			"unixts/L");
+	T0->Branch("Level",				&iLevel,			"level/I");
+	T0->Branch("Chisquared_NDF",	&iXSQ_ndf,			"ndf/I");
 	T0->Branch("PGA_samples",		iPGASamples ,		"pga[8]/I");
-	T0->Branch("Fast_window",		iFastTime ,		"fast[8]/I");
-	T0->Branch("Slow_window",		iSlowTime ,		"slow[8]/I");
+	T0->Branch("Fast_window",		iFastTime ,			"fast[8]/I");
+	T0->Branch("Slow_window",		iSlowTime ,			"slow[8]/I");
 	T0->Branch("Detector_pos_z",	fDetectorZ ,		"z_pos[3]/F");
 	T0->Branch("Detector_pos_r",	fDetectorR ,		"r_pos[3]/F");
-	T0->Branch("NG_HV_setpoint",	&fHV,					"hv/F");
-	T0->Branch("NG_Current_setpoint",&fCurrent,				"current/F");
+	T0->Branch("NG_HV_setpoint",	&fHV,				"hv/F");
+	T0->Branch("NG_Current_setpoint",&fCurrent,			"current/F");
 	if (iAverage != 0) T0->Branch("Moving_average", &iAverage, "average/I");
 
 	T0->Fill();
@@ -547,7 +545,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 
 	if (g_verbose > 1) cout << "Alloc'ing trees\n";
 	try {buffer.resize(iEventsize);}
-	catch (std::exception& e) {
+	catch (exception& e) {
 		cout << error_message[alloc_error] << "Buffer\n";
 		cout << e.what() << '\n';
 		throw ProcessorException();
@@ -559,74 +557,74 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 		TS = unique_ptr<TTree>(new TTree("TS","Timestamps"));
 		T0 = unique_ptr<TTree>(new TTree("T0","Event"));
 		if (iLevel > 0) T1 = unique_ptr<TTree>(new TTree("T1","Method"));
-	} catch (std::bad_alloc& ba) {
+	} catch (bad_alloc& ba) {
 		cout << error_message[alloc_error] << "Trees\n";
 		throw ProcessorException();
 	}
 
-	T0->Branch("FullWaveform",	bFullWave ,	"fullwave[8]/O");
-	T0->Branch("Saturated",		bSaturated , 	"sat[8]/O");
+	T0->Branch("FullWaveform",	bFullWave,		"fullwave[8]/O");
+	T0->Branch("Saturated",		bSaturated, 	"sat[8]/O");
+	T0->Branch("Decaytime",		sDecay,			"decay[8]/S");
+	T0->Branch("Trigger",		sTrigger,		"trig[8]/S");
+	T0->Branch("SatDur",		sSaturation,	"satdur[8]/S");
+	T0->Branch("Peakc",			sNumPeaks,		"numpks[8]/S");
+	T0->Branch("Base",			dBase,			"base[8]/D");
+	T0->Branch("Sigma",			dSigma,			"sigma[8]/D");
+	T0->Branch("BaseP",			dBaseP,			"basep[8]/D");
+	T0->Branch("BasePS",		dBasePS,		"baseps[8]/D");
+	T0->Branch("BasePkP",		dBasePeakP,		"basepkp[8]/D");
+	T0->Branch("BasePkN",		dBasePeakN,		"basepkn[8]/D");
+	T0->Branch("Integral",		dFullInt,		"integral[8]/D");
 
-	T0->Branch("Decaytime",		sDecay ,		"decay[8]/S");
-	T0->Branch("Risetime",		"vector<vector<double>>", &pRise);
-	T0->Branch("Peakx",			"vector<vector<double>>", &pPeakX);
-	T0->Branch("Trigger",		sTrigger ,	"trig[8]/S");
-	T0->Branch("HWHM",			"vector<vector<double>>", &pHWHM);
-	T0->Branch("SatDur",		sSaturation ,"satdur[8]/S");
-
-	T0->Branch("Base",			dBase ,		"base[8]/D");
-	T0->Branch("Sigma",			dSigma ,		"sigma[8]/D");
-	T0->Branch("BaseP",			dBaseP ,		"basep[8]/D");
-	T0->Branch("BasePS",		dBasePS ,		"baseps[8]/D");
-	T0->Branch("BasePkP",		dBasePeakP ,	"basepkp[8]/D");
-	T0->Branch("BasePkN",		dBasePeakN ,	"basepkn[8]/D");
 	T0->Branch("Peakheight0",	"vector<vector<double>>", &pPeak0);
 	T0->Branch("Peakheight2",	"vector<vector<double>>", &pPeak2);
-	T0->Branch("Integral",		dFullInt ,	"integral[8]/D");
+	T0->Branch("HWHM",			"vector<vector<double>>", &pHWHM);
+	T0->Branch("Risetime",		"vector<vector<double>>", &pRise);
+	T0->Branch("Peakx",			"vector<vector<double>>", &pPeakX);
 
 	if (iLevel > 0) {
-		T1->Branch("Truncated",		bTruncated , 		"trunc[8]/O");
+		T1->Branch("Truncated",		bTruncated, 		"trunc[8]/O");
 
-		T1->Branch("Baseline",		dBaseline ,		"baseline[8]/D");
-		T1->Branch("BaseSigma",		dBaseSigma ,		"basesigma[8]/D");
-		T1->Branch("BasePost",		dBasePost ,		"basepost[8]/D");
-		T1->Branch("BasePostSigma",	dBasePostSigma ,	"basepostsigma[8]/D");
-		T1->Branch("FastInt",		dFastInt ,		"fastint[8]/D");
-		T1->Branch("SlowInt",		dSlowInt ,		"slowint[8]/D");
+		T1->Branch("Baseline",		dBaseline,			"baseline[8]/D");
+		T1->Branch("BaseSigma",		dBaseSigma,			"basesigma[8]/D");
+		T1->Branch("BasePost",		dBasePost,			"basepost[8]/D");
+		T1->Branch("BasePostSigma",	dBasePostSigma,		"basepostsigma[8]/D");
+		T1->Branch("FastInt",		dFastInt,			"fastint[8]/D");
+		T1->Branch("SlowInt",		dSlowInt,			"slowint[8]/D");
 
-		T1->Branch("Sample",		dSample ,			"sample[8]/D");
+		T1->Branch("Sample",		dSample,			"sample[8]/D");
 
-		T1->Branch("Odd",			dOdd ,			"odd[8]/D");
-		T1->Branch("Even",			dEven ,			"even[8]/D");
+		T1->Branch("Odd",			dOdd,				"odd[8]/D");
+		T1->Branch("Even",			dEven,				"even[8]/D");
 
-		T1->Branch("LapLow",		dLaplaceLow ,		"laplow[8]/D");
-		T1->Branch("LapHi",			dLaplaceHigh ,	"laphi[8]/D");
+		T1->Branch("LapLow",		dLaplaceLow,		"laplow[8]/D");
+		T1->Branch("LapHi",			dLaplaceHigh,		"laphi[8]/D");
 
-		T1->Branch("Xsq_n",			dXsq_n ,			"xsqn[4]/D");
-		T1->Branch("Xsq_y",			dXsq_y ,			"xsqy[4]/D");
-		T1->Branch("Xsq_n_f",		dXsq_f_n ,		"xsqnf[4]/D");
-		T1->Branch("Xsq_y_f",		dXsq_f_y ,		"xsqyf[4]/D");
-		T1->Branch("Peakscale_n",	dPeak_scale_n ,	"pkn[4]/D");
-		T1->Branch("Peakscale_y",	dPeak_scale_y ,	"pky[4]/D");
-		T1->Branch("Peakscale_n_f",	dPeak_scale_f_n ,	"pknf[4]/D");
-		T1->Branch("Peakscale_y_f",	dPeak_scale_f_y ,	"pkyf[4]/D");
-		T1->Branch("Base_shift_n",	dBase_shift_n ,	"bshn[4]/D");
-		T1->Branch("Base_shift_y",	dBase_shift_y ,	"bshy[4]/D");
-		T1->Branch("Offset_n",		dOffset_n ,		"offn[4]/D");
-		T1->Branch("Offset_y",		dOffset_y ,		"offy[4]/D");
-		T1->Branch("Offset_n_f",	dOffset_f_n ,		"offnf[4]/D");
-		T1->Branch("Offset_y_f",	dOffset_f_y ,		"offyf[4]/D");
+		T1->Branch("Xsq_n",			dXsq_n,				"xsqn[4]/D");
+		T1->Branch("Xsq_y",			dXsq_y,				"xsqy[4]/D");
+		T1->Branch("Xsq_n_f",		dXsq_f_n,			"xsqnf[4]/D");
+		T1->Branch("Xsq_y_f",		dXsq_f_y,			"xsqyf[4]/D");
+		T1->Branch("Peakscale_n",	dPeak_scale_n,		"pkn[4]/D");
+		T1->Branch("Peakscale_y",	dPeak_scale_y,		"pky[4]/D");
+		T1->Branch("Peakscale_n_f",	dPeak_scale_f_n,	"pknf[4]/D");
+		T1->Branch("Peakscale_y_f",	dPeak_scale_f_y,	"pkyf[4]/D");
+		T1->Branch("Base_shift_n",	dBase_shift_n,		"bshn[4]/D");
+		T1->Branch("Base_shift_y",	dBase_shift_y,		"bshy[4]/D");
+		T1->Branch("Offset_n",		dOffset_n,			"offn[4]/D");
+		T1->Branch("Offset_y",		dOffset_y,			"offy[4]/D");
+		T1->Branch("Offset_n_f",	dOffset_f_n,		"offnf[4]/D");
+		T1->Branch("Offset_y_f",	dOffset_f_y,		"offyf[4]/D");
 
-		T1->Branch("Peak_err_n",	dPeak_err_n ,		"pkerrn[4]/D");
-		T1->Branch("Peak_err_y",	dPeak_err_y ,		"pkerry[4]/D");
-		T1->Branch("Peak_err_n_f",	dPeak_err_f_n ,	"pkerrnf[4]/D");
-		T1->Branch("Peak_err_y_f",	dPeak_err_f_y ,	"pkerryf[4]/D");
-		T1->Branch("Base_err_n",	dBase_err_n ,		"baerrn[4]/D");
-		T1->Branch("Base_err_y",	dBase_err_y ,		"baerry[4]/D");
-		T1->Branch("Off_err_n",		dOff_err_n ,		"oferrn[4]/D");
-		T1->Branch("Off_err_y",		dOff_err_y ,		"oferry[4]/D");
-		T1->Branch("Off_err_n_f",	dOff_err_f_n ,	"oferrnf[4]/D");
-		T1->Branch("Off_err_y_f",	dOff_err_f_y ,	"oferryf[4]/D");
+		T1->Branch("Peak_err_n",	dPeak_err_n,		"pkerrn[4]/D");
+		T1->Branch("Peak_err_y",	dPeak_err_y,		"pkerry[4]/D");
+		T1->Branch("Peak_err_n_f",	dPeak_err_f_n,		"pkerrnf[4]/D");
+		T1->Branch("Peak_err_y_f",	dPeak_err_f_y,		"pkerryf[4]/D");
+		T1->Branch("Base_err_n",	dBase_err_n,		"baerrn[4]/D");
+		T1->Branch("Base_err_y",	dBase_err_y,		"baerry[4]/D");
+		T1->Branch("Off_err_n",		dOff_err_n,			"oferrn[4]/D");
+		T1->Branch("Off_err_y",		dOff_err_y,			"oferry[4]/D");
+		T1->Branch("Off_err_n_f",	dOff_err_f_n,		"oferrnf[4]/D");
+		T1->Branch("Off_err_y_f",	dOff_err_f_y,		"oferryf[4]/D");
 	}
 	cout << "Processing level " << iLevel << '\n';
 	auto i = 0;
@@ -635,7 +633,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 		try {
 			dTrace.push_back(vector<double>(iEventlength-iAverage));
 			event.push_back(unique_ptr<Event>(new Event(iEventlength, digitizer.iBaselength, iAverage, uiThreshold[ch], ch, uspTrace + (i++)*iEventlength, dTrace.back().data())));
-		} catch (std::bad_alloc& ba) {
+		} catch (bad_alloc& ba) {
 			cout << error_message[alloc_error] << "Event\n";
 			throw ProcessorException();
 		}
@@ -648,7 +646,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 		if (iLevel > 0) {
 			try {
 				method.push_back(unique_ptr<Method>(new Method(event.back()->Length(), iFastTime[ch], iSlowTime[ch], iPGASamples[ch], fGain[ch], digitizer.dNsPerSample, digitizer.dVoltsPerBin, event.back(), sConfigDir)));
-			} catch (std::bad_alloc& ba) {
+			} catch (bad_alloc& ba) {
 				cout << error_message[alloc_error] << "Method\n";
 				throw ProcessorException();
 			}

@@ -10,13 +10,7 @@
 #include "TFile.h"
 #include "TTree.h"
 
-using std::array;
-using std::vector;
-using std::unique_ptr;
-using std::shared_ptr;
-using std::string;
-
-class ProcessorException : public std::exception { // simpler than checking Failed() after every step in setup
+class ProcessorException : public exception { // simpler than checking Failed() after every step in setup
 	public:
 	const char* what() const throw () {
 		return "Setup error: ";
@@ -41,7 +35,7 @@ class Processor {
 		unique_ptr<TTree> T1;
 		unique_ptr<TTree> TS; // discriminator handles its own tree
 		vector<char> buffer;
-		std::ifstream fin;
+		ifstream fin;
 
 		string sConfigFileName;
 		string sRawDataFile;

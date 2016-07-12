@@ -5,7 +5,6 @@
 #include "NGDP_types.h"
 #endif
 
-using std::vector;
 
 class Event {
 	private:

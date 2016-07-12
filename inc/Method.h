@@ -7,11 +7,6 @@
 #include "TGraph.h"
 #include "TF1.h"
 
-using std::unique_ptr;
-using std::shared_ptr;
-using std::array;
-using std::vector;
-
 class Method {
 protected:
 	int iFailed;
@@ -52,17 +47,17 @@ protected:
 	unique_ptr<TF1> fit_n_f;
 	unique_ptr<TF1> fit_y_f;
 	unique_ptr<TGraph> graph;
-	std::string sConfigDir;
+	string sConfigDir;
 
 public:
 	Method();
-	Method(const int length, const int fast, const int slow, const int samples, const array<float,2>& gain, const double scaleT, const double scaleV, shared_ptr<Event> ev, std::string sConfDir);
+	Method(const int length, const int fast, const int slow, const int samples, const array<float,2>& gain, const double scaleT, const double scaleV, shared_ptr<Event>& ev, string& sConfDir);
 	~Method();
 	void Analyze();
 	void SetDCOffset(const short sResolution, const int dc_offset)	{dZero = sResolution*(1.-(double)dc_offset/65535.);} // conversion from wavedump code
 	void SetDefaultValues();
 	void SetAddresses(const vector<void*>& add);
-	void SetConfigDir(const std::string& in) {sConfigDir = in;}
+	void SetConfigDir(const string& in) {sConfigDir = in;}
 	int Failed() {return iFailed;}
 	double TF1_fit_func(double* x, double* par);
 	shared_ptr<Event> event;
