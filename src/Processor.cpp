@@ -155,8 +155,8 @@ Processor::~Processor() {
 	TS = nullptr;
 	T0 = nullptr;
 	T1 = nullptr;
-	if (f) f->Close();
-	f = nullptr;
+	if (f.IsOpen()) f.Close();
+//	f = nullptr;
 	if (fin.is_open()) fin.close();
 	pRise = pPeakX = pHWHM = nullptr;
 	pPeak0 = pPeak2 = nullptr;
@@ -180,7 +180,7 @@ void Processor::BusinessTime() {
 		cout << "Processing:\n";
 		cout << "Completed\tRate (ev/s)\tTime left\n";
 	}
-	f->cd();
+	f.cd();
 	if (bForceOldFormat) fin.seekg(sizeof_f_header-sizeof(long));
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.data(), iEventsize);
@@ -220,8 +220,7 @@ void Processor::BusinessTime() {
 	TS.reset();
 	T0.reset();
 	T1.reset();
-	f->Close();
-	f.reset();
+	f.Close();
 	if (g_verbose) cout << " done\n";
 	return;
 }
@@ -359,8 +358,8 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 		cout << error_message[file_error];
 		throw ProcessorException();
 	}
-	f = unique_ptr<TFile>(new TFile(sRootFile.c_str(), "RECREATE"));
-	if (!f->IsOpen()) {
+	f.Open(sRootFile.c_str(), "RECREATE");
+	if (f.IsZombie()) {
 		cout << "Error: could not open " << sRootFile << '\n';
 		cout << error_message[file_error];
 		throw ProcessorException();
