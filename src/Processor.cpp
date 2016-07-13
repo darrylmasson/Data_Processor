@@ -155,8 +155,8 @@ Processor::~Processor() {
 	TS = nullptr;
 	T0 = nullptr;
 	T1 = nullptr;
-	if (f.IsOpen()) f.Close();
-//	f = nullptr;
+	if (f) f->Close();
+	f.reset();
 	if (fin.is_open()) fin.close();
 	pRise = pPeakX = pHWHM = nullptr;
 	pPeak0 = pPeak2 = nullptr;
@@ -180,7 +180,7 @@ void Processor::BusinessTime() {
 		cout << "Processing:\n";
 		cout << "Completed\tRate (ev/s)\tTime left\n";
 	}
-	f.cd();
+	f->cd();
 	if (bForceOldFormat) fin.seekg(sizeof_f_header-sizeof(long));
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.data(), iEventsize);
@@ -220,7 +220,8 @@ void Processor::BusinessTime() {
 	TS.reset();
 	T0.reset();
 	T1.reset();
-	f.Close();
+	f->Close();
+	f.reset();
 	if (g_verbose) cout << " done\n";
 	return;
 }
@@ -358,8 +359,14 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 		cout << error_message[file_error];
 		throw ProcessorException();
 	}
-	f.Open(sRootFile.c_str(), "RECREATE");
-	if (f.IsZombie()) {
+	try {
+		f.reset(new TFile(sRootFile.c_str(), "RECREATE"));
+	} catch (exception& e) {
+		cout << e.what() << '\n';
+		cout << "Error: coult not alloc " << sRootFile << '\n';
+		throw ProcessorException();
+	}
+	if (f->IsZombie()) {
 		cout << "Error: could not open " << sRootFile << '\n';
 		cout << error_message[file_error];
 		throw ProcessorException();

@@ -30,7 +30,7 @@ class Processor {
 			int				iSpecial;
 			dig_id_t		id;
 		} digitizer;
-		TFile f;
+		unique_ptr<TFile> f;
 		unique_ptr<TTree> T0;
 		unique_ptr<TTree> T1;
 		unique_ptr<TTree> TS;
