@@ -25,20 +25,20 @@ void PrintVersions() {
 
 void Help() {
 	cout << "Arguments:\n";
-	cout << "--file\t\tSpecifies which file for processor to use (full path). Required\n";
-	cout << "--source\t\tSpecifies what source was used for file. Required\n";
-	cout << "--moving_average\tSpecifies how many samples on each side of a given point to average. Optional\n";
-	cout << "--config\t\tSpecifies a non-default configuration file to use. Must be in same directory as default. Optional\n";
-	cout << "--verbose\t\tSets level of output during processing to 1 (default 0). Optional\n";
-	cout << "--very_verbose\t\tSets level of output during processing to 2 (default 0). Optional\n";
-	cout << "-h, --help\t\tPrints this message\n";
-	cout << "--NG_current\tCurrent setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
-	cout << "--level\t\tSpecifies processing level to be done. Default 1 (Method and Event), 0 = Event, 2 = Event, Method, and Discriminator, 3 = Discriminator. Optional\n";
-	cout << "--old\t\tForces old-format file header\n";
-	cout << "--position\t\tSets positions of detectors. Required for Cf-252 runs, optional otherwise\n";
-	cout << "--version\t\tPrints installed versions and exits\n";
-	cout << "--NG_voltage\tVoltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
-	cout << "--config_dir\tDirectory for config files\n";
+	cout << "--file           | Specifies which file for processor to use (full path). Required\n";
+	cout << "--source         | Specifies what source was used for file. Required\n";
+	cout << "--moving_average | Specifies how many samples on each side of a given point to average. Optional\n";
+	cout << "--config         | Specifies a non-default configuration file to use. Must be in same directory as default. Optional\n";
+	cout << "--verbose        | Sets level of output during processing to 1 (default 0). Optional\n";
+	cout << "--very_verbose   | Sets level of output during processing to 2 (default 0). Optional\n";
+	cout << "-h, --help       | Prints this message\n";
+	cout << "--NG_current     | Current setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "--level          | Specifies processing level to be done. Default 1 (Method and Event), 0 = Event. Optional\n";
+	cout << "--old            | Forces old-format file header\n";
+	cout << "--position       | Sets positions of detectors. Required for Cf-252 runs, optional otherwise\n";
+	cout << "--version        | Prints installed versions and exits\n";
+	cout << "--NG_voltage     | Voltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "--config_dir     | Directory for config files\n";
 	return;
 }
 
@@ -120,5 +120,6 @@ int main(int argc, char **argv) {
 	t_elapsed = duration_cast<duration<double>>(t_end-t_start);
 	iElapsed = t_elapsed.count();
 	cout << "Total time elapsed: " << iElapsed/3600 << 'h' << (iElapsed%3600)/60 << 'm' << iElapsed%60 << "s\n";
+	cout << "Average rate " << processor.iNumEvents/iElapsed << " ev/s\n";
 	return 0;
 }

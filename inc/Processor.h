@@ -64,7 +64,6 @@ class Processor {
 		int					iFastTime[MAX_CH];
 		int					iLevel; // level of processing to be done
 		int					iNchan; // number of enabled channels
-		int					iNumEvents;
 		int					iPGASamples[MAX_CH];
 		int					iSlowTime[MAX_CH];
 		int					iTrigPost; // percentage of event after trigger
@@ -157,7 +156,6 @@ class Processor {
 		void BusinessTime(); // it's business, it's business time!
 		int Failed()								{return iFailed;}
 		void ForceOld() {bForceOldFormat = true;}
-		unsigned short GetMask() {return usMask;}
 		vector<void*> GetAddresses(const int ch, const int level);
 		void SetConfigFile(const string& in)				{sConfigFileName = in;}
 		void SetDetectorPositions(const string& in);
@@ -167,6 +165,8 @@ class Processor {
 		void SetIODir(const string& in)						{sIODir = in;}
 		void SetConfigDir(const string& in)					{sConfigDir = in;}
 		void Setup(const string& in); // opens files, parses header and config file, does trees and alloc'ing
+
+		int iNumEvents; // public for average rate counter
 };
 
 #endif // PROCESSOR_H
