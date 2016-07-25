@@ -165,11 +165,13 @@ Processor::~Processor() {
 void Processor::BusinessTime() {
 	int ev(0), iProgCheck(0), iRate(0), iTimeleft(0);
 
-	unsigned long* ulpTimestamp = (unsigned long*)(buffer.data()+sizeof(long));
-	unsigned long ulTSPrev(0);
+	unsigned long* ulpEvHeader = (unsigned long*)buffer.data();
+	unsigned long ulTSPrev(0), ulEvNumPrev(0);
 
-	TS->Branch("Timestamp", ulpTimestamp, "time_stamp/l");
+	TS->Branch("Timestamp", ulpEvHeader+1, "time_stamp/l");
 	TS->Branch("Timestamp_prev", &ulTSPrev, "time_stamp_prev/l");
+	TS->Branch("Eventnum", ulpEvHeader, "evnum/l");
+	TS->Branch("Eventnum_prev", &ulEvNumPrev, "evnum_prev/l");
 
 	steady_clock::time_point t_this, t_that;
 	duration<double> t_elapsed;
@@ -191,7 +193,8 @@ void Processor::BusinessTime() {
 		T0->Fill();
 		TS->Fill();
 		if (iLevel > 0) T1->Fill();
-		ulTSPrev = *ulpTimestamp;
+		ulEvNumPrev = ulpEvHeader[0];
+		ulTSPrev = ulpEvHeader[1];
 		if ((g_verbose) && (ev % iProgCheck == iProgCheck/2)) { // progress updates
 			cout << ev*100l/iNumEvents << "%\t\t";
 			t_this = steady_clock::now();
@@ -203,7 +206,10 @@ void Processor::BusinessTime() {
 			cout << iTimeleft/3600 << "h" << (iTimeleft%3600)/60 << "m" << iTimeleft%60 << "s          \r";
 			cout.flush();
 		}
-		if (s_interrupted) break;
+		if (s_interrupted) {
+			cout << "\nInterrupted!\n";
+			break;
+		}
 	}
 	if (g_verbose) cout << "Processing completed\n";
 	T0->AddFriend("TS");

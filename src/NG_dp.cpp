@@ -32,12 +32,12 @@ void Help() {
 	cout << "--verbose        | Sets level of output during processing to 1 (default 0). Optional\n";
 	cout << "--very_verbose   | Sets level of output during processing to 2 (default 0). Optional\n";
 	cout << "-h, --help       | Prints this message\n";
-	cout << "--NG_current     | Current setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
 	cout << "--level          | Specifies processing level to be done. Default 1 (Method and Event), 0 = Event. Optional\n";
 	cout << "--old            | Forces old-format file header\n";
 	cout << "--position       | Sets positions of detectors. Required for Cf-252 runs, optional otherwise\n";
 	cout << "--version        | Prints installed versions and exits\n";
 	cout << "--NG_voltage     | Voltage setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
+	cout << "--NG_current     | Current setpoint on neutron generator. Requried for NG runs, optional otherwise\n";
 	cout << "--config_dir     | Directory for config files\n";
 	return;
 }
