@@ -51,7 +51,6 @@ Processor::Processor() {
 	sName = "\0";
 	cSource[0] = '\0';
 
-	bForceOldFormat = false;
 	s_catch_signals();
 	memset(&digitizer, 0, sizeof(digitizer));
 
@@ -183,7 +182,6 @@ void Processor::BusinessTime() {
 		cout << "Completed\tRate (ev/s)\tTime left\n";
 	}
 	f->cd();
-	if (bForceOldFormat) fin.seekg(sizeof_f_header-sizeof(long));
 	for (ev = 0; ev < iNumEvents; ev++) {
 		fin.read(buffer.data(), iEventsize);
 
@@ -208,6 +206,7 @@ void Processor::BusinessTime() {
 		}
 		if (s_interrupted) {
 			cout << "\nInterrupted!\n";
+			cout << "Only finished " << ev << "/" << iNumEvents << " events\n";
 			break;
 		}
 	}
@@ -353,7 +352,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 	long filesize;
 	int ch(-1);
 	long lUnixTS(0);
-	sName = in;
+	sName = in.substr(in.length()-15,11); // path/yymmdd_hhmm.dat -> yymmdd_hhmm
 	if (g_verbose > 1) cout << "Opening files\n";
 	sRawDataFile = in;
 	sRootFile = in;
@@ -384,14 +383,15 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 	filesize = fin.tellg();
 	fin.seekg(0, fin.beg);
 	fin.read(buffer.data(), sizeof_f_header);
-	fin.seekg((in[1] >= '6' ? sizeof_f_header : sizeof_f_header-sizeof(long)),fin.beg);
+	if (sName[1] <= '5') fin.seekg(-sizeof(long),fin.cur);
+//	fin.seekg(sizeof_f_header - (in[1] >= '6' ? 0 : sizeof(long)),fin.beg);
 	memcpy(digitizer.cName, buffer.data(), 12); // digitizer name
 	memcpy(&usMask, buffer.data() + 12, sizeof(usMask)); // channel mask
 	memcpy(&iEventlength, buffer.data() + 14, sizeof(iEventlength)); // Eventlength
 	memcpy(&iTrigPost, buffer.data() + 18, sizeof(iTrigPost)); // post-trigger
 	memcpy(uiDCOffset, buffer.data() + 22, sizeof(uiDCOffset)); // dc offsets
 	memcpy(uiThreshold, buffer.data() + 54, sizeof(uiThreshold)); // trigger thresholds
-	if (in[1] >= '6' && !bForceOldFormat) memcpy(&lUnixTS, buffer.data() + 86, sizeof(lUnixTS)); // unix timestamp
+	if (sName[1] >= '6') memcpy(&lUnixTS, buffer.data() + 86, sizeof(lUnixTS)); // unix timestamp
 
 	if (string(digitizer.cName) == "DT5730") {
 		digitizer.dSamplerate = 5E8;
@@ -434,15 +434,10 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 	digitizer.dVoltsPerBin = digitizer.dVpp/(double)digitizer.sResolution;
 	digitizer.dNsPerSample = 1E9/digitizer.dSamplerate;
 
-	iNchan = 0;
 	for (auto i = 0; i < MAX_CH; i++) if (usMask & (1<<i)) iChan.push_back(i);
 	iNchan = iChan.size();
 	iEventsize = sizeof_ev_header + iNchan*iEventlength*sizeof(short); // each sample is size 2
-	if (!bForceOldFormat) {
-		iNumEvents = (filesize - (in[1] >= '6' ? sizeof_f_header : sizeof_f_header-sizeof(long)))/iEventsize;
-	} else {
-		iNumEvents = (filesize - sizeof_f_header - sizeof(long))/iEventsize;
-	}
+	iNumEvents = (filesize - sizeof_f_header + (sName[1] >= '6' ? 0 : sizeof(long)))/iEventsize;
 
 	if (g_verbose) cout << "Parsing config file\n";
 	string sFilename = sConfigDir + "/config/" + sConfigFileName;
@@ -482,7 +477,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 	iDateNow = (t_today->tm_year-100)*10000 + (t_today->tm_mon+1)*100 + t_today->tm_mday; // yymmdd
 	//sprintf(cTime.data(), "%i_%i",iDateNow,iTimeNow);
 	sTime = to_string(iDateNow) + "_" + to_string(iTimeNow);
-	lUnixTS = in[1] >= '6' && !bForceOldFormat ? lUnixTS : UnixConverter(in.substr(in.find(".dat")-11,11));
+	lUnixTS = sName[1] >= '6' ? lUnixTS : UnixConverter(sName);
 
 	switch (digitizer.id) {
 		case dt5751 :
@@ -508,7 +503,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 		cout << error_message[alloc_error];
 		throw ProcessorException();
 	}
-	if (string(cSource).find("252") != string::npos) { // Cf-252 (NG requirement relaxed)
+/*	if (string(cSource).find("252") != string::npos) { // Cf-252 (NG requirement relaxed)
 		if (!bPositionsSet) {
 			if (g_verbose == 0) { // assumed running in batch mode
 				cout << "No detector positions specified\n";
@@ -530,7 +525,7 @@ void Processor::Setup(const string& in) { // also opens raw and processed files
 			cout << "HV: "; cin >> fHV;
 			cout << "Current: "; cin >> fCurrent;
 		}
-	}
+	}*/
 
 	T0->Branch("Digitizer",			digitizer.cName,	"name[12]/B");
 	T0->Branch("Source",			cSource ,			"source[12]/B");

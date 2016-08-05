@@ -64,7 +64,6 @@ int main(int argc, char **argv) {
 		{"position", required_argument, 0, 'p'},
 		{"version", no_argument, 0, 'v'},
 		{"NG_voltage", required_argument, 0, 'V'},
-		{"old", no_argument, 0, 'O'},
 		{"conf_dir", required_argument, 0, 'o'},
 		{0,0,0,0}
 	};
@@ -82,7 +81,6 @@ int main(int argc, char **argv) {
 			case 'h': Help();					return 1;
 			case 'I': fCurrent = atof(optarg);	break;
 			case 'l': iLevel = atoi(optarg);	break;
-			case 'O': processor.ForceOld();		break;
 			case 'p': sDetectorPos = optarg;	break;
 			case 's': sSource = optarg;			break;
 			case 'v': PrintVersions();			return 1;

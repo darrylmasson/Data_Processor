@@ -50,7 +50,6 @@ class Processor {
 		vector<shared_ptr<Method> > method;
 
 		bool			bPositionsSet;
-		bool			bForceOldFormat;
 
 		char			cSource[12];
 
@@ -155,7 +154,6 @@ class Processor {
 		~Processor();
 		void BusinessTime(); // it's business, it's business time!
 		int Failed()								{return iFailed;}
-		void ForceOld() {bForceOldFormat = true;}
 		vector<void*> GetAddresses(const int ch, const int level);
 		void SetConfigFile(const string& in)				{sConfigFileName = in;}
 		void SetDetectorPositions(const string& in);
